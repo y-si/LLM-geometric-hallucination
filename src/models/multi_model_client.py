@@ -38,24 +38,39 @@ class MultiModelClient:
         else:
             raise ValueError(f"Unknown provider: {provider}")
     
-    def generate(self, prompt: str, max_tokens: int = 200, temperature: float = 0.0) -> str:
-        """Generate text completion."""
+    def generate(self, prompt: str, max_tokens: int = 200, temperature: float = 0.0, system_prompt: str = None) -> str:
+        """Generate text completion.
+
+        Args:
+            prompt: User message text.
+            max_tokens: Maximum tokens in response.
+            temperature: Sampling temperature.
+            system_prompt: Optional system prompt prepended to the conversation.
+        """
         try:
             if self.provider == 'anthropic':
-                response = self.client.messages.create(
-                    model=self.model_name,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                kwargs = {
+                    "model": self.model_name,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "messages": [{"role": "user", "content": prompt}]
+                }
+                if system_prompt:
+                    kwargs["system"] = system_prompt
+                response = self.client.messages.create(**kwargs)
                 return response.content[0].text
             else:
                 # OpenAI and Together use same API
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+
                 # Newer OpenAI models (o1, gpt-4o) prefer max_completion_tokens
                 try:
                     response = self.client.chat.completions.create(
                         model=self.model_name,
-                        messages=[{"role": "user", "content": prompt}],
+                        messages=messages,
                         max_tokens=max_tokens,
                         temperature=temperature
                     )
@@ -64,13 +79,13 @@ class MultiModelClient:
                         # Retry with max_completion_tokens
                         response = self.client.chat.completions.create(
                             model=self.model_name,
-                            messages=[{"role": "user", "content": prompt}],
+                            messages=messages,
                             max_completion_tokens=max_tokens,
                             temperature=temperature
                         )
                     else:
                         raise e
-                        
+
                 return response.choices[0].message.content
         except Exception as e:
             print(f"Error generating with {self.provider}/{self.model_name}: {e}")
