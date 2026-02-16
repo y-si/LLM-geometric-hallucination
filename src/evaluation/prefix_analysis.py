@@ -169,7 +169,11 @@ def plot_tradeoff_curve(metrics_df, output_dir, v3_baselines=None):
         'llama-4-maverick-17b': {'correct_rate': 0.906, 'safety_rate': 1 - 0.058},
     }
 
-    # Plot baseline points
+    # Plot baseline points with model-specific label offsets
+    baseline_offsets = {
+        'mixtral-8x7b': (15, 10),
+        'llama-4-maverick-17b': (-15, -22),
+    }
     for model, bl in baselines.items():
         marker = markers.get(model, 'D')
         ax.scatter(
@@ -178,11 +182,14 @@ def plot_tradeoff_curve(metrics_df, output_dir, v3_baselines=None):
             edgecolors='darkred', linewidth=1.5,
         )
         model_label = MODEL_LABELS.get(model, model)
+        offset = baseline_offsets.get(model, (-15, -20))
         ax.annotate(
             f'{model_label}\n(baseline)',
             (bl['correct_rate'], bl['safety_rate']),
-            textcoords="offset points", xytext=(-15, -20),
-            fontsize=8, ha='center', color='red', fontweight='bold',
+            textcoords="offset points", xytext=offset,
+            fontsize=9, ha='center', color='red', fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='white',
+                      edgecolor='red', alpha=0.8),
         )
 
     # Plot prefix points with arrows from baseline
@@ -249,7 +256,7 @@ def plot_tradeoff_curve(metrics_df, output_dir, v3_baselines=None):
     ax.set_xlabel('Correctness Rate', fontsize=13)
     ax.set_ylabel('Safety Rate (1 − Hallucination Rate)', fontsize=13)
     ax.set_title('Correctness vs Safety Tradeoff by Prompt Prefix', fontsize=15)
-    ax.legend(loc='lower left', fontsize=8, ncol=2, framealpha=0.9)
+    ax.legend(loc='lower right', fontsize=8, ncol=2, framealpha=0.9)
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
