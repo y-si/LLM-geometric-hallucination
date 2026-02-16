@@ -139,51 +139,117 @@ PREFIX_ORDER = [
 ]
 
 PREFIX_LABELS = {
-    'epistemic_humility': 'Epistemic\nHumility',
-    'fact_grounded': 'Fact-\nGrounded',
-    'entity_aware': 'Entity-\nAware',
-    'structured_caution': 'Structured\nCaution',
-    'cot_verification': 'CoT\nVerification',
+    'epistemic_humility': 'Epistemic Humility',
+    'fact_grounded': 'Fact-Grounded',
+    'entity_aware': 'Entity-Aware',
+    'structured_caution': 'Structured Caution',
+    'cot_verification': 'CoT Verification',
+}
+
+MODEL_LABELS = {
+    'mixtral-8x7b': 'Mixtral 8x7B',
+    'llama-4-maverick-17b': 'Llama 4 Maverick',
 }
 
 
-def plot_tradeoff_curve(metrics_df, output_dir):
-    """Correctness Rate (X) vs Safety Rate (Y) per (model, prefix)."""
-    fig, ax = plt.subplots(figsize=(10, 8))
+def plot_tradeoff_curve(metrics_df, output_dir, v3_baselines=None):
+    """Correctness Rate (X) vs Safety Rate (Y) per (model, prefix).
+
+    Zoomed into the relevant region with baseline points and arrows.
+    """
+    fig, ax = plt.subplots(figsize=(11, 8))
 
     markers = {'mixtral-8x7b': 'o', 'llama-4-maverick-17b': 's'}
-    colors = sns.color_palette('tab10', n_colors=len(PREFIX_ORDER))
+    colors = sns.color_palette('Set2', n_colors=len(PREFIX_ORDER))
     prefix_color = {k: colors[i] for i, k in enumerate(PREFIX_ORDER)}
 
+    # V3 baselines (hardcoded from extract_baselines output)
+    baselines = {
+        'mixtral-8x7b': {'correct_rate': 0.829, 'safety_rate': 1 - 0.118},
+        'llama-4-maverick-17b': {'correct_rate': 0.906, 'safety_rate': 1 - 0.058},
+    }
+
+    # Plot baseline points
+    for model, bl in baselines.items():
+        marker = markers.get(model, 'D')
+        ax.scatter(
+            bl['correct_rate'], bl['safety_rate'],
+            marker=marker, s=200, color='red', zorder=10,
+            edgecolors='darkred', linewidth=1.5,
+        )
+        model_label = MODEL_LABELS.get(model, model)
+        ax.annotate(
+            f'{model_label}\n(baseline)',
+            (bl['correct_rate'], bl['safety_rate']),
+            textcoords="offset points", xytext=(-15, -20),
+            fontsize=8, ha='center', color='red', fontweight='bold',
+        )
+
+    # Plot prefix points with arrows from baseline
     for model in metrics_df['model_name'].unique():
         model_data = metrics_df[metrics_df['model_name'] == model]
         marker = markers.get(model, 'D')
+        bl = baselines.get(model)
 
         for _, row in model_data.iterrows():
             color = prefix_color.get(row['prefix_key'], 'gray')
             label = PREFIX_LABELS.get(row['prefix_key'], row['prefix_key'])
+
             ax.scatter(
                 row['correct_rate'], row['safety_rate'],
-                marker=marker, s=120, color=color, zorder=5,
-                edgecolors='black', linewidth=0.5,
+                marker=marker, s=140, color=color, zorder=5,
+                edgecolors='black', linewidth=0.8,
             )
+
+            # Arrow from baseline to prefix point
+            if bl:
+                ax.annotate(
+                    '', xy=(row['correct_rate'], row['safety_rate']),
+                    xytext=(bl['correct_rate'], bl['safety_rate']),
+                    arrowprops=dict(arrowstyle='->', color=color,
+                                    lw=1.2, alpha=0.4),
+                )
+
             ax.annotate(
                 label,
                 (row['correct_rate'], row['safety_rate']),
-                textcoords="offset points", xytext=(8, 5),
-                fontsize=7, ha='left',
+                textcoords="offset points", xytext=(10, 4),
+                fontsize=7.5, ha='left',
             )
 
-    # Legend entries for models
+    # Legend: models
     for model, marker in markers.items():
-        ax.scatter([], [], marker=marker, color='gray', s=80, label=model)
+        model_label = MODEL_LABELS.get(model, model)
+        ax.scatter([], [], marker=marker, color='gray', s=80,
+                   edgecolors='black', label=model_label)
+    ax.scatter([], [], marker='o', color='red', s=80,
+               edgecolors='darkred', label='Baseline (no prefix)')
 
-    ax.set_xlabel('Correctness Rate', fontsize=12)
-    ax.set_ylabel('Safety Rate (1 - Hallucination Rate)', fontsize=12)
-    ax.set_title('Correctness vs Safety Tradeoff by Prompt Prefix', fontsize=14)
-    ax.legend(loc='lower left', fontsize=10)
-    ax.set_xlim(-0.02, 1.02)
-    ax.set_ylim(-0.02, 1.02)
+    # Legend: prefixes
+    for key in PREFIX_ORDER:
+        ax.scatter([], [], marker='o', color=prefix_color[key], s=60,
+                   edgecolors='black', linewidth=0.5,
+                   label=PREFIX_LABELS[key])
+
+    # Zoom to relevant region
+    all_x = list(metrics_df['correct_rate']) + [b['correct_rate'] for b in baselines.values()]
+    all_y = list(metrics_df['safety_rate']) + [b['safety_rate'] for b in baselines.values()]
+    x_min = min(all_x) - 0.03
+    x_max = max(all_x) + 0.03
+    y_min = min(all_y) - 0.015
+    y_max = min(max(all_y) + 0.015, 1.005)
+
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+
+    # Ideal corner indicator
+    ax.annotate('← Better', xy=(x_max - 0.01, y_max - 0.003),
+                fontsize=9, ha='right', va='top', color='green', alpha=0.6)
+
+    ax.set_xlabel('Correctness Rate', fontsize=13)
+    ax.set_ylabel('Safety Rate (1 − Hallucination Rate)', fontsize=13)
+    ax.set_title('Correctness vs Safety Tradeoff by Prompt Prefix', fontsize=15)
+    ax.legend(loc='lower left', fontsize=8, ncol=2, framealpha=0.9)
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
@@ -194,6 +260,16 @@ def plot_tradeoff_curve(metrics_df, output_dir):
 
 def plot_category_heatmap(category_metrics, output_dir):
     """Heatmap of hallucination rate by prefix x category for each model."""
+    CATEGORY_LABELS = {
+        'ambiguous': 'Ambiguous',
+        'borderline_edge_factual': 'Borderline\nEdge Factual',
+        'borderline_obscure_real': 'Borderline\nObscure Real',
+        'borderline_plausible_fake': 'Borderline\nPlausible Fake',
+        'factual': 'Factual',
+        'impossible': 'Impossible',
+        'nonexistent': 'Nonexistent',
+    }
+
     for model in category_metrics['model_name'].unique():
         model_data = category_metrics[category_metrics['model_name'] == model]
 
@@ -202,19 +278,26 @@ def plot_category_heatmap(category_metrics, output_dir):
             values='hallucination_rate', aggfunc='first',
         )
 
-        # Reorder rows
+        # Reorder rows and columns
         ordered = [p for p in PREFIX_ORDER if p in pivot.index]
         pivot = pivot.loc[ordered]
 
-        fig, ax = plt.subplots(figsize=(12, 5))
+        # Rename columns for display
+        pivot.columns = [CATEGORY_LABELS.get(c, c) for c in pivot.columns]
+
+        fig, ax = plt.subplots(figsize=(14, 4.5))
         sns.heatmap(
             pivot, annot=True, fmt='.1%', cmap='RdYlGn_r',
-            vmin=0, vmax=0.5, ax=ax,
+            vmin=0, vmax=0.25, ax=ax, linewidths=0.5,
             yticklabels=[PREFIX_LABELS.get(p, p) for p in ordered],
+            annot_kws={'fontsize': 9},
         )
-        ax.set_title(f'Hallucination Rate: {model}', fontsize=13)
+        model_label = MODEL_LABELS.get(model, model)
+        ax.set_title(f'Hallucination Rate by Category: {model_label}', fontsize=13)
         ax.set_ylabel('')
-        ax.set_xlabel('Prompt Category')
+        ax.set_xlabel('')
+        ax.tick_params(axis='x', rotation=30)
+        ax.tick_params(axis='y', rotation=0)
 
         plt.tight_layout()
         fname = f'category_heatmap_{model}.png'
