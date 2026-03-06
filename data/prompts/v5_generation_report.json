@@ -1,0 +1,100 @@
+{
+  "seed": 2025,
+  "total_generated": 2430,
+  "total_target": 2430,
+  "v3_exclusion_set_size": 431,
+  "validation": {
+    "v3_overlap": 0,
+    "unfilled_placeholders": 0,
+    "internal_duplicates": 0,
+    "all_passed": true
+  },
+  "categories": {
+    "borderline_edge_factual": {
+      "generated": 130,
+      "target": 130,
+      "available_after_exclusions": 144,
+      "v3_excluded": 6,
+      "cross_category_excluded": 0,
+      "total_in_pool": 150
+    },
+    "factual": {
+      "generated": 500,
+      "target": 500,
+      "templates_total": 56,
+      "templates_used": 56,
+      "template_coverage": 100.0,
+      "entities_total": 359,
+      "entities_used": 249,
+      "entity_coverage": 69.4,
+      "avg_entity_reuse": 2.16,
+      "max_entity_reuse_observed": 5,
+      "v3_excluded": 51,
+      "placeholder_rejected": 0,
+      "attempts": 691
+    },
+    "nonexistent": {
+      "generated": 600,
+      "target": 600,
+      "templates_total": 55,
+      "templates_used": 55,
+      "template_coverage": 100.0,
+      "entities_total": 508,
+      "entities_used": 408,
+      "entity_coverage": 80.3,
+      "avg_entity_reuse": 2.26,
+      "max_entity_reuse_observed": 5,
+      "v3_excluded": 33,
+      "placeholder_rejected": 0,
+      "attempts": 831
+    },
+    "impossible": {
+      "generated": 200,
+      "target": 200,
+      "templates_total": 66,
+      "templates_used": 46,
+      "template_coverage": 69.7,
+      "entities_total": 180,
+      "entities_used": 138,
+      "entity_coverage": 76.7,
+      "avg_entity_reuse": 1.7,
+      "max_entity_reuse_observed": 5,
+      "v3_excluded": 100,
+      "placeholder_rejected": 0,
+      "attempts": 329
+    },
+    "ambiguous": {
+      "generated": 600,
+      "target": 600,
+      "templates_total": 55,
+      "templates_used": 55,
+      "template_coverage": 100.0,
+      "entities_total": 551,
+      "entities_used": 463,
+      "entity_coverage": 84.0,
+      "avg_entity_reuse": 2.06,
+      "max_entity_reuse_observed": 5,
+      "v3_excluded": 59,
+      "placeholder_rejected": 0,
+      "attempts": 851
+    },
+    "borderline_obscure_real": {
+      "generated": 200,
+      "target": 200,
+      "templates_total": 60,
+      "entities_total": 119,
+      "entities_used": 103,
+      "entity_coverage": 86.6,
+      "v3_excluded": 1
+    },
+    "borderline_plausible_fake": {
+      "generated": 200,
+      "target": 200,
+      "templates_total": 60,
+      "entities_total": 135,
+      "entities_used": 107,
+      "entity_coverage": 79.3,
+      "v3_excluded": 1
+    }
+  }
+}

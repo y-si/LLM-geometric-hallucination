@@ -1,6 +1,7 @@
 """Run judging with Consensus Judge (multiple models)."""
 
 import sys
+import time
 import argparse
 from pathlib import Path
 from tqdm import tqdm
@@ -57,33 +58,41 @@ def run_consensus_judging(input_dir, output_dir):
         for answer_data in tqdm(answers):
             if answer_data['id'] in existing_ids:
                 continue
-                
-            try:
-                judgment = judge_system.judge(
-                    question=answer_data["question"],
-                    answer=answer_data["model_answer"],
-                    ground_truth=answer_data["ground_truth"],
-                    meta_info=answer_data.get("metadata", {})
-                )
-                
-                result = {
-                    **answer_data,
-                    "judge_label": judgment["label"],
-                    "judge_confidence": judgment["confidence"],
-                    "judge_justification": judgment["justification"],
-                    "judge_model": "consensus_panel",
-                    "individual_judgments": judgment["individual_judgments"],
-                    "agreement_rate": judgment["agreement_rate"],
-                    "individual_confidence_avg": judgment["individual_confidence_avg"]
-                }
-                results.append(result)
-                
-                # Save periodically
-                if len(results) % 10 == 0:
-                    write_jsonl(output_file, results)
-                
-            except Exception as e:
-                print(f"  Error judging {answer_data.get('id', 'unknown')}: {e}")
+
+            retry_delay = 2
+            for attempt in range(3):
+                try:
+                    judgment = judge_system.judge(
+                        question=answer_data["question"],
+                        answer=answer_data["model_answer"],
+                        ground_truth=answer_data["ground_truth"],
+                        meta_info=answer_data.get("metadata", {})
+                    )
+
+                    result = {
+                        **answer_data,
+                        "judge_label": judgment["label"],
+                        "judge_confidence": judgment["confidence"],
+                        "judge_justification": judgment["justification"],
+                        "judge_model": "consensus_panel",
+                        "individual_judgments": judgment["individual_judgments"],
+                        "agreement_rate": judgment["agreement_rate"],
+                        "individual_confidence_avg": judgment["individual_confidence_avg"]
+                    }
+                    results.append(result)
+                    break
+
+                except Exception as e:
+                    if attempt < 2:
+                        print(f"\n  Error judging {answer_data.get('id', 'unknown')}: {e}, retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                    else:
+                        print(f"\n  Failed after 3 attempts: {answer_data.get('id', 'unknown')}: {e}")
+
+            # Save periodically (outside retry loop to avoid duplicates on write failure)
+            if len(results) > 0 and len(results) % 10 == 0:
+                write_jsonl(output_file, results)
         
         write_jsonl(output_file, results)
         print(f"  Saved {len(results)} judgments to {output_file}")

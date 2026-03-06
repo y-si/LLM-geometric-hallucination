@@ -1,64 +1,206 @@
 {
-    "conjectures": [
+    "conjecture": [
         "Riemann Hypothesis",
         "Goldbach conjecture",
         "Collatz conjecture",
         "Twin Prime conjecture",
-        "Birch and Swinnerton-Dyer conjecture"
+        "Birch and Swinnerton-Dyer conjecture",
+        "ABC conjecture",
+        "Hodge conjecture",
+        "P vs NP problem",
+        "Navier-Stokes existence and smoothness problem",
+        "Yang-Mills existence and mass gap problem",
+        "Legendre's conjecture",
+        "Beal's conjecture",
+        "Erdos-Straus conjecture",
+        "Bunyakovsky conjecture",
+        "Cramers conjecture"
     ],
-    "impossible_values": [
+    "impossible_value": [
         "last digit of pi",
         "largest prime number",
         "exact value of pi's billionth digit pattern",
-        "complete decimal expansion of pi"
+        "complete decimal expansion of pi",
+        "exact decimal expansion of the square root of 2",
+        "final digit of Euler's number e",
+        "precise value of Chaitin's constant Omega",
+        "exact numerical value of the Kolmogorov complexity of the English language",
+        "complete decimal expansion of the golden ratio",
+        "largest twin prime",
+        "exact cardinality of the real numbers expressed as an integer",
+        "sum of all natural numbers as a finite number",
+        "precise value of an uncomputable real number",
+        "last term of the harmonic series",
+        "exact numerical probability of a truly random event before it occurs"
     ],
-    "unsolvable_problems": [
+    "unsolvable_problem": [
         "quintic equation",
         "halting problem for arbitrary programs",
-        "three-body problem in closed form"
+        "three-body problem in closed form",
+        "word problem for groups",
+        "tiling problem for arbitrary Wang tiles",
+        "Post correspondence problem",
+        "general Diophantine equation solvability",
+        "Entscheidungsproblem for first-order logic",
+        "Busy Beaver function for arbitrary inputs",
+        "mortal matrix problem",
+        "determining if an arbitrary context-free grammar is ambiguous",
+        "general angle trisection with compass and straightedge",
+        "squaring the circle with compass and straightedge",
+        "doubling the cube with compass and straightedge",
+        "Rice's theorem-violating semantic property detector"
     ],
-    "future_values": [
+    "future_value": [
         "price of Bitcoin",
         "winner of the next World Cup",
-        "next US president"
+        "next US president",
+        "closing price of the S&P 500",
+        "global average temperature",
+        "population of China",
+        "GDP of the European Union",
+        "winner of the next Super Bowl",
+        "Nobel Prize in Physics recipient",
+        "Oscar for Best Picture winner",
+        "exchange rate of the US dollar to the euro",
+        "unemployment rate in the United States",
+        "price of gold per ounce",
+        "number of hurricanes in the Atlantic season",
+        "winner of the next Formula 1 World Championship"
     ],
-    "future_dates": [
+    "future_date": [
         "January 1, 2030",
         "December 31, 2035",
-        "July 4, 2040"
+        "July 4, 2040",
+        "March 15, 2028",
+        "September 22, 2029",
+        "June 1, 2032",
+        "November 11, 2033",
+        "February 14, 2037",
+        "August 8, 2038",
+        "October 31, 2042",
+        "April 22, 2045",
+        "May 5, 2050",
+        "January 20, 2053",
+        "December 25, 2055",
+        "July 20, 2060"
     ],
-    "nonexistent_properties": [
+    "nonexistent_property": [
         "last element",
         "final prime",
-        "largest integer"
+        "largest integer",
+        "maximum value",
+        "terminal member",
+        "closing entry",
+        "uppermost bound as an attained value",
+        "last decimal digit",
+        "final term",
+        "total count as a finite number",
+        "greatest common divisor of all members",
+        "smallest upper bound that is also a member",
+        "midpoint",
+        "exact center element",
+        "complete enumeration"
     ],
-    "mathematical_objects": [
+    "mathematical_object": [
         "the set of all sets",
         "the set of natural numbers",
-        "the set of all primes"
+        "the set of all primes",
+        "the set of all real numbers",
+        "the set of all ordinal numbers",
+        "the set of all irrational numbers",
+        "the power set of the real numbers",
+        "the set of all transcendental numbers",
+        "the set of all computable functions",
+        "Russell's paradox set",
+        "the set of all infinite cardinal numbers",
+        "the collection of all groups up to isomorphism",
+        "the set of all Turing machines",
+        "the set of all true arithmetic statements",
+        "the proper class of all vector spaces"
     ],
-    "infinite_sets": [
+    "infinite_set": [
         "prime numbers",
         "natural numbers",
-        "real numbers between 0 and 1"
+        "real numbers between 0 and 1",
+        "rational numbers",
+        "perfect squares",
+        "Fibonacci numbers",
+        "irrational numbers",
+        "algebraic numbers",
+        "transcendental numbers",
+        "twin primes",
+        "Mersenne primes",
+        "digits of pi",
+        "composite numbers",
+        "even numbers",
+        "Gaussian integers"
     ],
-    "ancient_events": [
+    "ancient_event": [
         "the Big Bang",
         "the formation of Earth",
-        "the dinosaur extinction"
+        "the dinosaur extinction",
+        "the first living cell forming on Earth",
+        "the Cambrian explosion",
+        "the formation of the Moon",
+        "the Late Heavy Bombardment",
+        "the Great Oxygenation Event",
+        "the first multicellular organism evolving",
+        "the formation of the first stars",
+        "the Permian-Triassic mass extinction",
+        "the collision that formed the asteroid belt",
+        "the initial inflation of the early universe",
+        "the first photosynthesis event on Earth",
+        "the separation of Pangaea"
     ],
-    "unpredictable_events": [
+    "unpredictable_event": [
         "tomorrow's lottery numbers",
         "the stock market in 10 years",
-        "next earthquake location"
+        "next earthquake location",
+        "the next volcanic eruption date",
+        "the exact time of the next solar flare",
+        "which specific raindrop will hit a given point",
+        "the decay time of a specific radioactive atom",
+        "the outcome of the next roll of a fair die",
+        "the exact path of the next tornado",
+        "the result of the next quantum measurement",
+        "which mutation will occur next in a virus",
+        "the exact moment of the next lightning strike",
+        "the winning numbers of next month's Powerball",
+        "the precise weather in a specific city one year from now",
+        "the exact sequence of cards in the next shuffled deck"
     ],
-    "impossible_measurements": [
+    "impossible_measurement": [
         "position and momentum simultaneously with perfect precision",
-        "temperature of absolute zero in practice"
+        "temperature of absolute zero in practice",
+        "exact energy of a particle at a precise instant in time",
+        "the speed of a single photon from the photon's own reference frame",
+        "the gravitational field inside a singularity",
+        "the state of a quantum system without disturbing it",
+        "the exact mass of a virtual particle during its existence",
+        "the information content of a black hole interior from outside",
+        "the simultaneous spin of a particle along all three axes",
+        "the precise trajectory of an electron in an atom",
+        "the exact vacuum energy density at a point",
+        "the wavelength and position of a photon simultaneously",
+        "the dark energy density at a single spacetime point with infinite precision",
+        "the complete quantum state of a macroscopic object",
+        "the magnetic monopole charge of an ordinary bar magnet"
     ],
-    "topics": [
+    "topic": [
         "your favorite color",
         "the weather next year",
-        "lottery numbers"
+        "lottery numbers",
+        "what you dreamed about last night",
+        "your childhood memories",
+        "the number you are thinking of right now",
+        "your deepest secret",
+        "what you had for dinner three Tuesdays ago",
+        "your private password",
+        "how you are feeling at this exact moment",
+        "what decision you will make tomorrow morning",
+        "the contents of your last private conversation",
+        "the song stuck in your head right now",
+        "your exact emotional state two hours from now",
+        "the next word you will say out loud"
     ]
 }

@@ -1,5 +1,5 @@
 {
-    "countries": [
+    "country": [
         "France",
         "Germany",
         "Japan",
@@ -45,7 +45,7 @@
         "Venezuela",
         "Cuba"
     ],
-    "events": [
+    "event": [
         "World War II",
         "the Moon landing",
         "the fall of the Berlin Wall",
@@ -64,16 +64,24 @@
         "the invention of the telephone",
         "the first atomic bomb test"
     ],
-    "historical_events": [
+    "historical_event": [
         "the signing of the Declaration of Independence",
         "the Moon landing",
         "the fall of the Roman Empire",
         "the discovery of DNA structure",
         "the invention of the World Wide Web",
         "the first human heart transplant",
-        "the discovery of radioactivity"
+        "the discovery of radioactivity",
+        "the assassination of Archduke Franz Ferdinand",
+        "the signing of the Treaty of Versailles",
+        "the launch of Sputnik",
+        "the Boston Tea Party",
+        "the eruption of Mount Vesuvius",
+        "the construction of the Panama Canal",
+        "the Emancipation Proclamation",
+        "the storming of the Bastille"
     ],
-    "compounds": [
+    "compound": [
         "water",
         "table salt",
         "carbon dioxide",
@@ -87,9 +95,10 @@
         "hydrogen peroxide",
         "acetic acid",
         "sodium bicarbonate",
-        "nitric acid"
+        "nitric acid",
+        "hydrochloric acid"
     ],
-    "elements": [
+    "element": [
         "gold",
         "silver",
         "iron",
@@ -103,9 +112,10 @@
         "copper",
         "aluminum",
         "uranium",
-        "plutonium"
+        "plutonium",
+        "tungsten"
     ],
-    "books": [
+    "book": [
         "1984",
         "To Kill a Mockingbird",
         "The Great Gatsby",
@@ -119,14 +129,27 @@
         "The Hobbit",
         "Animal Farm",
         "Brave New World",
-        "Fahrenheit 451"
+        "Fahrenheit 451",
+        "Don Quixote"
     ],
-    "physical_quantities": [
+    "physical_quantity": [
         "light in vacuum",
         "sound in air",
-        "gravity on Earth"
+        "gravity on Earth",
+        "sound in water",
+        "Earth's escape velocity",
+        "the orbital speed of the Earth around the Sun",
+        "the speed of light in water",
+        "gravity on the Moon",
+        "gravity on Mars",
+        "the speed of sound in steel",
+        "the orbital speed of the Moon around Earth",
+        "gravity on Jupiter",
+        "the speed of light in glass",
+        "the speed of sound in helium",
+        "Earth's rotational speed at the equator"
     ],
-    "inventions": [
+    "invention": [
         "telephone",
         "light bulb",
         "airplane",
@@ -140,9 +163,10 @@
         "microscope",
         "telegraph",
         "bicycle",
-        "camera"
+        "camera",
+        "telescope"
     ],
-    "geographic_features": [
+    "geographic_feature": [
         "mountain",
         "river",
         "desert",
@@ -154,9 +178,12 @@
         "island",
         "peninsula",
         "glacier",
-        "bay"
+        "bay",
+        "plateau",
+        "archipelago",
+        "reef"
     ],
-    "purposes": [
+    "purpose": [
         "web development",
         "system programming",
         "data science",
@@ -164,7 +191,14 @@
         "game development",
         "scientific computing",
         "machine learning",
-        "database management"
+        "database management",
+        "embedded systems programming",
+        "network programming",
+        "automation scripting",
+        "financial modeling",
+        "natural language processing",
+        "computer graphics",
+        "operating system development"
     ],
     "unit": [
         "meters",
@@ -172,13 +206,33 @@
         "inches",
         "centimeters",
         "miles",
-        "kilometers"
+        "kilometers",
+        "yards",
+        "millimeters",
+        "nautical miles",
+        "micrometers",
+        "furlongs",
+        "fathoms",
+        "leagues",
+        "light-years",
+        "astronomical units"
     ],
     "larger_unit": [
         "kilometer",
         "mile",
         "meter",
-        "yard"
+        "yard",
+        "foot",
+        "league",
+        "furlong",
+        "nautical mile",
+        "centimeter",
+        "inch",
+        "fathom",
+        "rod",
+        "chain",
+        "hectare",
+        "acre"
     ],
     "number": [
         "144",
@@ -190,7 +244,12 @@
         "324",
         "361",
         "400",
-        "625"
+        "625",
+        "441",
+        "484",
+        "529",
+        "576",
+        "729"
     ],
     "acronym": [
         "NASA",
@@ -202,20 +261,46 @@
         "GDP",
         "DNA",
         "RNA",
-        "HTTP"
+        "HTTP",
+        "UNICEF",
+        "OPEC",
+        "IAEA",
+        "OSHA",
+        "INTERPOL"
     ],
     "achievement": [
         "walk on the Moon",
         "circumnavigate the globe",
         "climb Mount Everest",
-        "break the sound barrier"
+        "break the sound barrier",
+        "reach the South Pole",
+        "reach the North Pole",
+        "summit K2",
+        "fly solo across the Atlantic",
+        "orbit the Earth",
+        "reach the bottom of the Mariana Trench",
+        "run a sub-four-minute mile",
+        "swim across the English Channel",
+        "fly nonstop around the world",
+        "perform a spacewalk",
+        "land a reusable orbital rocket"
     ],
     "food": [
         "bread",
         "pizza",
         "pasta",
         "chocolate",
-        "cheese"
+        "cheese",
+        "sushi",
+        "hummus",
+        "yogurt",
+        "tofu",
+        "butter",
+        "wine",
+        "beer",
+        "kimchi",
+        "tortilla",
+        "olive oil"
     ],
     "celestial_object": [
         "Earth",
@@ -223,7 +308,16 @@
         "Venus",
         "Jupiter",
         "Saturn",
-        "Mercury"
+        "Mercury",
+        "Neptune",
+        "Uranus",
+        "Pluto",
+        "the Moon",
+        "the Sun",
+        "Ceres",
+        "Titan",
+        "Ganymede",
+        "Europa"
     ],
     "company": [
         "Apple",
@@ -231,14 +325,33 @@
         "Google",
         "Amazon",
         "Facebook",
-        "Tesla"
+        "Tesla",
+        "IBM",
+        "Intel",
+        "Samsung",
+        "Toyota",
+        "Coca-Cola",
+        "Nike",
+        "Boeing",
+        "Sony",
+        "Volkswagen"
     ],
     "artwork": [
         "Mona Lisa",
         "Starry Night",
         "The Scream",
         "The Last Supper",
-        "Guernica"
+        "Guernica",
+        "The Birth of Venus",
+        "Girl with a Pearl Earring",
+        "The Creation of Adam",
+        "The Persistence of Memory",
+        "The Great Wave off Kanagawa",
+        "David",
+        "The Thinker",
+        "Water Lilies",
+        "American Gothic",
+        "The Kiss"
     ],
     "scientific_discovery": [
         "gravity",
@@ -246,19 +359,49 @@
         "electricity",
         "penicillin",
         "radioactivity",
-        "X-rays"
+        "X-rays",
+        "the theory of general relativity",
+        "the structure of the atom",
+        "the germ theory of disease",
+        "vaccination",
+        "the periodic table",
+        "evolution by natural selection",
+        "the laws of thermodynamics",
+        "the speed of light",
+        "plate tectonics"
     ],
     "physics_concept": [
         "kinetic energy",
         "potential energy",
         "force",
         "momentum",
-        "acceleration"
+        "acceleration",
+        "work",
+        "power",
+        "torque",
+        "angular momentum",
+        "impulse",
+        "pressure",
+        "entropy",
+        "wavelength",
+        "frequency",
+        "electric charge"
     ],
     "ocean": [
         "Atlantic Ocean",
         "Pacific Ocean",
         "Indian Ocean",
-        "Arctic Ocean"
+        "Arctic Ocean",
+        "Southern Ocean",
+        "Mediterranean Sea",
+        "Caribbean Sea",
+        "Red Sea",
+        "Black Sea",
+        "Baltic Sea",
+        "Caspian Sea",
+        "South China Sea",
+        "Arabian Sea",
+        "Coral Sea",
+        "Bering Sea"
     ]
 }

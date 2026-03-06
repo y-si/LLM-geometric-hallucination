@@ -148,12 +148,22 @@ class JudgeClient:
                     result_text = result_text.split("```")[1].strip()
 
                 result = json.loads(result_text)
-                
-                # Check required keys
-                if not all(key in result for key in ["label", "confidence", "justification"]):
-                     # Handle case where model might output different casing or missed a key
-                     # (Simple robustness check could go here)
-                     pass
+
+                # Validate required keys
+                required_keys = ["label", "confidence", "justification"]
+                missing = [k for k in required_keys if k not in result]
+                if missing:
+                    raise ValueError(f"Judge response missing keys: {missing}")
+
+                # Type coercion — LLMs sometimes return "0" instead of 0
+                result["label"] = int(result["label"])
+                result["confidence"] = float(result["confidence"])
+
+                # Range validation
+                if result["label"] not in {0, 1, 2, 3}:
+                    raise ValueError(f"Judge returned invalid label: {result['label']}")
+                if not (0.0 <= result["confidence"] <= 1.0):
+                    raise ValueError(f"Judge returned invalid confidence: {result['confidence']}")
 
                 return result
                 

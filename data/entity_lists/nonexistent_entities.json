@@ -1,5 +1,5 @@
 {
-    "fake_names": [
+    "fake_name": [
         "Dr. Marcus Valmont",
         "Professor Elena Thorsen",
         "Dr. James Hartwell",
@@ -17,7 +17,7 @@
         "Dr. Robert Taylor",
         "Professor Sarah Mitchell"
     ],
-    "fake_inventions": [
+    "fake_invention": [
         "quantum resonance amplifier",
         "temporal displacement matrix",
         "bio-synthetic consciousness",
@@ -30,9 +30,11 @@
         "chronometric stabilizer",
         "neural amplification device",
         "quantum encryption key",
-        "bio-digital converter"
+        "bio-digital converter",
+        "subatomic frequency modulator",
+        "electromagnetic coherence lattice"
     ],
-    "fake_books": [
+    "fake_book": [
         "The Phantom Chronicles of Eldoria",
         "Shadows Over Meridian",
         "The Last Echo",
@@ -59,9 +61,16 @@
         "The Last Equation",
         "Digital Souls",
         "The Infinite Code",
-        "Beyond Tomorrow"
+        "Beyond Tomorrow",
+        "The Fractal Labyrinth",
+        "Resonance and Ruin",
+        "The Null Hypothesis",
+        "Architects of Silence",
+        "The Forgotten Variable",
+        "Entropy's Edge",
+        "The Obsidian Codex"
     ],
-    "fake_authors": [
+    "fake_author": [
         "Eleanor Ashford",
         "Marcus Blackwell",
         "Isabella Crane",
@@ -83,9 +92,20 @@
         "Daniel Thornton",
         "Rebecca Stone",
         "Lucas Montgomery",
-        "Natalie Rivers"
+        "Natalie Rivers",
+        "Charlotte Pemberton",
+        "Hugh Fairbanks",
+        "Ingrid Soderholm",
+        "Rajesh Malhotra",
+        "Genevieve LaRoche",
+        "Tobias Kellerman",
+        "Miriam Ashcroft",
+        "Felix Drummond",
+        "Cassandra Whitmore",
+        "Graham Sinclair",
+        "Priya Deshmukh"
     ],
-    "fake_theories": [
+    "fake_theory": [
         "temporal resonance",
         "quantum entanglement collapse",
         "bio-informational synthesis",
@@ -96,9 +116,13 @@
         "temporal causality loops",
         "quantum coherence dynamics",
         "bio-electromagnetic integration",
-        "topological information theory"
+        "topological information theory",
+        "stochastic symmetry breaking",
+        "recursive causal emergence",
+        "harmonic wave condensation",
+        "subquantum field oscillation"
     ],
-    "fake_scientists": [
+    "fake_scientist": [
         "Dr. Hermann Valcke",
         "Professor Lisa Moreland",
         "Dr. Anton Reichmann",
@@ -106,9 +130,16 @@
         "Dr. Friedrich Mendel",
         "Professor Anna Kowalski",
         "Dr. Marcus Chen",
-        "Professor Elena Rodriguez"
+        "Professor Elena Rodriguez",
+        "Dr. Gunther Strauss",
+        "Professor Yuki Tanabe",
+        "Dr. Osei Mensah",
+        "Professor Lena Bergqvist",
+        "Dr. Rajiv Chandrasekaran",
+        "Professor Marguerite Deveraux",
+        "Dr. Pavel Sorokin"
     ],
-    "fake_theorems": [
+    "fake_theorem": [
         "Bertrand-Goldstein theorem",
         "Fitzgerald's convergence principle",
         "Morton's inequality",
@@ -118,9 +149,14 @@
         "Kellerman's bound",
         "Thompson's duality",
         "Anderson's lemma",
-        "Sterling's criterion"
+        "Sterling's criterion",
+        "Nakamura-Volkov decomposition",
+        "Pemberton's fixed-point theorem",
+        "Richter's separation lemma",
+        "Ashcroft-Huang inequality",
+        "Delacroix's spectral criterion"
     ],
-    "fake_movies": [
+    "fake_movie": [
         "Shadows Over Meridian",
         "The Last Horizon",
         "Digital Dreams",
@@ -132,9 +168,12 @@
         "Beyond the Threshold",
         "The Silent Frequency",
         "Temporal Nexus",
-        "The Last Algorithm"
+        "The Last Algorithm",
+        "Fractured Meridians",
+        "The Obsidian Signal",
+        "Parallel Dawn"
     ],
-    "fake_elements": [
+    "fake_element": [
         "Quantumite",
         "Temporal",
         "Nexium",
@@ -144,17 +183,31 @@
         "Neutronium",
         "Darkium",
         "Plasmonite",
-        "Graviton"
+        "Graviton",
+        "Vortexium",
+        "Luminite",
+        "Spectrium",
+        "Resonite",
+        "Syntheon"
     ],
-    "fake_laws": [
+    "fake_law": [
         "Law of Temporal Conservation",
         "Blackwood's Principle",
         "Valmont's Law of Energy Displacement",
         "Chen's Theorem of Quantum States",
         "Morrison's Law of Information",
-        "Sterling's Principle"
+        "Sterling's Principle",
+        "Hartwell's Law of Entropy Transfer",
+        "Thorsen's Principle of Wave Symmetry",
+        "Berg-Kim Law of Phase Equilibrium",
+        "Frost's Law of Signal Attenuation",
+        "Mendel's Principle of Recursive Stability",
+        "Ramirez's Law of Coherent Decay",
+        "Anderson-Wells Theorem of Field Coupling",
+        "Cross's Law of Dimensional Invariance",
+        "Taylor's Principle of Information Density"
     ],
-    "fake_algorithms": [
+    "fake_algorithm": [
         "Fibonacci-Euler algorithm",
         "Temporal Sort",
         "Quantum Merge",
@@ -162,9 +215,16 @@
         "Hartwell Transform",
         "Blackwood Optimization",
         "Chen-Mendel Algorithm",
-        "Sterling Cipher"
+        "Sterling Cipher",
+        "Recursive Phase Descent",
+        "Stochastic Lattice Walk",
+        "Valmont-Frost Partition",
+        "Spectral Bridge Algorithm",
+        "Kellerman Hash",
+        "Adaptive Resonance Sort",
+        "Berg-Thorsen Decomposition"
     ],
-    "fake_countries": [
+    "fake_country": [
         "Zamboria",
         "Valentia",
         "Mordania",
@@ -174,15 +234,31 @@
         "Nexaria",
         "Chronosia",
         "Phantomia",
-        "Meridiana"
+        "Meridiana",
+        "Solvarnia",
+        "Delvantis",
+        "Krasovia",
+        "Oberland",
+        "Thalassion"
     ],
     "fake_country2": [
         "Temporia",
         "Quantia",
         "Ethereia",
-        "Voidland"
+        "Voidland",
+        "Arcanis",
+        "Belvaria",
+        "Corinthea",
+        "Dravenholm",
+        "Estvoria",
+        "Farethia",
+        "Galdenmoor",
+        "Havensreach",
+        "Isenmark",
+        "Juvantia",
+        "Keldonar"
     ],
-    "fields": [
+    "field": [
         "physics",
         "mathematics",
         "biology",
@@ -191,9 +267,15 @@
         "neuroscience",
         "quantum mechanics",
         "molecular biology",
-        "theoretical physics"
+        "theoretical physics",
+        "astrophysics",
+        "materials science",
+        "cognitive science",
+        "bioinformatics",
+        "electrical engineering",
+        "applied mathematics"
     ],
-    "years": [
+    "year": [
         "2015",
         "2018",
         "2020",
@@ -203,100 +285,300 @@
         "2021",
         "2016",
         "2014",
-        "2013"
+        "2013",
+        "2010",
+        "2011",
+        "2012",
+        "2023",
+        "2024"
     ],
     "fake_event": [
         "Great Convergence",
         "Digital Awakening",
         "Quantum Shift",
-        "Temporal Collapse"
+        "Temporal Collapse",
+        "Silent Reformation",
+        "Meridian Incident",
+        "Chromatic Revolution",
+        "Nexus Accords Breakdown",
+        "Phase Transition Crisis",
+        "Spectral Uprising",
+        "Global Resonance Event",
+        "Valmont Protocol Failure",
+        "Obsidian Summit",
+        "Digital Fracture",
+        "Harmonic Convergence of Nations"
     ],
     "fake_company": [
         "QuantumTech Solutions",
         "NexusCorp",
         "Temporal Industries",
-        "BioPhase Technologies"
+        "BioPhase Technologies",
+        "Meridian Dynamics",
+        "Aetheron Labs",
+        "Vortex Semiconductor",
+        "Chromatic Biosystems",
+        "Parallax Computing",
+        "Spectral Energy Group",
+        "Obsidian Robotics",
+        "Cascade Analytics",
+        "Helix Quantum Systems",
+        "Resonance Medical Technologies",
+        "Synthos Pharmaceuticals"
     ],
     "fake_treaty": [
         "Treaty of Quantum Accords",
         "Helsinki Convention on AI",
         "Temporal Agreement",
-        "New Amsterdam Compact"
+        "New Amsterdam Compact",
+        "Geneva Protocol on Synthetic Intelligence",
+        "Meridian Accords on Climate Restoration",
+        "Vienna Convention on Digital Sovereignty",
+        "Osaka Agreement on Quantum Governance",
+        "Cape Town Declaration on Neural Rights",
+        "Stockholm Framework on Autonomous Systems",
+        "Buenos Aires Protocol on Data Territories",
+        "Singapore Compact on Maritime Algorithms",
+        "Nairobi Agreement on Bioethics",
+        "Prague Convention on Predictive Policing",
+        "Vancouver Accord on Space Mineral Rights"
     ],
     "article_number": [
         "42.7",
         "15.3",
         "8.9",
         "23.1",
-        "17.4"
+        "17.4",
+        "31.2",
+        "7.4",
+        "54.6",
+        "3.8",
+        "19.7",
+        "26.5",
+        "11.1",
+        "38.3",
+        "6.2",
+        "44.9"
     ],
     "fake_music": [
         "Symphony of the Void",
         "Temporal Rhapsody",
         "Quantum Dreams",
-        "Digital Aurora"
+        "Digital Aurora",
+        "Concerto for Entangled Strings",
+        "Nocturne of the Aether",
+        "Sonata in Parallel Minor",
+        "Overture to the Infinite",
+        "Requiem for a Lost Frequency",
+        "Chromatic Variations on Silence",
+        "The Obsidian Cantata",
+        "Elegy for the Meridian",
+        "Fugue of Recursive Memory",
+        "Suite for Synthetic Orchestra",
+        "Resonance in D Diminished"
     ],
     "fake_disease": [
         "Temporal Flux Syndrome",
         "Quantum Degradation Disorder",
-        "Neural Phase Misalignment"
+        "Neural Phase Misalignment",
+        "Chromatic Resonance Fatigue",
+        "Vortex Dissociation Syndrome",
+        "Meridian Perception Disorder",
+        "Spectral Sensitivity Condition",
+        "Cascading Neural Entropy",
+        "Bio-Electromagnetic Hypersensitivity Syndrome",
+        "Recursive Memory Fragmentation",
+        "Cortical Phase Drift",
+        "Synthetic Adaptation Disorder",
+        "Aetheric Resonance Condition",
+        "Digital Synaptic Overflow",
+        "Harmonic Vestibular Dysregulation"
     ],
     "fake_building": [
         "Tower of Convergence",
         "Quantum Archive",
-        "Nexus Monument"
+        "Nexus Monument",
+        "Meridian Spire",
+        "The Obsidian Pavilion",
+        "Hall of Temporal Records",
+        "Aetheron Bridge",
+        "The Chromatic Library",
+        "Vortex Amphitheater",
+        "Parallax Observatory",
+        "The Resonance Cathedral",
+        "Spectral Gate",
+        "The Infinite Colonnade",
+        "Helix Memorial Tower",
+        "The Cascade Rotunda"
     ],
     "fake_city": [
         "New Meridian",
         "Quantum Falls",
         "Temporal city",
-        "Nexus Prime"
+        "Nexus Prime",
+        "Port Aetheron",
+        "Valthersburg",
+        "Chromavale",
+        "Spectral Harbor",
+        "Obsidian Crossing",
+        "Cascadeton",
+        "Helixford",
+        "Resonance Bay",
+        "Parallax Springs",
+        "Vortex Heights",
+        "Synthoria"
     ],
     "fake_principle": [
         "Principle of Temporal Efficiency",
-        "Law of Digital Convergence"
+        "Law of Digital Convergence",
+        "Principle of Recursive Causality",
+        "Law of Spectral Conservation",
+        "Principle of Harmonic Information Transfer",
+        "Law of Cascading Entropy",
+        "Principle of Phase-Locked Emergence",
+        "Law of Dimensional Coherence",
+        "Principle of Neural Signal Integrity",
+        "Law of Quantum State Persistence",
+        "Principle of Stochastic Resonance Amplification",
+        "Law of Bio-Digital Equilibrium",
+        "Principle of Chromatic Wave Coupling",
+        "Law of Aetheric Symmetry",
+        "Principle of Asymptotic Field Decay"
     ],
     "fake_song": [
         "Digital Moonlight",
         "Echoes in the Void",
         "Temporal Waves",
-        "Quantum Heart"
+        "Quantum Heart",
+        "Fractured Frequencies",
+        "Neon Parallax",
+        "The Last Resonance",
+        "Chromatic Descent",
+        "Fading Into Static",
+        "Midnight in the Algorithm",
+        "Spectral Drift",
+        "Hollow Frequencies",
+        "Phase Shift",
+        "Vortex of Silence",
+        "Binary Sunset"
     ],
     "fake_band": [
         "The Resonance Collective",
         "Quantum Echo",
         "Digital Horizon",
-        "Temporal Surge"
+        "Temporal Surge",
+        "Chromatic Drift",
+        "The Spectral Architects",
+        "Null Vector",
+        "Phase Transition",
+        "The Obsidian Circuit",
+        "Recursive Loop",
+        "Meridian Static",
+        "The Aether Assembly",
+        "Vortex Signal",
+        "Synthetic Twilight",
+        "The Parallax Ensemble"
     ],
     "fake_university": [
         "Valmont Institute of Technology",
         "Quantum University",
-        "Temporal Academy"
+        "Temporal Academy",
+        "Meridian College of Sciences",
+        "Blackwood Polytechnic",
+        "Nexus Institute for Advanced Study",
+        "Corsantia State University",
+        "Hartwell School of Engineering",
+        "Thorsen Academy of Mathematics",
+        "Sterling College",
+        "Ashford University of the Arts",
+        "Kellerman Institute of Theoretical Research",
+        "Oberland Technical University",
+        "Delvantis School of Medicine",
+        "Chromavale College of Natural Sciences"
     ],
     "fake_play": [
         "The Convergence",
         "Shadows of Tomorrow",
-        "Quantum Paradox"
+        "Quantum Paradox",
+        "The Meridian Monologues",
+        "A Theorem for the Damned",
+        "Resonance at Midnight",
+        "The Last Frequency",
+        "Entropy's Children",
+        "The Obsidian Curtain",
+        "Echoes in an Empty Room",
+        "The Spectral Witness",
+        "Cascading Silence",
+        "The Vortex Dialogues",
+        "Parallel Lives, Parallel Lies",
+        "The Hollowed Stage"
     ],
     "fake_playwright": [
         "Marcus Sterling",
         "Elena Blackwood",
-        "Viktor Morrison"
+        "Viktor Morrison",
+        "Adrienne Fontaine",
+        "Conrad Hargrove",
+        "Isadora Venn",
+        "Rupert Ashdown",
+        "Mirela Kovac",
+        "Douglas Fairholm",
+        "Celeste Marchetti",
+        "Henrik Solberg",
+        "Tamsin Holt",
+        "Joaquin Esperanza",
+        "Phoebe Alderton",
+        "Nikolai Severyn"
     ],
     "fake_war": [
         "Quantum Conflict",
         "Temporal War",
-        "Digital Revolution"
+        "Digital Revolution",
+        "Meridian Border War",
+        "Corsantia-Mordania Conflict",
+        "The Spectral Insurrection",
+        "War of the Nexus Straits",
+        "Zamboria-Valentia Crisis",
+        "The Chromatic Rebellion",
+        "Eldorian Civil War",
+        "Atlantean Succession War",
+        "The Obsidian Campaign",
+        "Krasovian War of Independence",
+        "The Silent Front",
+        "Delvantis-Solvarnia Border Conflict"
     ],
     "fake_programming_language": [
         "QuantumScript",
         "TemporalCode",
         "NexusLang",
-        "PhaseScript"
+        "PhaseScript",
+        "Spectral",
+        "Resonance++",
+        "Vortex",
+        "CascadeML",
+        "Meridian",
+        "Parallax",
+        "Obsidian",
+        "Chromalang",
+        "SynthCode",
+        "AetherScript",
+        "HelixLang"
     ],
     "fake_historical_figure": [
         "Lord Valmont the Wise",
         "Queen Meridiana",
-        "Emperor Nexus"
+        "Emperor Nexus",
+        "Grand Duchess Corsantia",
+        "Admiral Thorsen of Zamboria",
+        "Chancellor Kellerman the Reformer",
+        "King Eldor III",
+        "General Hargrove of Mordania",
+        "Sage Ashdown the Elder",
+        "Empress Solvarnia",
+        "Prince Delvantis the Unifier",
+        "High Priestess Chromavale",
+        "Count Oberland the Bold",
+        "Lady Resonance of Krasovia",
+        "Vizier Thalassius the Scholar"
     ]
 }

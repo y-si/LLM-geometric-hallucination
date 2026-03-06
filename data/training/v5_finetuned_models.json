@@ -1,0 +1,94 @@
+{
+  "jobs": [
+    {
+      "model": "mixtral-8x7b",
+      "config": "A",
+      "job_id": "ft-f825369e-e85e",
+      "file_id": "file-43eeddb5-3ec0-4ebc-91e7-0c3692dcfd38",
+      "together_model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+      "hyperparameters": {
+        "description": "Primary \u2014 literature-standard LoRA",
+        "learning_rate": 0.0002,
+        "n_epochs": 3,
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "batch_size": 8,
+        "warmup_ratio": 0.05
+      },
+      "launched_at": "2026-03-05T16:49:41.101392",
+      "status": "completed",
+      "output_name": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgA-8e4653cf",
+      "completed_at": "2026-03-05T17:07:01.763198"
+    },
+    {
+      "model": "mixtral-8x7b",
+      "config": "B",
+      "job_id": "ft-8736dd05-498a",
+      "file_id": "file-43eeddb5-3ec0-4ebc-91e7-0c3692dcfd38",
+      "together_model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+      "hyperparameters": {
+        "description": "Lower LR \u2014 more conservative",
+        "learning_rate": 0.0001,
+        "n_epochs": 3,
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "batch_size": 8,
+        "warmup_ratio": 0.05
+      },
+      "launched_at": "2026-03-05T16:49:44.836173",
+      "status": "completed",
+      "output_name": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgB-f211fed7",
+      "completed_at": "2026-03-05T17:07:02.392221"
+    },
+    {
+      "model": "mixtral-8x7b",
+      "config": "C",
+      "job_id": "ft-92abefa7-0d3c",
+      "file_id": "file-43eeddb5-3ec0-4ebc-91e7-0c3692dcfd38",
+      "together_model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+      "hyperparameters": {
+        "description": "More epochs \u2014 tests convergence",
+        "learning_rate": 0.0002,
+        "n_epochs": 5,
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "batch_size": 8,
+        "warmup_ratio": 0.05
+      },
+      "launched_at": "2026-03-05T16:49:48.438615",
+      "status": "completed",
+      "output_name": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgC-937e9a1f",
+      "completed_at": "2026-03-05T17:07:03.198648"
+    },
+    {
+      "model": "llama-4-maverick-17b",
+      "config": "A",
+      "job_id": "ft-395e3673-d686",
+      "file_id": "file-3d0ab62b-4064-47d5-b083-8602fbf64896",
+      "together_model": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+      "hyperparameters": {
+        "description": "Primary \u2014 literature-standard LoRA",
+        "learning_rate": 0.0002,
+        "n_epochs": 3,
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "lora_dropout": 0.05,
+        "batch_size": 16,
+        "warmup_ratio": 0.05
+      },
+      "launched_at": "2026-03-05T17:04:50.688285",
+      "status": "completed",
+      "output_name": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-v5-llama-cfgA-acef853f",
+      "completed_at": "2026-03-05T18:32:18.202235"
+    }
+  ],
+  "completed_models": {
+    "mixtral-8x7b_configA": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgA-8e4653cf",
+    "mixtral-8x7b_configB": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgB-f211fed7",
+    "mixtral-8x7b_configC": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgC-937e9a1f",
+    "llama-4-maverick-17b_configA": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-v5-llama-cfgA-acef853f"
+  }
+}

@@ -1,5 +1,5 @@
 {
-    "professions": [
+    "profession": [
         "philosopher",
         "artist",
         "scientist",
@@ -10,9 +10,13 @@
         "inventor",
         "teacher",
         "doctor",
-        "engineer"
+        "engineer",
+        "architect",
+        "chef",
+        "filmmaker",
+        "explorer"
     ],
-    "categories": [
+    "category": [
         "city",
         "programming language",
         "book",
@@ -24,9 +28,12 @@
         "car",
         "phone",
         "restaurant",
-        "vacation destination"
+        "vacation destination",
+        "sport",
+        "musical instrument",
+        "hobby"
     ],
-    "actions": [
+    "action": [
         "live in",
         "learn",
         "read",
@@ -36,9 +43,14 @@
         "wear",
         "study",
         "use",
-        "buy"
+        "buy",
+        "cook",
+        "practice",
+        "listen to",
+        "invest in",
+        "recommend"
     ],
-    "controversial_topics": [
+    "controversial_topic": [
         "AI alignment",
         "nuclear energy",
         "genetic engineering",
@@ -47,9 +59,15 @@
         "automation",
         "global governance",
         "surveillance",
-        "gene editing"
+        "gene editing",
+        "universal basic income",
+        "space colonization",
+        "mandatory vaccination",
+        "data privacy regulation",
+        "autonomous weapons",
+        "geoengineering"
     ],
-    "items": [
+    "item": [
         "programming language",
         "operating system",
         "framework",
@@ -57,7 +75,14 @@
         "method",
         "device",
         "platform",
-        "service"
+        "service",
+        "database",
+        "text editor",
+        "cloud provider",
+        "search engine",
+        "browser",
+        "streaming service",
+        "social network"
     ],
     "option_pairs": [
         {
@@ -83,9 +108,45 @@
         {
             "option1": "iOS",
             "option2": "Android"
+        },
+        {
+            "option1": "Vim",
+            "option2": "Emacs"
+        },
+        {
+            "option1": "tabs",
+            "option2": "spaces"
+        },
+        {
+            "option1": "ebooks",
+            "option2": "physical books"
+        },
+        {
+            "option1": "city life",
+            "option2": "country life"
+        },
+        {
+            "option1": "early rising",
+            "option2": "staying up late"
+        },
+        {
+            "option1": "Linux",
+            "option2": "macOS"
+        },
+        {
+            "option1": "renting",
+            "option2": "buying a home"
+        },
+        {
+            "option1": "working remotely",
+            "option2": "working in an office"
+        },
+        {
+            "option1": "saving money",
+            "option2": "investing money"
         }
     ],
-    "things": [
+    "thing": [
         "color",
         "place",
         "time of day",
@@ -93,9 +154,16 @@
         "art style",
         "genre",
         "design",
-        "sound"
+        "sound",
+        "landscape",
+        "melody",
+        "texture",
+        "scent",
+        "architecture",
+        "sunset",
+        "natural phenomenon"
     ],
-    "philosophical_concepts": [
+    "philosophical_concept": [
         "life",
         "consciousness",
         "free will",
@@ -105,16 +173,29 @@
         "justice",
         "happiness",
         "knowledge",
-        "existence"
+        "existence",
+        "love",
+        "identity",
+        "time",
+        "purpose",
+        "wisdom"
     ],
-    "subjective_actions": [
+    "subjective_action": [
         "live a good life",
         "be happy",
         "find meaning",
         "make decisions",
         "raise children",
         "choose a career",
-        "spend time"
+        "spend time",
+        "build relationships",
+        "handle failure",
+        "deal with grief",
+        "set priorities",
+        "balance work and life",
+        "express creativity",
+        "resolve conflict",
+        "age gracefully"
     ],
     "concept_pairs": [
         {
@@ -132,6 +213,50 @@
         {
             "concept": "individual rights",
             "other_concept": "collective good"
+        },
+        {
+            "concept": "privacy",
+            "other_concept": "transparency"
+        },
+        {
+            "concept": "equality",
+            "other_concept": "meritocracy"
+        },
+        {
+            "concept": "progress",
+            "other_concept": "preservation"
+        },
+        {
+            "concept": "autonomy",
+            "other_concept": "community"
+        },
+        {
+            "concept": "justice",
+            "other_concept": "mercy"
+        },
+        {
+            "concept": "ambition",
+            "other_concept": "contentment"
+        },
+        {
+            "concept": "logic",
+            "other_concept": "intuition"
+        },
+        {
+            "concept": "courage",
+            "other_concept": "prudence"
+        },
+        {
+            "concept": "order",
+            "other_concept": "liberty"
+        },
+        {
+            "concept": "competition",
+            "other_concept": "cooperation"
+        },
+        {
+            "concept": "honesty",
+            "other_concept": "kindness"
         }
     ],
     "technology": [
@@ -139,147 +264,458 @@
         "AI",
         "smartphones",
         "electric cars",
-        "nuclear power"
+        "nuclear power",
+        "blockchain",
+        "virtual reality",
+        "self-driving cars",
+        "facial recognition",
+        "genetic testing",
+        "drones",
+        "robotics",
+        "brain-computer interfaces",
+        "3D printing",
+        "internet of things"
     ],
     "value": [
         "quality in life",
         "virtue",
         "skill",
-        "achievement"
+        "achievement",
+        "trait in a leader",
+        "measure of success",
+        "human right",
+        "cultural tradition",
+        "educational goal",
+        "personal quality",
+        "moral principle",
+        "aspect of character",
+        "form of intelligence",
+        "source of fulfillment",
+        "component of well-being"
     ],
     "policy_option1": [
         "increase taxes",
         "expand healthcare",
-        "invest in space exploration"
+        "invest in space exploration",
+        "strengthen environmental regulations",
+        "increase military spending",
+        "implement universal basic income",
+        "open borders for immigration",
+        "nationalize key industries",
+        "mandate renewable energy",
+        "increase foreign aid",
+        "fund public transportation",
+        "raise the minimum wage",
+        "subsidize higher education",
+        "strengthen labor unions",
+        "expand social safety nets"
     ],
     "policy_option2": [
         "reduce taxes",
         "reduce government spending",
-        "focus on Earth's problems"
+        "focus on Earth's problems",
+        "deregulate business",
+        "cut military spending",
+        "eliminate welfare programs",
+        "restrict immigration",
+        "privatize public services",
+        "allow market-driven energy",
+        "reduce foreign aid",
+        "build more highways",
+        "let the market set wages",
+        "reduce education subsidies",
+        "promote right-to-work laws",
+        "reduce entitlement programs"
     ],
     "ambiguous_text": [
         "the Constitution",
         "religious texts",
-        "classic literature"
+        "classic literature",
+        "ancient philosophy",
+        "the Bill of Rights",
+        "Shakespearean plays",
+        "the Tao Te Ching",
+        "Plato's Republic",
+        "the Book of Genesis",
+        "Nietzsche's writings",
+        "the Bhagavad Gita",
+        "Kafka's works",
+        "the Quran",
+        "Confucian texts",
+        "existentialist literature"
     ],
     "art_form": [
         "painting",
         "music",
         "sculpture",
-        "dance"
+        "dance",
+        "architecture",
+        "poetry",
+        "opera",
+        "ceramics",
+        "calligraphy",
+        "textile art",
+        "glassblowing",
+        "printmaking",
+        "mosaic",
+        "installation art",
+        "street art"
     ],
     "other_art_form": [
         "literature",
         "film",
         "theater",
-        "photography"
+        "photography",
+        "animation",
+        "graphic novels",
+        "video games",
+        "stand-up comedy",
+        "podcasting",
+        "digital art",
+        "documentary",
+        "spoken word",
+        "fashion design",
+        "culinary arts",
+        "industrial design"
     ],
     "lifestyle_choice": [
         "work-life balance",
         "diet",
         "living situation",
-        "daily routine"
+        "daily routine",
+        "exercise regimen",
+        "sleep schedule",
+        "social media use",
+        "spending habits",
+        "relationship style",
+        "parenting approach",
+        "spiritual practice",
+        "travel frequency",
+        "screen time",
+        "environmental footprint",
+        "career trajectory"
     ],
     "group": [
         "society",
         "individuals",
         "governments",
-        "companies"
+        "companies",
+        "universities",
+        "religious institutions",
+        "nonprofits",
+        "families",
+        "communities",
+        "scientists",
+        "artists",
+        "educators",
+        "healthcare workers",
+        "media organizations",
+        "international organizations"
     ],
     "goal1": [
         "economic growth",
         "environmental protection",
-        "technological advancement"
+        "technological advancement",
+        "national security",
+        "scientific research",
+        "public health",
+        "space exploration",
+        "energy independence",
+        "digital infrastructure",
+        "military strength",
+        "global competitiveness",
+        "industrial innovation",
+        "artificial intelligence development",
+        "food security",
+        "cybersecurity"
     ],
     "goal2": [
         "social equality",
         "cultural preservation",
-        "stability"
+        "stability",
+        "individual freedom",
+        "mental health",
+        "community building",
+        "artistic expression",
+        "work-life balance",
+        "biodiversity",
+        "privacy rights",
+        "income equality",
+        "educational access",
+        "democratic participation",
+        "historical preservation",
+        "intergenerational equity"
     ],
     "practice": [
         "capital punishment",
         "animal testing",
-        "genetic modification"
+        "genetic modification",
+        "euthanasia",
+        "solitary confinement",
+        "factory farming",
+        "mandatory military service",
+        "plea bargaining",
+        "zero-tolerance policing",
+        "corporal punishment in schools",
+        "trophy hunting",
+        "embryonic stem cell research",
+        "organ markets",
+        "predictive policing",
+        "mandatory drug testing"
     ],
     "role": [
         "leader",
         "parent",
         "teacher",
         "friend",
-        "citizen"
+        "citizen",
+        "mentor",
+        "partner",
+        "neighbor",
+        "manager",
+        "sibling",
+        "activist",
+        "volunteer",
+        "colleague",
+        "caregiver",
+        "public servant"
     ],
     "cultural_item": [
         "book",
         "film",
         "song",
         "artwork",
-        "idea"
+        "idea",
+        "invention",
+        "speech",
+        "photograph",
+        "building",
+        "scientific theory",
+        "philosophical argument",
+        "poem",
+        "album",
+        "performance",
+        "social movement"
     ],
     "trend": [
         "remote work",
         "minimalism",
         "veganism",
-        "cryptocurrency"
+        "cryptocurrency",
+        "hustle culture",
+        "cancel culture",
+        "influencer marketing",
+        "plant-based diets",
+        "slow living",
+        "digital detox",
+        "gig economy",
+        "homeschooling",
+        "tiny houses",
+        "subscription services",
+        "artificial intelligence in art"
     ],
     "complex_issue": [
         "climate change",
         "poverty",
         "education",
-        "healthcare"
+        "healthcare",
+        "immigration",
+        "gun control",
+        "drug policy",
+        "income inequality",
+        "housing affordability",
+        "criminal justice reform",
+        "misinformation",
+        "mental health",
+        "aging populations",
+        "food insecurity",
+        "urban planning"
     ],
     "abstract_concept1": [
         "efficiency",
         "innovation",
-        "growth"
+        "growth",
+        "freedom",
+        "progress",
+        "equality",
+        "competition",
+        "rationality",
+        "transparency",
+        "individualism",
+        "disruption",
+        "meritocracy",
+        "globalization",
+        "specialization",
+        "optimization"
     ],
     "abstract_concept2": [
         "tradition",
         "stability",
-        "sustainability"
+        "sustainability",
+        "security",
+        "preservation",
+        "equity",
+        "cooperation",
+        "empathy",
+        "privacy",
+        "collectivism",
+        "continuity",
+        "solidarity",
+        "localism",
+        "generalism",
+        "resilience"
     ],
     "achievement_type": [
         "scientific discovery",
         "artistic work",
-        "human accomplishment"
+        "human accomplishment",
+        "technological invention",
+        "philosophical insight",
+        "medical breakthrough",
+        "engineering feat",
+        "literary masterpiece",
+        "mathematical proof",
+        "political achievement",
+        "humanitarian effort",
+        "act of courage",
+        "cultural contribution",
+        "athletic record",
+        "diplomatic achievement"
     ],
     "methodology": [
         "democracy",
         "capitalism",
-        "scientific method"
+        "scientific method",
+        "utilitarianism",
+        "free market economics",
+        "direct democracy",
+        "evidence-based policy",
+        "grassroots organizing",
+        "top-down regulation",
+        "consensus building",
+        "cost-benefit analysis",
+        "trial and error",
+        "public-private partnership",
+        "decentralized governance",
+        "deliberative democracy"
     ],
     "objective": [
         "achieve happiness",
         "solve problems",
-        "make progress"
+        "make progress",
+        "reduce suffering",
+        "build community",
+        "advance knowledge",
+        "promote fairness",
+        "ensure prosperity",
+        "foster creativity",
+        "maintain peace",
+        "protect the environment",
+        "improve education",
+        "strengthen democracy",
+        "achieve equality",
+        "encourage innovation"
     ],
     "system1": [
         "democracy",
         "capitalism",
-        "federalism"
+        "federalism",
+        "libertarianism",
+        "meritocracy",
+        "free trade",
+        "parliamentary governance",
+        "market economy",
+        "constitutional republic",
+        "laissez-faire economics",
+        "direct democracy",
+        "confederalism",
+        "pluralism",
+        "liberal democracy",
+        "deregulated markets"
     ],
     "system2": [
         "authoritarianism",
         "socialism",
-        "centralization"
+        "centralization",
+        "communitarianism",
+        "technocracy",
+        "protectionism",
+        "presidential governance",
+        "planned economy",
+        "one-party state",
+        "Keynesian economics",
+        "representative democracy",
+        "unitary state",
+        "corporatism",
+        "social democracy",
+        "regulated markets"
     ],
     "goal": [
         "reduce poverty",
         "achieve success",
-        "find happiness"
+        "find happiness",
+        "improve public health",
+        "build wealth",
+        "foster innovation",
+        "strengthen communities",
+        "improve education",
+        "reduce crime",
+        "protect civil liberties",
+        "promote cultural understanding",
+        "combat loneliness",
+        "increase voter participation",
+        "reduce homelessness",
+        "bridge political divides"
     ],
     "lifestyle": [
         "urban living",
         "minimalism",
-        "digital nomad life"
+        "digital nomad life",
+        "communal living",
+        "off-grid living",
+        "van life",
+        "frugal living",
+        "high-intensity career",
+        "solo travel lifestyle",
+        "early retirement",
+        "plant-based living",
+        "zero-waste lifestyle",
+        "homesteading",
+        "constant learning",
+        "slow living"
     ],
     "other_lifestyle": [
         "suburban living",
         "materialism",
-        "settled life"
+        "settled life",
+        "independent living",
+        "on-grid living",
+        "home ownership",
+        "comfortable spending",
+        "work-life balance",
+        "group travel",
+        "traditional retirement",
+        "omnivorous eating",
+        "conventional consumption",
+        "city apartment living",
+        "career specialization",
+        "fast-paced living"
     ],
     "moral_action": [
         "lie to protect someone",
         "break a promise for a good reason",
-        "prioritize family over strangers"
+        "prioritize family over strangers",
+        "steal to feed a starving child",
+        "report a friend who committed a crime",
+        "sacrifice one life to save many",
+        "withhold a painful truth from a dying person",
+        "disobey an unjust law",
+        "forgive an unrepentant wrongdoer",
+        "use violence to defend an innocent person",
+        "betray a confidence to prevent harm",
+        "refuse to help if helping enables dependency",
+        "choose personal happiness over duty to others",
+        "accept a lesser evil to prevent a greater one",
+        "punish someone to deter future wrongdoing"
     ]
 }
