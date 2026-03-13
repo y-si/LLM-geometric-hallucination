@@ -1,0 +1,50 @@
+[
+  {
+    "label": "T5_mixtral",
+    "job_id": "ft-1dc56ff5-5435",
+    "status": "completed",
+    "output_name": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-abl-T5-mixtral-b6757183",
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "suffix": "abl-T5-mixtral"
+  },
+  {
+    "label": "R397_mixtral",
+    "job_id": "ft-d0eea4ce-dd33",
+    "status": "completed",
+    "output_name": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-abl-R397-mixtral-6ef6a680",
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "suffix": "abl-R397-mixtral"
+  },
+  {
+    "label": "T10_mixtral",
+    "job_id": "ft-8313836b-b9ac",
+    "status": "completed",
+    "output_name": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-abl-T10-mixtral-631bc9e1",
+    "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "suffix": "abl-T10-mixtral"
+  },
+  {
+    "label": "T5_llama",
+    "job_id": "ft-d6183ef5-cc91",
+    "status": "completed",
+    "output_name": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-abl-T5-llama-c34edd9f",
+    "model": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+    "suffix": "abl-T5-llama"
+  },
+  {
+    "label": "T10_llama",
+    "job_id": "ft-0e637b6c-4aaa",
+    "status": "completed",
+    "output_name": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-abl-T10-llama-61158d64",
+    "model": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+    "suffix": "abl-T10-llama"
+  },
+  {
+    "label": "R402_llama",
+    "job_id": "ft-823d8b5b-39d1",
+    "status": "completed",
+    "output_name": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-abl-R402-llama-40138f4e",
+    "model": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+    "suffix": "abl-R402-llama"
+  }
+]

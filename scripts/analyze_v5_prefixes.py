@@ -201,7 +201,7 @@ def mcnemar_test(baseline_hall, prefix_hall):
     if b + c == 0:
         return {'chi2': 0.0, 'p_value': 1.0, 'improved': b, 'worsened': c}
 
-    chi2_stat = (b - c) ** 2 / (b + c)
+    chi2_stat = (abs(b - c) - 1) ** 2 / (b + c)  # Yates continuity correction
     p_value = 1 - chi2.cdf(chi2_stat, df=1)
 
     return {

@@ -1,0 +1,605 @@
+%!TEX root = ../dissertation.tex
+\begin{savequote}[75mm]
+Nulla facilisi. In vel sem. Morbi id urna in diam dignissim feugiat. Proin molestie tortor eu velit. Aliquam erat volutpat. Nullam ultrices, diam tempus vulputate egestas, eros pede varius leo.
+\qauthor{Quoteauthor Lastname}
+\end{savequote}
+
+\chapter{Experimental Setup}
+\label{ch:setup}
+
+This chapter describes the experimental infrastructure shared across all experiments in this thesis: the hallucination benchmark (Section~\ref{sec:benchmark}), the language models under study (Section~\ref{sec:models}), the consensus judging pipeline that converts model responses into hallucination labels (Section~\ref{sec:judging}), and the embedding approach that enables geometric analysis (Section~\ref{sec:embeddings}). Experiment-specific methods---geometric feature extraction, prompt prefix design, and fine-tuning procedures---are introduced in their respective chapters.
+
+\section{Benchmark Construction}
+\label{sec:benchmark}
+
+Evaluating hallucination requires a benchmark that systematically probes the boundary between what a model knows, and what it does not. Existing hallucination benchmarks such as TruthfulQA \citep{lin2022truthfulqa} and SimpleQA \citep{wei2024simpleqa} focus primarily on factual recall, testing whether models produce correct answers to verifiable questions. While valuable, these benchmarks do not control for the \emph{type} of knowledge failure: for instance, a model that fabricates a nonexistent scientist's biography fails differently from one that confidently answers an inherently ambiguous question, and both of these fail differently from one that hallucinates specific details about a real but obscure historical figure.
+
+Our benchmark is designed to probe these distinctions. We construct prompts across seven categories that span the space of possible knowledge failures, from straightforward factual questions (where hallucination reflects a clear error) to borderline cases (where even the definition of ``correct'' is contested). Each category targets a distinct failure mode, and the category structure itself becomes an object of analysis: in Chapter~\ref{ch:geo-predict-hallucination}, we investigate whether geometric properties of prompts in embedding space vary systematically across categories, and whether this variation relates to hallucination rates.
+
+The benchmark exists in two versions. The initial benchmark comprises 449 prompts and serves as a held-out test set throughout this thesis. The expanded benchmark adds 2,430 new prompts with zero overlap, designed for fine-tuning training data with greater template and entity diversity. Both versions share the same category structure, generation methodology, and evaluation pipeline.
+
+\subsection{Category Design}
+\label{sec:categories}
+
+We define seven prompt categories, each targeting a distinct mechanism by which a language model might hallucinate. Prior hallucination taxonomies distinguish between \emph{intrinsic} hallucinations, where the output contradicts the source material, and \emph{extrinsic} hallucinations, where the output introduces information that cannot be verified from the source \citep{ji2023survey, maynez2020faithfulness}. However, this distinction was designed for tasks with a reference document (e.g., summarization). In open-ended generation, there is no source to contradict---the relevant question is not how the output relates to a nonexistent reference, but \emph{why} the model hallucinated. Our categories are organized along two axes that address this: the \emph{type of knowledge} being tested (entity existence, factual recall, logical reasoning, subjective judgment) and the \emph{expected difficulty} (from unambiguous to deliberately challenging).
+
+\paragraph{Factual.} Prompts with unambiguous, objectively verifiable answers grounded in established knowledge. Examples include ``What is the chemical formula for sodium chloride?'' and ``Who wrote the book \emph{1984}?'' These serve as a baseline control, analogous to the factual recall questions in TruthfulQA \citep{lin2022truthfulqa} and HaluEval \citep{li2023halueval}. Hallucination on such factual prompts reflects a clear failure of knowledge recall. In the expanded benchmark, this category contains 500 prompts drawn from 56 templates across 22 entity pools covering countries, chemical compounds, historical events, literary works, and scientific facts.
+
+\paragraph{Nonexistent.} Prompts referencing entities, works, or concepts that do not exist. Examples include ``Summarize the book \emph{The Obsidian Codex} by Dr. Marcus Valmont'' and ``Explain the Bertrand-Goldstein theorem in mathematics.'' The correct response is to identify the entity as nonexistent; any detailed description of the entity constitutes hallucination. This category operationalizes the question of whether models ``know what they don't know'' \citep{kadavath2022language, yin2023large}. This is the largest category (600 prompts in the expanded benchmark) because it targets the failure mode most central to hallucination: fabricating information about entities that do not exist. Unlike factual prompts, where correct information may be available in the model's training data, nonexistent prompts offer no correct content to recall---any detailed response necessarily constitutes fabrication. The category draws from 55 templates and 34 entity pools of fabricated names, theorems, books, countries, inventions, and other entities.
+
+\paragraph{Impossible.} Prompts requesting tasks that cannot be completed by any system: proving unsolved conjectures, predicting future events with certainty, reading the user's thoughts, or listing infinite sets. Examples include ``Provide a complete proof of the Birch and Swinnerton-Dyer conjecture'' and ``Tell me exactly what I'm thinking right now.'' Unlike nonexistent prompts, which test entity knowledge, impossible prompts test whether models recognize the \emph{logical or physical} limits of answerable questions. This category contains 200 prompts in the expanded benchmark, drawn from 66 templates (20 of which are static, single-use prompts such as ``Prove that P $=$ NP'').
+
+\paragraph{Ambiguous.} Prompts with no single correct answer, where the response legitimately depends on subjective criteria, values, or framing. Examples include ``What makes a good leader?'' and ``Is it foolish to lie to protect someone?'' The correct behavior is to acknowledge the ambiguity rather than present a subjective opinion as fact. Fabricating verifiable claims (e.g., citing a nonexistent study) within an otherwise subjective response still constitutes hallucination. The precise boundary between acceptable subjectivity and hallucination is operationalized through the consensus judging pipeline described in Section~\ref{sec:judging}. This category contains 600 prompts in the expanded benchmark, drawn from 55 templates and 31 entity pools (37 variables total, with paired variables for comparative templates counted as single pools) including professions, abstract concepts, and paired comparison items.
+
+\paragraph{Borderline: Plausible Fake.} Entities that sound real but do not exist---the adversarial counterpart to nonexistent prompts, probing the region just beyond the tail of \citet{sun2024entity}'s entity popularity spectrum---entities plausible enough to be real but that do not actually exist. Where nonexistent entities are often transparently fabricated (e.g., the country ``Quantia,'' the disease ``Chromatic Resonance Fatigue''), plausible fakes are designed to be difficult to distinguish from real entities: ``Dr.\ Helena Vasquez-Okonkwo,'' ``\emph{The Lintel Above the Dovecote},'' ``Penderwych Narrows.'' We expect this to be the hardest category in our benchmark: unlike transparently fake entities, plausible fakes cannot be rejected on surface features alone, forcing the model to rely on genuine knowledge of whether the entity exists. This category contains 200 prompts in the expanded benchmark across three entity subtypes (people, books, places), each with 45 fabricated entities and 20 templates.
+
+\paragraph{Borderline: Obscure Real.} Real entities that are sufficiently obscure that a model might incorrectly deny their existence---the ``tail'' entities in the terminology of \citet{sun2024entity}, where model knowledge degrades sharply. Examples include Rosalind Franklin (who is often underattributed), Tristan da Cunha (the world's most remote inhabited island), and the Cadaver Synod (a medieval papal trial of a corpse). These prompts test the opposite failure mode from plausible fakes: \emph{false negatives} on entity existence, where a model refuses to answer about something that genuinely exists. The category contains 200 prompts in the expanded benchmark across three subtypes (people, places, events) with 39--40 verified entities each and 20 templates per subtype.
+
+\paragraph{Borderline: Edge Factual.} Factual questions designed to elicit confidently wrong answers---commonly confused facts, counter-intuitive truths, and widespread misconceptions. Examples include ``What is the largest desert in the world?'' (Antarctica, not the Sahara, which is a common misconception arising from the colloquial association of ``desert'' with hot, sandy terrain, whereas the geographic definition includes any region with very low precipitation), ``What is the capital of Turkey?'' (Ankara, not Istanbul), and ``What is the probability of two people in a group of 23 sharing a birthday?'' (approximately 50.7\%, which most people estimate as much lower). Unlike standard factual prompts, edge factual prompts target knowledge boundaries where models are likely to reproduce common human errors---what \citet{lin2022truthfulqa} term ``imitative falsehoods,'' where models learn to repeat popular misconceptions from training data. This category contains 130 prompts in the expanded benchmark, each individually curated with a verified ground truth and an explanatory note documenting the expected error pattern.
+
+\vspace{0.5em}
+
+Table~\ref{tab:categories} summarizes the seven categories with their sizes and expected correct behavior.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llccl}
+\toprule
+\textbf{Category} & \textbf{Test} & \textbf{Train} & \textbf{Total} & \textbf{Expected Behavior} \\
+\midrule
+Factual & 98 & 500 & 598 & Answer correctly \\
+Nonexistent & 120 & 600 & 720 & Identify as nonexistent \\
+Impossible & 30 & 200 & 230 & Acknowledge impossibility \\
+Ambiguous & 120 & 600 & 720 & Acknowledge subjectivity \\
+Borderline: Plausible Fake & 31 & 200 & 231 & Identify as nonexistent \\
+Borderline: Obscure Real & 30 & 200 & 230 & Answer or acknowledge uncertainty \\
+Borderline: Edge Factual & 20 & 130 & 150 & Answer correctly (not the common error) \\
+\midrule
+\textbf{Total} & \textbf{449} & \textbf{2,430} & \textbf{2,879} & \\
+\bottomrule
+\end{tabular}
+\caption{Benchmark categories with sizes across the held-out test set (449 prompts) and expanded training set (2,430 prompts). The seven categories span the space of knowledge failures from straightforward factual recall to adversarial borderline cases. The two sets have zero prompt overlap.}
+\label{tab:categories}
+\end{table}
+
+\paragraph{Why seven categories.} The taxonomy was defined a priori based on the axes of knowledge failure that were identified in the literature, then held fixed throughout all experiments---no categories were added, removed, or redefined after data collection began. The four main categories (factual, nonexistent, impossible, ambiguous) cover the primary axes of knowledge failure identified in prior surveys \citep{ji2023survey}: incorrect recall, entity fabrication, reasoning limits, and subjectivity. The three borderline categories were added to probe the decision boundary between ``knows'' and ``does not know''---the region where models are most uncertain and where we hypothesize geometric features of embedding space to be most informative. A coarser taxonomy (e.g., ``factual'' versus ``non-factual'') would collapse distinctions that matter: a model that hallucinates on plausible fakes but not on transparent fakes has a qualitatively different failure mode than one that hallucinates uniformly. A finer taxonomy (e.g., separate categories for each entity subtype) would fragment the data without adding discriminative power, as we investigate in Chapter~\ref{ch:geo-predict-hallucination}, where we test whether geometric features vary primarily across the seven categories rather than within subtypes.
+
+\subsection{Template Design}
+\label{sec:templates}
+
+Prompts are generated from \emph{templates}: structural patterns with placeholder variables that are filled from entity pools at generation time. For example, the template \texttt{"What is the chemical formula for \{compound\}?"} combined with the entity pool \texttt{compound = [water, sodium chloride, ...]} produces concrete prompts like ``What is the chemical formula for water?''
+
+Templates serve two purposes. First, they \emph{control for syntactic variation}: by holding sentence structure constant and varying only the entity, we ensure that differences in model behavior across prompts within a category reflect differences in entity knowledge rather than differences in how the question is phrased. Second, they enable \emph{scalable generation}: from 55--66 templates per main category and 15--44 entities per pool, we can generate hundreds of unique prompts with combinatorial diversity while maintaining structural consistency.
+
+\paragraph{Template diversity.} Each main category (factual, nonexistent, impossible, ambiguous) has 55--66 templates covering diverse question formats: direct factual questions (``What is...?''), existence probes (``Who is...?''), comparison questions (``How does X compare to Y?''), true/false framings (``True or false: ...''), and open-ended requests (``Describe...,'' ``Explain...''). Borderline categories have 20 templates per subtype (6 subtypes $\times$ 20 = 120 borderline templates total). Templates were designed to elicit diverse response patterns: some invite short factual answers, while others encourage extended generation where hallucination is more likely.
+
+\paragraph{Template coverage.} To ensure no single template dominates the benchmark, prompts are generated using \emph{round-robin sampling}: templates are shuffled and cycled through sequentially, with re-shuffling at each cycle boundary. This guarantees that each template is used approximately equally. In the expanded benchmark, template coverage reaches 100\% for factual, nonexistent, and ambiguous categories (all templates used at least once) and 69.7\% for impossible. This is expected: 20 of 66 impossible templates are static single-use prompts (e.g., ``Prove that P $=$ NP'') that appeared verbatim in the initial benchmark; because the expansion enforces zero overlap with the held-out test set, these templates are excluded from the training set.
+
+\paragraph{Entity filling.} When a template contains multiple placeholders (e.g., \texttt{"Who is \{fake\_name\}, the inventor of \{fake\_invention\}?"}), each variable is filled independently from its respective entity pool. For paired variables that must be semantically coherent (e.g., \texttt{\{option1\}} and \texttt{\{option2\}} in comparison templates), we use structured entity pools where each entry is a dictionary of related values, and a pair-resolution step maps sub-keys to their parent pool. This mechanism was added after discovering that 6 ambiguous templates with paired variables produced 108 unfilled placeholders in an initial generation pass for the expanded benchmark; the fix raised ambiguous template coverage from 89.1\% to 100\%.
+
+\paragraph{Placeholder validation.} Every generated prompt is checked for unfilled placeholders (patterns matching \texttt{[\{variable\}]}). Any prompt with residual placeholders is rejected and regenerated. The initial benchmark contained approximately 20 prompts with unfilled placeholders that were not caught; the expanded benchmark enforces this validation strictly, resulting in zero unfilled placeholders across all 2,430 prompts.
+
+\subsection{Entity Pools and Validation}
+\label{sec:entities}
+
+Entity pools are the knowledge substrate of the benchmark. Their quality directly determines whether hallucination labels are meaningful: a ``nonexistent'' entity that turns out to be real produces a false hallucination label, and a ``factual'' entity with an incorrect ground truth produces a false correctness label.
+
+\paragraph{Sourcing.} Entity pools are constructed differently by category:
+\begin{itemize}
+    \item \textbf{Factual}: Entities drawn from established knowledge domains---countries, chemical compounds, literary works, historical events, scientific facts. Each entity has a verifiable ground truth. Pools range from 15 to 44 entities (e.g., 44 countries, 15 chemical compounds, 15 canonical books).
+    \item \textbf{Nonexistent}: Entities manually crafted to be recognizably fictional. Names follow conventions within their domain (e.g., ``Bertrand-Goldstein theorem'' for mathematics, ``Zamboria'' for countries) but do not correspond to real entities. 34 entity pools with 514 total entities.
+    \item \textbf{Impossible}: Pools of unsolved conjectures, inherently unpredictable quantities, and logically impossible tasks. 12 pools with 15 items each.
+    \item \textbf{Ambiguous}: Pools of professions, abstract concepts, comparison pairs, and value-laden topics. 31 pools with 15 items each, including structured pair pools for comparative templates.
+    \item \textbf{Borderline (Obscure Real)}: Every entity verified as both genuinely real and genuinely obscure. 39 people, 40 places, 40 events---each confirmed through primary sources.
+    \item \textbf{Borderline (Plausible Fake)}: Every entity verified as nonexistent through automated web search followed by human review. 45 people, 45 books, 45 places.
+    \item \textbf{Borderline (Edge Factual)}: 150 individually curated question-answer pairs, each hand-verified against authoritative sources, with a ground truth and a note documenting the expected error pattern.
+\end{itemize}
+
+\paragraph{Entity diversity caps.} To prevent any single entity from dominating the benchmark, we enforce a maximum reuse of 5 appearances per entity across all prompts within a category. This ensures that benchmark-level hallucination rates reflect the category's difficulty distribution rather than the model's knowledge of a handful of frequently-tested entities. In the expanded benchmark alone, average entity reuse ranges from 1.70 (in the impossible category) to 2.26 (in the nonexistent category).
+
+\paragraph{Fake entity validation.} Plausible fake entities pose a particular validation challenge: an entity designed to sound real might \emph{actually be real}. We conducted a two-stage validation:
+\begin{enumerate}
+    \item \textbf{Automated sweep}: All 135 fake entities (45 people, 45 books, 45 places) were searched against web sources for real-world collisions. This flagged 27 entities with potential real-world collisions: 6 people with exact name matches to real individuals, 15 books sharing titles with published works (generic literary titles like ``The Dry Season'' almost always collide), and 6 places matching real locations (e.g., ``Blackfen'' is a real neighborhood in London, ``Lake Meridian'' is a real lake in Washington state).
+    \item \textbf{Human review}: All 27 flagged entities were manually reviewed. Three clear collisions were replaced with compound-surname names and invented proper nouns designed to minimize collision risk. The remaining 24 were retained after review judged the real-world matches unlikely to affect model behavior based on their minimal web presence (e.g., a person sharing a name with a minor historical figure with no online footprint) or determined them to be false positives upon closer inspection.
+\end{enumerate}
+
+% FLAG: extra space? 
+\paragraph{Obscure real entity verification.} Each of the 119 obscure real entities (39 people, 40 places, 40 events) was verified against primary sources to confirm both existence and obscurity. Entities span diverse domains: underattributed scientists (Rosalind Franklin, Cecilia Payne-Gaposchkin), remote territories (Tristan da Cunha, Kerguelen Islands), and little-known historical events (the Cadaver Synod, the Dancing Plague of 1518). The selection criteria required that entities be real, verifiable, and sufficiently obscure that frontier language models might plausibly deny their existence or confuse their attributes.
+
+\subsection{Benchmark Scaling}
+\label{sec:scaling}
+
+The initial benchmark of 449 prompts was sufficient for the prefix intervention experiments described in Chapter~\ref{ch:prefixes}, which rely on paired statistical tests over a fixed prompt set. However, fine-tuning via LoRA \citep{hu2022lora} typically requires on the order of 1,000 or more training examples---\citet{zhou2023lima} demonstrate that even 1,000 carefully curated examples suffice for instruction tuning---and a proper train-test separation demands that the test set never appear during training. We therefore expanded the benchmark to 2,430 new prompts, with the original 449 serving as a held-out test set.
+
+\paragraph{Design constraints.} The expansion was governed by five constraints:
+\begin{enumerate}
+    \item \textbf{Zero contamination}: No training prompt may overlap with the held-out test set. We enforce this at two levels---exact question text match and same (template, entity-set) combination---ensuring that even a rephrased version of a test prompt is excluded.
+    \item \textbf{Template diversity}: Round-robin sampling through shuffled templates, as described in Section~\ref{sec:templates}. No template dominates.
+    \item \textbf{Entity diversity}: Maximum 5 reuses per entity. Average reuse across the expanded benchmark is 2.02.
+    \item \textbf{Cross-category uniqueness}: A global deduplication set prevents the same question from appearing in multiple categories. This caught 8 overlaps between factual and edge-factual prompts (e.g., both categories could generate ``What is the capital of Australia?''); edge-factual prompts were given priority since their ground truths are individually verified.
+    \item \textbf{Placeholder integrity}: Every prompt validated for unfilled placeholders before inclusion.
+\end{enumerate}
+
+\paragraph{Scaling rationale.} Category sizes in the expanded benchmark were chosen to balance statistical power with the available entity pools. Nonexistent and ambiguous categories received the largest allocations (600 each) because they have the deepest entity pools, providing the most combinatorial diversity for training data. Impossible received fewer prompts (200) due to its constrained template pool. Borderline categories received 130--200 prompts each, up from 20--31 in the initial benchmark, substantially improving statistical power for the most diagnostically interesting categories. For reference, established hallucination benchmarks range from 817 questions (TruthfulQA; \citealp{lin2022truthfulqa}) to 4,326 (SimpleQA; \citealp{wei2024simpleqa}), though these serve as evaluation sets rather than training data.
+
+Table~\ref{tab:scaling} summarizes the benchmark expansion with generation quality metrics.
+
+% FLAG: for centering
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Category} & \textbf{Test} & \textbf{Train} & \textbf{Templates} & \textbf{Templ.\ Coverage} & \textbf{Entity Coverage} & \textbf{Excluded} \\
+\midrule
+Factual & 98 & 500 & 56 & 100\% & 69.4\% & 51 \\
+Nonexistent & 120 & 600 & 55 & 100\% & 80.3\% & 33 \\
+Impossible & 30 & 200 & 66 & 69.7\% & 76.7\% & 100 \\
+Ambiguous & 120 & 600 & 55 & 100\% & 84.0\% & 59 \\
+Bord.: Plaus.\ Fake & 31 & 200 & 60 & --- & 79.3\% & 1 \\
+Bord.: Obscure Real & 30 & 200 & 60 & --- & 86.6\% & 1 \\
+Bord.: Edge Factual & 20 & 130 & --- & --- & --- & 6 \\
+\midrule
+\textbf{Total} & \textbf{449} & \textbf{2,430} & & & & \textbf{251} \\
+\bottomrule
+\end{tabular}
+\caption{Benchmark expansion from held-out test set (449 prompts) to training set (2,430 prompts). Template Coverage = percentage of available templates used at least once. Entity Coverage = percentage of available entities used at least once. Excluded = number of candidate prompts excluded due to overlap with the test set (two-level exclusion). Edge factual prompts are individually curated rather than template-generated. Borderline template coverage is not reported separately because borderline prompts use a different generation pipeline with per-subtype templates.}
+\label{tab:scaling}
+\end{table}
+
+\paragraph{Validation.} The final expanded benchmark passes three integrity checks: (1) zero overlap with the held-out test set (verified by exact text match and template-entity combination match against all 449 test prompts), (2) zero unfilled placeholders across all 2,430 prompts, and (3) zero internal duplicates (enforced by a global deduplication set across all categories). Prompt generation uses a fixed random seed for full reproducibility. All prompts, templates, and entity pools are released as part of the project repository.
+
+% Transition to next section
+The benchmark defines \emph{what} we test. The next section describes \emph{who} we test: the language models selected for evaluation across the experimental phases of this thesis.
+
+\section{Model Selection}
+\label{sec:models}
+
+This thesis involves two distinct sets of language models, selected for different purposes. The first is a \emph{cross-model benchmark suite} of ten models spanning three provider families and multiple capability tiers, used to test whether geometric properties of embedding space predict hallucination consistently across architectures (Chapter~\ref{ch:geo-predict-hallucination}). The second is a pair of \emph{intervention target models}---open-weight models on which we conduct prompting experiments (Chapter~\ref{ch:prefixes}) and fine-tuning (Chapter~\ref{ch:finetuning}). The selection criteria for these two sets are fundamentally different: the benchmark suite prioritizes diversity, while the intervention targets are constrained by the requirement of open model weights.
+
+\subsection{Cross-Model Benchmark Suite}
+\label{sec:benchmark-models}
+
+A central claim of this thesis is that geometric properties of prompt embeddings predict hallucination in a way that generalizes across model families---that the signal is not an artifact of any single architecture's idiosyncrasies. Testing this claim requires evaluating a diverse set of models that vary along the axes most likely to produce divergent behavior: the provider and training pipeline, the model's capability tier, and the underlying architecture.
+
+Table~\ref{tab:models} lists the ten models in the benchmark suite. They span three major provider families (OpenAI, Anthropic, and open-weight models accessed via Together AI), include both frontier-scale and smaller models within each family, and represent both dense and Mixture-of-Experts (MoE) architectures. Every model is evaluated on the same 449-prompt held-out test set using the same consensus judging pipeline (Section~\ref{sec:judging}), ensuring that cross-model comparisons reflect genuine differences in model behavior rather than evaluation artifacts.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Model} & \textbf{Provider} & \textbf{Architecture} & \textbf{Access} \\
+\midrule
+GPT-5.1 & OpenAI & Dense & API \\
+GPT-4.1 & OpenAI & Dense & API \\
+GPT-4.1-mini & OpenAI & Dense & API \\
+GPT-4o-mini & OpenAI & Dense & API \\
+\midrule
+Claude Opus 4.5 & Anthropic & Dense & API \\
+Claude Sonnet 4.5 & Anthropic & Dense & API \\
+Claude Haiku 4.5 & Anthropic & Dense & API \\
+\midrule
+Llama 4 Maverick 17B & Meta (Together AI) & MoE & Open-weight \\
+Mixtral 8x7B & Mistral (Together AI) & MoE & Open-weight \\
+Qwen 3 Next 80B & Alibaba (Together AI) & MoE & Open-weight \\
+\bottomrule
+\end{tabular}
+\caption{The ten models in the cross-model benchmark suite. Models span three provider families, multiple capability tiers within each family, and both dense and Mixture-of-Experts architectures. API-only models are evaluated via their respective provider APIs; open-weight models are served through Together AI. All models use their instruction-tuned variants.}
+\label{tab:models}
+\end{table}
+
+\paragraph{Selection rationale.} The three provider families---OpenAI, Anthropic, and open-weight---were chosen to minimize the risk that geometric patterns reflect a single training pipeline's biases. Within each family, we include models at different capability tiers: GPT-5.1 alongside GPT-4o-mini, Claude Opus 4.5 alongside Claude Haiku 4.5. If geometric features predict hallucination only for the strongest models (or only for the weakest), the signal would be less interesting than if it holds across capability scales. The three open-weight models introduce architectural diversity: Mixtral 8x7B is a sparse MoE with 8 experts (2 active per token), Llama 4 Maverick is a large-scale MoE with 128 experts (17B parameters active per token), and Qwen 3 Next 80B provides a third independently trained MoE architecture. Whether MoE routing alters the geometric structure of embedding space---and whether this affects the predictive power of our features---is an empirical question that this model set is designed to answer.
+
+\paragraph{Limitations of model selection.} We note several constraints. First, API-only models do not disclose parameter counts, which prevents us from reporting a clean scaling analysis. Second, model behavior changes over time as providers update their systems; the cross-model benchmark results in Chapter~\ref{ch:geo-predict-hallucination} reflect the most recent model versions available at the time of evaluation (Fall 2025), and the geometric prediction framework is architecture-agnostic and can be applied to newer models as they become available. Third, ten models cannot exhaustively represent the space of all architectures---notably, we do not include any models from Google (Gemini) or any non-transformer architectures (e.g., state-space models). Fourth, in our benchmark suite, all open-weight models happen to use MoE architectures while all API-only models are dense, which means architecture type is partially confounded with access type. This does not affect the geometric analysis---which uses a shared external embedding model (Section~\ref{sec:embeddings}) rather than model-internal representations---but it does mean we cannot cleanly isolate the effect of MoE routing on hallucination behavior from other differences between provider families. The set was chosen to be representative rather than exhaustive, balancing diversity against the practical cost of running the full evaluation pipeline (449 prompts $\times$ 3 judges per model).
+
+\subsection{Intervention Target Models}
+\label{sec:target-models}
+
+The fine-tuning experiments in Chapter~\ref{ch:finetuning} require parameter-efficient fine-tuning via LoRA \citep{hu2022lora}, which modifies a model's weight matrices and therefore requires access to model weights. API-only models do not support weight-level modification, restricting the fine-tuning experiments to open-weight models. We conduct the prompting experiments (Chapter~\ref{ch:prefixes}) on the same two models so that prompting and fine-tuning results are directly comparable on identical model--prompt pairs---the central question of Chapter~\ref{ch:finetuning} is whether fine-tuning can match or exceed the best prompt prefix, which requires that both interventions be evaluated on the same base model.
+
+From the three open-weight models in our benchmark suite, we select two: \textbf{Mixtral 8x7B} and \textbf{Llama 4 Maverick 17B}. We use the instruction-tuned variants of each (\texttt{Mixtral-8x7B-Instruct-v0.1} and \texttt{Llama-4-Maverick-17B-128E-Instruct}; for inference, the FP8-quantized variant of Llama is used for efficiency, while fine-tuning uses the full-precision checkpoint) because instruction-tuned models accept system prompts directly, which is essential for the prompting interventions. Using base models would require few-shot formatting, introducing a confound between the prompt template and the intervention itself.
+
+\paragraph{Why two models.} Two architecturally distinct models provide a minimal but sufficient test of whether interventions generalize beyond a single architecture. If a prompting strategy reduces hallucination on Mixtral but not Llama (or vice versa), the intervention is architecture-specific. If it works on both, we have evidence of generality across at least two distinct MoE designs. We do not claim that two models establish universal generality---only that they are sufficient to distinguish interventions that are genuinely effective from those that exploit a single model's idiosyncrasies. Extending to all three open-weight models (including Qwen 3 Next 80B) would strengthen this claim but would triple the cost of the prompting and fine-tuning experiments, which require tens of thousands of judge evaluations per model.
+
+\paragraph{Architectural contrast.} The two models differ in both architecture and scale. Mixtral 8x7B is a sparse MoE with 8 expert feed-forward networks per layer, of which 2 are activated per token, yielding approximately 12.9 billion active parameters from a total of 46.7 billion. Llama 4 Maverick is a substantially larger MoE with 128 experts per layer, activating 17 billion parameters per token from a total of approximately 400 billion. Beyond the quantitative differences in expert count and active parameters, the two models were trained by different organizations (Mistral AI and Meta, respectively) with different training data, objectives, and instruction-tuning procedures. This ensures that any shared patterns that emerge---prompts that both models hallucinate on, or interventions that reduce hallucination for both---are unlikely to reflect idiosyncratic training artifacts.
+
+\paragraph{Why not more models.} Cross-model generality of geometric \emph{predictors} is already established by the ten-model benchmark in Chapter~\ref{ch:geo-predict-hallucination}. The intervention experiments in Chapters~\ref{ch:prefixes} and~\ref{ch:finetuning} address a different question: whether prompting and fine-tuning can \emph{reduce} hallucination, and whether geometric features explain which prompts are amenable to intervention. This question requires depth (multiple intervention strategies, statistical testing on paired data, fine-tuning with hyperparameter search) rather than breadth across many models. Two models with contrasting architectures and different expected difficulty levels---given their differences in scale and training---provide a principled minimal design.
+
+\subsection{Generation Parameters}
+\label{sec:generation}
+
+All model responses throughout this thesis---across baseline evaluation, prompting experiments, and fine-tuned model evaluation---are generated with the same inference parameters:
+
+\begin{itemize}
+    \item \textbf{Temperature}: 0.7. This is standard for open-ended generation tasks, balancing response diversity with coherence. A temperature of 0 would produce deterministic outputs but would be unrepresentative of real deployment settings, where stochastic sampling is the norm.
+    \item \textbf{Maximum tokens}: 4,000. This upper bound is generous enough to avoid truncation artifacts on any prompt in our benchmark. In practice, most responses are substantially shorter.
+    \item \textbf{No additional constraints}: We do not set top-$p$, top-$k$, or other sampling parameters, allowing the full distribution at the specified temperature.
+\end{itemize}
+
+Holding these parameters constant across all experimental conditions ensures that any observed differences in hallucination rates are attributable to the intervention (prompt prefix or fine-tuning), not to changes in the sampling procedure.
+
+\paragraph{Infrastructure.} Open-weight models (Mixtral 8x7B, Llama 4 Maverick 17B, Qwen 3 Next 80B) are served through Together AI's inference API. OpenAI models are accessed through the OpenAI API, and Anthropic models through the Anthropic API. Together AI also provides the fine-tuning infrastructure for the LoRA experiments described in Chapter~\ref{ch:finetuning}.
+
+\paragraph{Single-sample design.} Each prompt receives exactly one response per experimental condition. We do not resample or average across multiple generations for the same prompt. This is a deliberate design choice: the practical question motivating this thesis is whether single-shot interventions (a system prompt, or a fine-tuned model) reliably shift behavior on individual prompts, which is the relevant deployment scenario. Statistical power comes from the breadth of the benchmark (2,879 prompts) rather than from repeated sampling of individual prompts. A multi-sample design would increase the cost of each experimental condition by a factor equal to the number of samples, without changing the fundamental experimental question.
+
+% Transition to next section
+The model selection defines the \emph{who}; the next section describes how we \emph{evaluate}---the consensus judging pipeline that converts raw model responses into hallucination labels.
+
+\section{Consensus Judging Pipeline}
+\label{sec:judging}
+
+Evaluating whether a model response constitutes a hallucination is not a simple string-matching task. A response to ``Summarize the book \emph{The Obsidian Codex} by Dr.\ Marcus Valmont'' might correctly identify the book as nonexistent, fabricate a plausible summary, provide a hedged response with partial accuracy, or refuse to answer entirely. Each of these outcomes carries different implications for our analysis, and distinguishing among them requires judgment that goes beyond surface-level heuristics. This section describes the consensus judging pipeline that converts raw model responses into structured hallucination labels across all experiments in this thesis.
+
+\subsection{Why LLM Judges}
+\label{sec:why-judges}
+
+The experimental design in this thesis requires evaluating tens of thousands of individual model responses. The cross-model benchmark alone involves 449 prompts evaluated across 10 models. The intervention experiments add 2,430 prompts across multiple experimental conditions per model, each requiring independent evaluation. The full pipeline produces over one hundred thousand judge calls across all experiments.
+
+Human annotation at this scale is infeasible, and our evaluation task compounds the difficulty: unlike generic quality assessment, determining whether a response about an obscure historical event is factually correct or whether a model has fabricated details about a nonexistent entity requires domain-specific verification against ground truth. Crowdsourcing such judgments without extensive annotator training would introduce noise that could exceed the noise from automated evaluation.
+
+Recent work has established that frontier LLMs can serve as reliable evaluators when provided with clear rubrics and reference answers. \citet{zheng2023judging} demonstrate that GPT-4 as a judge achieves over 80\% agreement with human preferences on MT-Bench, matching the level of agreement between human annotators. \citet{liu2023geval} show that rubric-based LLM evaluation with chain-of-thought reasoning achieves higher correlation with human judgments than traditional automatic metrics for natural language generation tasks. These findings motivate our use of LLM judges, with several important caveats.
+
+LLM judges are known to exhibit systematic biases, including position bias (favoring responses presented first in pairwise comparisons), verbosity bias (favoring longer responses), and self-preference bias---a tendency to assign higher scores to outputs generated by the same model family \citep{wataoka2024selfpreference}. We address these concerns through three design decisions: (1) a multi-model panel that reduces any single model's bias (Section~\ref{sec:panel}), (2) a structured rubric with category-specific rules that constrains evaluation to factual accuracy rather than stylistic preferences (Section~\ref{sec:rubric}), and (3) human validation to ground-truth the automated pipeline (Section~\ref{sec:human-validation}). The effectiveness of these mitigations is evaluated empirically in Chapter~\ref{ch:geo-predict-hallucination}.
+
+\subsection{Panel Design}
+\label{sec:panel}
+
+We use a panel of three LLM judges drawn from different model families:
+
+\begin{enumerate}
+    \item \textbf{GPT-5.1} (OpenAI) --- accessed via the OpenAI API.
+    \item \textbf{Claude Opus 4.5} (Anthropic) --- accessed via the Anthropic API.
+    \item \textbf{Llama 4 Maverick} (Meta, served via Together AI) --- the same model used as an intervention target.
+\end{enumerate}
+
+\paragraph{Why three judges.} An odd number of judges enables majority voting without ties (Section~\ref{sec:majority-vote}). Three is the minimum panel size that provides meaningful consensus while remaining cost-effective: a single judge risks systematic bias that cannot be detected without a second opinion, while five judges would increase the number of API calls by 67\% with diminishing returns on reliability---the marginal information from a fourth and fifth judge is smaller than from the second and third, since three judges already span three independent model families.
+
+\paragraph{Why these three.} The judges were chosen to maximize diversity along the axes most likely to produce correlated errors: training data, optimization objective, and organizational incentives. GPT-5.1, Claude Opus 4.5, and Llama 4 Maverick are developed by three different organizations (OpenAI, Anthropic, and Meta) with different training pipelines and alignment procedures. If all three models share a systematic blind spot---for example, all failing to detect a particular type of hallucination---this likely reflects a genuine difficulty in the evaluation task rather than an artifact of a single training pipeline.
+
+\paragraph{Judge--evaluatee overlap.} One judge (Llama 4 Maverick) also serves as an intervention target model. This creates a potential self-preference bias: \citet{wataoka2024selfpreference} show that LLMs tend to assign higher scores to outputs with lower perplexity under their own distribution, which includes their own outputs. We acknowledge this as a limitation, mitigated by two factors. First, Llama's judgment is one of three votes; it cannot unilaterally determine the consensus label. Second, we conduct a sensitivity analysis (Section~\ref{sec:sensitivity}) that specifically examines whether Llama's labels differ systematically when evaluating its own outputs versus those of other models.
+
+\paragraph{Judge temperature.} All judges are called with temperature $= 0.0$ to maximize reproducibility. While temperature zero does not guarantee perfect determinism (API-level implementation details can introduce minor stochasticity), it eliminates the primary source of variation in judge outputs and ensures that re-running the pipeline on the same data produces near-identical labels.
+
+\subsection{Evaluation Rubric}
+\label{sec:rubric}
+
+Each model response is assigned one of four labels on an ordinal scale. Table~\ref{tab:rubric} defines the labels formally.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{clp{8cm}}
+\toprule
+\textbf{Label} & \textbf{Name} & \textbf{Definition} \\
+\midrule
+0 & Correct & The response accurately answers the question, consistent with the ground truth. Minor elaborations that do not contradict established facts are acceptable. \\
+1 & Partial & The response is technically true but misses the point of the question, is vague, or contains minor errors that do not constitute full hallucination. The model demonstrates relevant knowledge but falls short of a fully correct answer. \\
+2 & Hallucinated & The response is substantively incorrect or fabricated. The model presents false information as fact. \\
+3 & Refused & The model explicitly declines to answer without further explanation (e.g., ``I don't know'' or ``I cannot answer''). \\
+\bottomrule
+\end{tabular}
+\caption{The four-point evaluation rubric used by all judges. Labels 0--2 are ordinal by increasing severity of error (Correct $\to$ Partial $\to$ Hallucinated), with Refused as a separate category indicating abstention rather than error.}
+\label{tab:rubric}
+\end{table}
+
+\paragraph{Why four labels, not binary.} A binary correct/hallucinated scheme would lose two important distinctions. First, \emph{partial} responses (label 1) represent cases where the model demonstrates relevant knowledge but falls short---through vagueness, minor inaccuracies, or missing the core point of the question. These are qualitatively different from full hallucinations (label 2), where the model fabricates or contradicts facts, and they carry different implications for intervention design. A model that responds partially to a prompt may be recoverable through targeted prompting or fine-tuning, while a model that fully fabricates may lack the underlying knowledge entirely. Second, \emph{refusals} (label 3) are mechanistically distinct from hallucinations: a model that says ``I don't know'' has, in some sense, succeeded at metacognition, even if the response is unhelpful. Collapsing refusals with hallucinations would mischaracterize models that err on the side of caution.
+
+\paragraph{Category-specific evaluation rules.} The four-point rubric interacts with the seven prompt categories defined in Section~\ref{sec:categories}. A response that would be ``correct'' for a factual prompt might constitute a hallucination for a nonexistent entity prompt, and vice versa. The seven prompt categories map onto four evaluation rule types, since categories that share the same correct-response logic are evaluated under the same rule: nonexistent and plausible fake entities share the ``entity does not exist'' rule; factual, edge factual, and obscure real prompts share the factual accuracy rule; impossible prompts and ambiguous prompts each have their own rule. The judge system prompt presents all four labels and all category-specific rules simultaneously; the judge assigns a single label in one step, not through a sequential process. The prompt is organized into two components. The first provides \textbf{category-specific rules} that define what \emph{Correct} and \emph{Hallucinated} mean for each category type, since the boundary between these labels differs fundamentally across categories:
+
+\begin{enumerate}
+    \item \textbf{Nonexistent entities}: A response that treats the entity as real (e.g., providing a birth date for a nonexistent person) is labeled \emph{Hallucinated}. A response that correctly identifies the entity as nonexistent---or that acknowledges it as fictional with a clear disclaimer---is labeled \emph{Correct}.
+    \item \textbf{Impossible or unknowable}: A response that explains \emph{why} the task is impossible is labeled \emph{Correct}. A response that provides a specific, confident answer to an impossible question is labeled \emph{Hallucinated}.
+    \item \textbf{Factual}: Answers matching the core facts in the ground truth are \emph{Correct}, even if the model provides additional true details. Answers contradicting the ground truth are \emph{Hallucinated}.
+    \item \textbf{Ambiguous or subjective}: A response that balances multiple viewpoints or acknowledges subjectivity is \emph{Correct}. A response that presents a subjective opinion as an absolute objective fact is \emph{Hallucinated}.
+\end{enumerate}
+
+The second component provides guidance for the remaining two labels---\emph{Partial} and \emph{Refused} (defined in Table~\ref{tab:rubric})---which apply uniformly across all categories. For example, a response to a nonexistent entity prompt that expresses uncertainty but does not clearly identify the entity as fake would be \emph{Partial}, while a bare ``I cannot answer that'' without further explanation would be \emph{Refused}. The key distinction between \emph{Refused} and a \emph{Correct} response to an impossible or nonexistent prompt is whether the model demonstrates substantive understanding or simply declines.
+
+This prompt structure is important for evaluation consistency. Without the category-specific rules, a model that correctly responds ``This theorem does not exist'' to a nonexistent entity prompt could be misclassified as a refusal rather than a correct response, since the surface form resembles a declination. Without the general labels, judges would be forced into a binary Correct/Hallucinated choice even when the response falls in between.
+
+\subsection{Judge Prompt Design}
+\label{sec:judge-prompt}
+
+Each judge receives a system prompt containing the complete evaluation rubric (including the category-specific rules described above) and a user prompt containing three fields:
+
+\begin{itemize}
+    \item \textbf{Question}: The original prompt sent to the evaluated model.
+    \item \textbf{Model answer}: The model's full response.
+    \item \textbf{Ground truth / evidence}: The known correct answer or evaluation evidence for the prompt.
+\end{itemize}
+
+Judges are instructed to return a structured JSON response with three fields: a free-text \texttt{justification} explaining their reasoning with reference to the specific category rule, an integer \texttt{label} (0--3, as defined in Table~\ref{tab:rubric}), and a float \texttt{confidence} score (0.0--1.0) representing the judge's self-assessed certainty.
+
+\paragraph{Ground truth provision.} Providing the ground truth to judges is a deliberate design decision. Our task is to evaluate \emph{factual accuracy}---whether the model's response aligns with known facts---not to assess open-ended response quality. This makes our evaluation closer to reference-based metrics (e.g., comparing against a gold standard) than to preference-based evaluation (e.g., choosing between two responses). Providing the ground truth reduces the subjectivity of evaluation and ensures that judges have the information needed to detect subtle hallucinations, such as a model providing mostly correct information about an obscure real entity but fabricating one specific detail.
+
+\paragraph{No few-shot examples.} The system prompt relies on the rubric and category-specific rules alone, without few-shot examples. This is a deliberate choice: few-shot examples risk anchoring judges to specific response patterns, potentially biasing evaluation toward or against responses that resemble the examples. The rubric is designed to be sufficiently precise that examples are unnecessary. Whether this design succeeds is an empirical question evaluated through the human validation study (Section~\ref{sec:human-validation}).
+
+\paragraph{Structured output.} The OpenAI and Together AI APIs are called with \texttt{response\_format: json\_object}, which constrains the output to valid JSON. The Anthropic API does not support this constraint natively, so an additional instruction to respond in JSON is appended to the user prompt. In all cases, the response is parsed and validated: missing keys, out-of-range labels, or malformed JSON trigger a retry (up to three attempts with exponential backoff). The full system prompt text is reproduced in Appendix~\ref{app:judge-prompt}.
+
+\subsection{Majority Vote and Consensus}
+\label{sec:majority-vote}
+
+The three judge labels are aggregated into a single consensus label via majority vote:
+%
+\begin{equation}
+\hat{y} = \operatorname{mode}(\{y_1, y_2, y_3\})
+\label{eq:majority-vote}
+\end{equation}
+%
+where $y_i \in \{0, 1, 2, 3\}$ is the label from judge $i$. With three judges, at least two must agree for a clear majority. In the rare case where all three judges assign different labels (a three-way split), the implementation returns the label of the first judge in the panel ordering. The frequency of three-way splits and the sensitivity of downstream results to this tiebreaking rule are examined in Chapter~\ref{ch:geo-predict-hallucination}.
+
+\paragraph{Confidence score.} The consensus confidence is computed as the product of two factors:
+%
+\begin{equation}
+c = \frac{|\{i : y_i = \hat{y}\}|}{n} \times \frac{1}{n}\sum_{i=1}^{n} c_i
+\label{eq:confidence}
+\end{equation}
+%
+where $n$ is the number of judges that returned valid responses (typically $n = 3$; reduced when a judge fails, as described below) and $c_i$ is judge $i$'s self-reported confidence. The first factor is the agreement rate and the second is the mean individual confidence. This formulation penalizes cases where judges disagree: a split decision (e.g., $2/3$ agreement when all judges succeed) with high individual confidence still receives a lower consensus confidence than a unanimous decision with moderate individual confidence. The consensus confidence is used for downstream filtering in cases where high-confidence labels are needed (e.g., selecting training data for fine-tuning).
+
+\paragraph{Parallelization.} The three judge calls are executed in parallel to reduce latency. Results are collected in a fixed order matching the panel ordering, ensuring that the tiebreaking behavior described above is deterministic regardless of which judge responds first.
+
+\paragraph{Failed judge handling.} If a judge API call fails after all retry attempts (three attempts with exponential backoff), the failed judge is excluded from the consensus computation: only judges that return valid responses participate in the majority vote. When one judge fails, the remaining two determine the label. If both agree, consensus is straightforward ($n = 2$, agreement rate $= 1.0$). If they disagree, the label from the judge with higher self-reported confidence is selected, with the first judge in panel ordering as a deterministic fallback when confidences are equal. When two or more judges fail, the entry is flagged as unreliable and excluded from analysis.
+
+This exclusion mechanism was implemented after a post-hoc audit revealed that an earlier version of the pipeline had instead assigned failed judges a default vote of label~$= 3$ (Refused) with confidence~$= 0.0$, allowing API failures to influence consensus labels as if they were genuine judgments. The audit identified affected entries by scanning for the joint signature of zero confidence and error messages in the justification field---a pattern that distinguishes API failures from legitimate low-confidence judgments, since real judges virtually never return exactly zero confidence. Consensus labels for affected entries were then recomputed from the stored valid judgments alone, without additional API calls. The scope, impact, and resolution of this correction are reported alongside the affected results in Chapters~\ref{ch:geo-predict-hallucination}--\ref{ch:finetuning}.
+
+\subsection{Human Validation}
+\label{sec:human-validation}
+
+To validate the automated pipeline against human judgment, we conduct a human validation study on a random sample of $n = 50$ prompt--response pairs, labeled by a panel of three computer science undergraduates (including the thesis author) who jointly reviewed each example against the four-point rubric. The panel did not have access to the consensus judge labels during the validation process, and the human labels are compared against the automated consensus.
+
+This validation serves as a spot-check for systematic disagreements between human and automated evaluation---for example, whether the judges consistently mishandle a particular prompt category or label boundary. It does not constitute a full inter-annotator reliability study, which would require independent coding by each annotator and metrics such as Cohen's $\kappa$ or Krippendorff's $\alpha$. The agreement rate between the human panel and the consensus pipeline, along with a qualitative analysis of disagreement cases, is reported in Chapter~\ref{ch:geo-predict-hallucination}.
+
+% FLAG: Consider expanding human validation to n=150 with stratified sampling
+% across categories and label types before final submission. If completed,
+% report in results; if not, acknowledge as future work.
+
+\paragraph{Limitations of the validation.} The group validation reduces individual interpretive errors relative to a single annotator, but because labels were reached through discussion rather than independent coding, we cannot measure inter-annotator agreement. All three annotators had familiarity with the rubric design, so this validation measures consistency of the rubric's application rather than its interpretability by naive raters. A stronger validation would use two or more annotators who were not involved in the rubric design, labeling independently, enabling measurement of inter-annotator agreement as a ceiling on automated evaluation quality. We acknowledge this as a scope limitation of the current work.
+
+% [RESOLVED] BIG FLAG: COME BACK TO THIS AFTER CLEANING CONTAMINATION
+\subsection{Sensitivity Analysis and Limitations}
+\label{sec:sensitivity}
+
+We pre-register three robustness checks on the judging pipeline, with results reported in the relevant experimental chapters:
+
+\begin{enumerate}
+    \item \textbf{Majority-vote versus unanimous-only aggregation.} The default analysis uses majority-vote labels (Equation~\ref{eq:majority-vote}). As a robustness check, we repeat key analyses using only prompts where all three judges agree (unanimous consensus). If conclusions hold under both aggregation rules, the findings are robust to the threshold for ``agreement.''
+    \item \textbf{Judge removal analysis.} We recompute consensus labels with each judge removed (three two-judge subsets). If no single judge drives the results, the panel is robust to the loss of any individual member.
+    \item \textbf{Self-evaluation bias check.} Because Llama 4 Maverick serves as both judge and intervention target, we specifically compare its labels when evaluating Llama-generated responses versus Mixtral-generated responses. A systematic difference would indicate self-preference bias; no difference would suggest the overlap is benign.
+\end{enumerate}
+
+% FLAG: extra space?
+\paragraph{Known limitations.} Beyond the validation limitations noted above, the consensus judging pipeline has several known limitations that we acknowledge transparently:
+
+\begin{itemize}
+    \item \textbf{Shared blind spots}: All three judge models are large language models trained on broadly similar internet text. They may share systematic blind spots---for example, all failing to detect a hallucination that involves an obscure fact absent from all three models' training data. The ground truth provision mitigates this partially, but judges must still correctly interpret the ground truth.
+    \item \textbf{Rubric sensitivity}: The category-specific rules were designed by the thesis author. Alternative rule formulations (e.g., a stricter definition of ``partial'' or a different treatment of hedged responses) might produce different label distributions. We do not claim that our rubric is the only defensible one, only that it is internally consistent and validated against human judgment.
+    \item \textbf{Determinism}: Temperature $= 0.0$ reduces but does not eliminate stochasticity. API-level implementation details (e.g., floating-point non-determinism in batched inference) can produce occasional variation across runs on identical inputs, though the effect is expected to be small.
+\end{itemize}
+
+% Transition to next section
+The judging pipeline defines how we \emph{label} model responses. The final component of the shared infrastructure is the embedding approach that enables geometric analysis of prompts.
+
+\section{Embedding and Geometric Feature Extraction}
+\label{sec:embeddings}
+
+A central hypothesis of this thesis is that geometric properties of prompt embeddings---how a question's representation sits within the embedding manifold---carry information about whether a language model will hallucinate in response. Testing this hypothesis requires (1) a method for embedding prompt text into a geometric space, and (2) a set of geometric features that capture different aspects of local and global structure. This section defines both.
+
+\subsection{Embedding Model}
+\label{sec:embedding-model}
+
+We embed all prompt texts using OpenAI's \texttt{text-embedding-3-large} model, which produces 3,072-dimensional vectors. This model was chosen for three reasons. First, its high dimensionality provides richer geometric structure to analyze compared to smaller alternatives such as \texttt{text-embedding-3-small} (1,536 dimensions) or open-source sentence transformers (typically 768 dimensions). Second, it is deterministic: identical inputs produce identical embeddings, enabling exact reproducibility. Third, as an API-served model with a fixed version, it guarantees that all embeddings in our corpus are produced by the same model weights, eliminating drift across experimental phases.
+
+\paragraph{Why external embeddings.} A natural alternative would be to analyze the \emph{internal} representations of the target models, which are the hidden states or activations produced by Mixtral or Llama while processing a prompt. Prior work has taken this approach: \citet{marks2023geometry} identify linear structure in model representations that distinguishes true from false statements, and \citet{li2024inferencetime} intervene on internal activations to reduce hallucination. However, our target models are accessed through an inference API (Together AI), which does not expose internal activations. Using a separate embedding model is therefore a practical necessity, but it also tests a stronger hypothesis: that the \emph{text of a question itself}, independent of any particular model's processing, carries geometric signatures predictive of hallucination. If this hypothesis holds, the signal is more fundamental than model-specific representations. The tradeoff is that external embeddings cannot capture model-specific difficulty---regions where one architecture struggles but another does not. We return to this limitation in Section~\ref{sec:embedding-limitations}.
+
+% for self: L2 normalization means each embedding vector is scaled so its Euclidean length (the L2 norm, i.e. $\sqrt{x_1^2 + x_2^2 + \cdots + x_n^2}$) equals exactly 1.
+\paragraph{Normalization.} The \texttt{text-embedding-3-large} API returns L2-normalized vectors, so all embeddings lie on the unit hypersphere in $\mathbb{R}^{3072}$. This means cosine distance equals angular distance (up to a monotonic transformation), and all distance-based features have a consistent geometric interpretation.
+
+\subsection{Corpus Construction}
+\label{sec:corpus-construction}
+
+We embed all 2,879 benchmark prompts---449 from the held-out test set and 2,430 from the training set---in a single batch. The held-out prompts are assigned indices 0--448, ensuring stable cross-referencing across experiments.
+
+\paragraph{Why a single combined corpus.} Several of our geometric features (density, centrality, intrinsic dimension) are defined relative to a reference distribution. Embedding all prompts in a single pass guarantees that the reference distribution is identical when comparing geometry across the held-out and training sets. Separate embedding runs would risk subtle distributional shifts if the API model version changed between calls, and would force a choice about which subset to use as the reference. The combined corpus eliminates both concerns.
+
+\paragraph{Self-reference.} The combined corpus serves as its own reference distribution: density is measured relative to all 2,879 prompts, and centrality is measured relative to the corpus mean. This is a deliberate design choice. An external reference corpus (e.g., Wikipedia passages or Common Crawl samples) would introduce a confound: density would measure similarity to the external domain rather than within-benchmark structure. Self-reference asks the right question for our purposes: \emph{how does this prompt relate to other prompts in our benchmark?}
+
+The cost of self-reference is that all geometric features are corpus-dependent. A prompt's density score would change if the corpus composition changed---adding or removing prompts shifts every point's neighborhood. This limits the generalizability of absolute feature values, though relative rankings are more stable. We discuss this further in Section~\ref{sec:embedding-limitations}.
+
+\paragraph{No preliminary dimensionality reduction.} We operate on the full 3,072-dimensional embedding space without applying a global dimensionality reduction step (e.g., PCA or UMAP) as preprocessing. Dimensionality reduction is used within specific feature computations (notably oppositeness, Section~\ref{sec:oppositeness}), but the raw embeddings are preserved for neighbor-based features. This avoids discarding information that might be relevant for local geometric structure.
+
+\subsection{Geometric Features}
+\label{sec:features}
+
+We extract five geometric features per prompt, each capturing a different aspect of how the prompt's embedding sits within the manifold. All features are computed from the prompt text embedding alone---they do not use the model's response or the judge label. This is essential: the features must be computable \emph{before} generation to serve as pre-generation hallucination risk signals.
+
+All neighbor-based features use $k = 20$ nearest neighbors under cosine distance (justification in Section~\ref{sec:hyperparameters}). Table~\ref{tab:features} provides a summary; the remainder of this section defines each feature precisely.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llp{5.5cm}}
+\toprule
+\textbf{Feature} & \textbf{Formula} & \textbf{Intuition} \\
+\midrule
+Local intrinsic dimension & $\hat{d}_i = 1 / \log(r_2/r_1)$ & Effective dimensionality of local neighborhood \\
+Curvature proxy & $1 - \sum_{j=1}^{n_c} \sigma_j^2 / \sum_\ell \sigma_\ell^2$ & Flatness vs.\ bending of local neighborhood \\
+Oppositeness & $d_{\cos}(\tilde{\mathbf{x}}_i, \text{NN}(\tilde{\mathbf{x}}_i))$ & Distance from ``semantic opposite'' to nearest real point \\
+Density & $1 / \bar{d}_{k\text{-NN}}$ & Inverse mean distance to $k$ nearest neighbors \\
+Centrality & $d_{\cos}(\mathbf{x}_i, \bar{\mathbf{x}})$ & Cosine distance to corpus mean \\
+\bottomrule
+\end{tabular}
+\caption{Summary of the five geometric features extracted per prompt. All distances use the cosine metric; all neighbor-based features use $k = 20$. Formal definitions are given in Sections~\ref{sec:local-id}--\ref{sec:centrality}.}
+\label{tab:features}
+\end{table}
+
+\subsubsection{Local Intrinsic Dimension}
+\label{sec:local-id}
+
+The local intrinsic dimension estimates how many effective dimensions the data occupies in the neighborhood of each point. We use the TwoNN estimator of \citet{facco2017twonn}: for each point $\mathbf{x}_i$, let $r_1$ and $r_2$ be the cosine distances to its first and second nearest neighbors (excluding the point itself). The local intrinsic dimension is
+\begin{equation}
+\hat{d}_i = \frac{1}{\log(r_2 / r_1)}.
+\label{eq:twonn}
+\end{equation}
+High $\hat{d}_i$ indicates that the local neighborhood is spread across many directions---the manifold is locally high-dimensional. Low $\hat{d}_i$ indicates that the neighborhood is concentrated along few directions, suggesting locally flat or low-dimensional structure. The estimate is undefined when $r_1 = 0$ (duplicate points), $r_2 = 0$, or $r_1 \geq r_2$ (degenerate neighborhoods); such points are excluded from downstream analysis.
+
+The TwoNN estimator uses only the two nearest neighbors and is therefore maximally local, making it suitable for detecting fine-grained variation in manifold structure. An alternative is the MLE estimator of \citet{levina2004maximum}, which averages log-ratios over all $k$ neighbors for a smoother but less local estimate; we use TwoNN because we are interested in point-level variation rather than global dimension estimates.
+
+\subsubsection{Curvature Proxy}
+\label{sec:curvature}
+
+The curvature proxy measures how well a low-dimensional linear subspace approximates each point's local neighborhood. For each point $\mathbf{x}_i$, we take its $k = 20$ nearest neighbors (plus the point itself, yielding 21 points), fit PCA with $n_c = \text{clip}(\lfloor \hat{d}_i \rfloor, 1, k)$ components---the point's own estimated local intrinsic dimension, capped to the range $[1, k]$---and compute the residual variance:
+\begin{equation}
+\text{curv}_i = 1 - \frac{\sum_{j=1}^{n_c} \sigma_j^2}{\sum_{\ell} \sigma_\ell^2},
+\label{eq:curvature}
+\end{equation}
+where $\sigma_j^2$ are the eigenvalues of the local covariance matrix. If the neighborhood lies on a flat subspace of dimension $\hat{d}_i$, PCA captures all variance and $\text{curv}_i \approx 0$. If the neighborhood curves or bends, the subspace approximation misses variance and $\text{curv}_i$ is large.
+
+The adaptive choice of $n_c$ means that curvature is measured relative to the local complexity of the manifold: a region that is intrinsically five-dimensional is judged against a five-dimensional linear fit, not a fixed-dimensional one. When $\hat{d}_i$ is undefined, $n_c$ defaults to $k / 2 = 10$. This coupling between the intrinsic dimension and curvature features is a deliberate design choice---it prevents curvature from being confounded by ambient dimensionality.
+
+\subsubsection{Oppositeness}
+\label{sec:oppositeness}
+
+Oppositeness measures the distance from a point's ``semantic opposite'' to the nearest real data point. The construction proceeds in five steps:
+
+\begin{enumerate}
+    \item Fit PCA with $p = 10$ components to the \emph{entire corpus} of 2,879 embeddings, obtaining a global low-rank approximation of the corpus structure.
+    \item For each point $\mathbf{x}_i$, project into PCA space: $\mathbf{z}_i = \text{PCA}(\mathbf{x}_i) \in \mathbb{R}^{10}$.
+    \item Construct the ``opposite'' by negating the top $f = 3$ components:
+    \[
+    \tilde{\mathbf{z}}_i = (-z_{i,1},\; -z_{i,2},\; -z_{i,3},\; z_{i,4},\; \ldots,\; z_{i,10}).
+    \]
+    \item Inverse-transform back to the full 3,072-dimensional space: $\tilde{\mathbf{x}}_i = \text{PCA}^{-1}(\tilde{\mathbf{z}}_i)$.
+    \item The oppositeness score is the cosine distance from $\tilde{\mathbf{x}}_i$ to its nearest neighbor among all real points in the corpus.
+\end{enumerate}
+
+Figure~\ref{fig:oppositeness} illustrates the construction in a simplified two-dimensional PCA space where only the first component is flipped.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    scale=1.0,
+    real point/.style={circle, fill=black!30, inner sep=1.6pt},
+    highlight/.style={circle, fill=blue!70, inner sep=2.2pt},
+    opposite/.style={diamond, fill=red!70, inner sep=2.2pt},
+    nearest/.style={circle, fill=black!30, draw=red!70, line width=1pt, inner sep=1.6pt},
+    >=Stealth
+]
+
+% Axes
+\draw[->, gray, thin] (-4.2,0) -- (4.2,0) node[right, font=\footnotesize] {PC$_1$};
+\draw[->, gray, thin] (0,-2.7) -- (0,3.2) node[above, font=\footnotesize] {PC$_2$};
+
+% Reflection axis (dashed)
+\draw[dashed, gray!50, thin] (0,-2.5) -- (0,3.0);
+
+% Real corpus points — dense cluster on right side
+\node[real point] at (1.2, 0.8) {};
+\node[real point] at (1.8, 1.5) {};
+\node[real point] at (2.3, 0.3) {};
+\node[real point] at (1.5, -0.4) {};
+\node[real point] at (2.8, 1.0) {};
+\node[real point] at (1.0, 1.8) {};
+\node[real point] at (2.1, 2.0) {};
+\node[real point] at (3.0, 0.5) {};
+\node[real point] at (1.7, -0.9) {};
+\node[real point] at (2.5, 1.8) {};
+\node[real point] at (0.8, 0.2) {};
+\node[real point] at (1.4, 1.2) {};
+\node[real point] at (3.2, 1.4) {};
+\node[real point] at (2.0, -0.2) {};
+\node[real point] at (0.6, -0.5) {};
+
+% A few sparse points on left side
+\node[real point] at (-1.5, -1.8) {};
+\node[real point] at (-0.8, 1.5) {};
+\node[nearest] (nn) at (-1.8, -0.2) {};  % Nearest real point to the opposite
+\node[real point] at (-0.5, -0.8) {};
+
+% The query point (right side)
+\node[highlight] (zi) at (2.1, 1.3) {};
+\node[right, font=\footnotesize, blue!70] at (2.3, 1.3) {$\mathbf{z}_i$};
+
+% The opposite point (left side — negate PC1, keep PC2)
+\node[opposite] (opp) at (-2.1, 1.3) {};
+\node[left, font=\footnotesize, red!70] at (-2.3, 1.3) {$\tilde{\mathbf{z}}_i$};
+
+% Arrow showing the flip
+\draw[->, thick, dashed, black!60] (zi) -- node[above, font=\footnotesize, pos=0.5, black!80] {negate PC$_1$} (opp);
+
+% Distance to nearest real point
+\draw[<->, thick, red!70] (opp) -- node[left, font=\footnotesize, pos=0.45, red!80] {oppositeness} (nn);
+
+% Annotation: dense vs sparse
+\draw[decorate, decoration={brace, amplitude=5pt, mirror}, gray] (3.6, -1.2) -- (3.6, 2.3) node[midway, right=6pt, font=\footnotesize, text=gray, align=left] {dense};
+\draw[decorate, decoration={brace, amplitude=5pt}, gray] (-3.4, -2.0) -- (-3.4, 1.8) node[midway, left=6pt, font=\footnotesize, text=gray, align=left] {sparse};
+
+\end{tikzpicture}
+\caption{Schematic of the oppositeness computation, shown in a simplified two-dimensional PCA space. The query point $\mathbf{z}_i$ (blue circle) is reflected by negating its first principal component, producing the ``opposite'' $\tilde{\mathbf{z}}_i$ (red diamond). The oppositeness score is the cosine distance from $\tilde{\mathbf{z}}_i$ to the nearest real corpus point (circled). When the original point lies in a directionally asymmetric region---dense on one side, sparse on the other---its opposite lands far from any real data, yielding a high oppositeness score. In the actual computation, 10 PCA components are used and the top 3 are negated.}
+\label{fig:oppositeness}
+\end{figure}
+
+The intuition is as follows. The top principal components capture the directions of greatest variance in the corpus. Flipping these components produces a point that is maximally different from $\mathbf{x}_i$ along the dominant axes of corpus structure. If this ``opposite'' is far from any real data point, the original prompt occupies a region where the corpus has strong directional asymmetry---there are no prompts ``on the other side.'' If the opposite is close to a real point, the corpus is more isotropic around $\mathbf{x}_i$.
+
+This feature uses a global PCA (fitted to the entire corpus), in contrast to the \emph{local} PCA used by the curvature proxy. Oppositeness measures structure relative to corpus-level principal directions, while curvature measures structure within point-level neighborhoods. Using local PCA for both would conflate the two features.
+
+We are not aware of prior work using PCA sign-flip distance as a geometric feature for hallucination prediction or related tasks. The construction is exploratory: it tests whether directional asymmetry in embedding space---the absence of data points in the ``opposite'' direction along dominant variance axes---correlates with hallucination susceptibility. Whether this captures a meaningful signal is an empirical question investigated in Chapter~\ref{ch:geo-predict-hallucination}.
+
+\subsubsection{Local Density}
+\label{sec:density}
+
+Local density estimates how densely populated the embedding space is around each prompt. For each point $\mathbf{x}_i$, we compute the mean cosine distance to its $k = 20$ nearest neighbors in the reference corpus (which, under our self-reference design, is the corpus itself) and take the inverse:
+\begin{equation}
+\text{density}_i = \frac{1}{\bar{d}_{k\text{-NN}}(\mathbf{x}_i)},
+\label{eq:density}
+\end{equation}
+where $\bar{d}_{k\text{-NN}}$ denotes the mean distance to the $k$ nearest neighbors. High density indicates many similar prompts nearby---a well-represented region of the prompt space. Low density indicates an isolated prompt in a sparsely populated region, where the model may have less reliable training signal. Density-based features are standard in anomaly and out-of-distribution detection; we apply them here to test whether low-density regions of the prompt embedding space correspond to higher hallucination rates.
+
+\subsubsection{Centrality}
+\label{sec:centrality}
+
+Centrality measures each prompt's distance from the global center of the corpus. Let $\bar{\mathbf{x}} = \frac{1}{N}\sum_{i=1}^{N} \mathbf{x}_i$ be the mean embedding over all $N = 2{,}879$ prompts. The centrality score is
+\begin{equation}
+\text{centrality}_i = 1 - \frac{\mathbf{x}_i \cdot \bar{\mathbf{x}}}{\|\mathbf{x}_i\| \, \|\bar{\mathbf{x}}\|},
+\label{eq:centrality}
+\end{equation}
+i.e., the cosine distance from each point to the corpus mean. Higher values indicate greater distance from the center---more peripheral prompts. Unlike density, which measures local neighborhood structure, centrality captures global position: a prompt can be locally dense (surrounded by similar prompts) yet peripherally located in the overall corpus.
+
+Note that despite the name ``centrality,'' higher values indicate \emph{less} central prompts. We retain this naming convention for consistency with the codebase but use ``distance-to-center'' interchangeably in the discussion to avoid ambiguity.
+
+\subsection{Hyperparameter Choices}
+\label{sec:hyperparameters}
+
+All hyperparameters were fixed during the initial benchmark experiments (Chapter~\ref{ch:geo-predict-hallucination}) and held constant for all subsequent experiments. No hyperparameter tuning was performed on the training set data. The key choices are:
+
+\begin{itemize}
+    \item \textbf{$k = 20$ for all neighbor-based features.} This applies to intrinsic dimension, curvature, and density. With $N = 2{,}879$ prompts, $k = 20$ represents approximately 0.7\% of the corpus---large enough for stable local estimates but small enough to capture genuinely local structure. Smaller values of $k$ produce noisier estimates (particularly for curvature, where PCA is fitted to the $k$-nearest neighborhood); larger values over-smooth local variation. We use the same $k$ for all neighbor-based features to prevent the choice of $k$ from becoming a confound in cross-feature comparisons.
+    \item \textbf{$p = 10$ PCA components for oppositeness.} The global PCA retains 10 components, capturing the dominant directions of corpus variance. Fewer components would discard meaningful structure; more would introduce noise-dominated directions into the sign-flip construction. The fraction of total variance explained by these 10 components is reported in Chapter~\ref{ch:geo-predict-hallucination}.
+    \item \textbf{$f = 3$ flipped components.} Only the top 3 of 10 PCA components are negated. Flipping more components would push the ``opposite'' further from the data manifold into noise-dominated regions, reducing the discriminative value of the nearest-neighbor distance. Flipping fewer would produce an ``opposite'' too close to the original, limiting the feature's dynamic range.
+    \item \textbf{Cosine distance throughout.} All distance computations---$k$-nearest neighbors, oppositeness nearest-neighbor search, and centrality---use cosine distance. Because the embeddings are L2-normalized, cosine distance is a monotone function of angular distance. Using a single metric throughout prevents cross-feature comparisons from being confounded by metric choice.
+\end{itemize}
+
+% FLAG: Big space again?
+\subsection{Limitations}
+\label{sec:embedding-limitations}
+
+We note several limitations of the embedding approach, each of which constrains the scope of conclusions that can be drawn from the geometric analysis.
+
+\paragraph{Single embedding model.} All geometric features depend on the choice of embedding model. A preliminary comparison using three embedding models---\texttt{text-embedding-3-small} (1,536 dimensions), \texttt{text-embedding-3-large} (3,072 dimensions), and the open-source \texttt{all-mpnet-base-v2} (768 dimensions)---was conducted on the held-out test set and is reported in Appendix~\ref{app:embedding-robustness}. However, this comparison covers only a subset of features and does not constitute a full robustness analysis. The dependence on a single primary embedding model remains a limitation.
+
+\paragraph{External vs.\ internal representations.} We embed the question text using an external model, not the target models' internal activations. As stated earlier, this tests a different (and arguably stronger) hypothesis---that hallucination risk is encoded in the text itself, not in how a specific model processes it---but it cannot capture model-specific difficulty. A prompt that is geometrically ``normal'' by our features may still be difficult for a particular model due to gaps in that model's training data. Conversely, a geometrically ``anomalous'' prompt may be well-handled by a model that has seen similar examples. The geometric features are best understood as capturing properties of the \emph{question}, not of any specific model's relationship to it.
+
+\paragraph{Corpus dependence.} Self-reference makes all features dependent on corpus composition. Adding or removing prompts changes every point's density, centrality, and neighborhood-based features. Absolute feature values are therefore not portable across different benchmarks. Relative rankings within a fixed corpus are more stable, and all analyses in this thesis use a fixed corpus, but generalization to new prompt distributions would require recomputing features against an appropriate reference.
+
+\paragraph{Static features.} The geometric features are computed once from prompt text before generation. They do not capture dynamics during response generation, such as attention patterns, token-level uncertainty, or the model's evolving internal state. This is by design---pre-generation risk signals are the most practically useful, since they can flag potential hallucinations before any computation is spent on generation---but it means the features cannot distinguish between prompts that are difficult due to knowledge gaps and those that are difficult due to generation-time pathologies (e.g., degenerate sampling).
+
+% Chapter closing
+\bigskip
+
+With the benchmark, model selection, judging pipeline, and geometric feature extraction defined, the shared experimental infrastructure is complete. Before turning to results, we briefly note the statistical approach common to all three experimental chapters.
+
+The analyses in Chapters~\ref{ch:geo-predict-hallucination}--\ref{ch:finetuning} use non-parametric tests throughout. Unpaired group comparisons (e.g., geometric feature values for hallucinated versus correct prompts) use the Mann-Whitney U test with rank-biserial correlation as the effect size measure. Paired binary comparisons (e.g., the same prompt under two experimental conditions) use McNemar's test with Yates' continuity correction. When testing multiple hypotheses simultaneously, we apply Bonferroni correction. We prefer non-parametric tests because hallucination labels are categorical, sample sizes vary substantially across prompt categories, and we make no distributional assumptions about the geometric features. Full test specifications and equations are given in each chapter alongside the analyses they support.
+
+The following three chapters each apply this infrastructure to a distinct research question. Chapter~\ref{ch:geo-predict-hallucination} tests whether geometric properties of prompt embeddings predict hallucination across models. Chapter~\ref{ch:prefixes} tests whether targeted prompt prefixes reduce hallucination rates. Chapter~\ref{ch:finetuning} bridges prediction and intervention, testing whether geometric features predict which hallucinations resist mitigation, and presents the full pipeline from geometric diagnosis to fine-tuned correction.

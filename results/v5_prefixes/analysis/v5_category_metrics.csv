@@ -7,9 +7,9 @@ llama-4-maverick-17b,cot_verification,factual,500.0,0.95,0.024,0.002
 llama-4-maverick-17b,cot_verification,impossible,200.0,0.0,0.0,1.0
 llama-4-maverick-17b,cot_verification,nonexistent,600.0,0.4166666666666667,0.045,0.5383333333333333
 llama-4-maverick-17b,entity_aware,ambiguous,600.0,0.99,0.01,0.0
-llama-4-maverick-17b,entity_aware,borderline_edge_factual,130.0,0.9692307692307692,0.015384615384615385,0.0
-llama-4-maverick-17b,entity_aware,borderline_obscure_real,200.0,0.85,0.075,0.01
-llama-4-maverick-17b,entity_aware,borderline_plausible_fake,200.0,0.805,0.19,0.005
+llama-4-maverick-17b,entity_aware,borderline_edge_factual,130.0,0.9769230769230769,0.015384615384615385,0.0
+llama-4-maverick-17b,entity_aware,borderline_obscure_real,200.0,0.945,0.04,0.005
+llama-4-maverick-17b,entity_aware,borderline_plausible_fake,200.0,0.83,0.165,0.005
 llama-4-maverick-17b,entity_aware,factual,500.0,0.95,0.026,0.0
 llama-4-maverick-17b,entity_aware,impossible,200.0,0.945,0.045,0.0
 llama-4-maverick-17b,entity_aware,nonexistent,600.0,0.965,0.03166666666666667,0.0
@@ -29,8 +29,8 @@ llama-4-maverick-17b,fact_grounded,impossible,200.0,0.9,0.09,0.0
 llama-4-maverick-17b,fact_grounded,nonexistent,599.0,0.9532554257095158,0.04340567612687813,0.0
 llama-4-maverick-17b,no_prefix,ambiguous,600.0,0.9833333333333333,0.015,0.0
 llama-4-maverick-17b,no_prefix,borderline_edge_factual,130.0,0.9692307692307692,0.007692307692307693,0.0
-llama-4-maverick-17b,no_prefix,borderline_obscure_real,200.0,0.89,0.03,0.06
-llama-4-maverick-17b,no_prefix,borderline_plausible_fake,200.0,0.58,0.285,0.12
+llama-4-maverick-17b,no_prefix,borderline_obscure_real,200.0,0.935,0.03,0.015
+llama-4-maverick-17b,no_prefix,borderline_plausible_fake,200.0,0.64,0.3,0.045
 llama-4-maverick-17b,no_prefix,factual,500.0,0.912,0.026,0.036
 llama-4-maverick-17b,no_prefix,impossible,200.0,0.83,0.16,0.0
 llama-4-maverick-17b,no_prefix,nonexistent,600.0,0.8066666666666666,0.19,0.0
@@ -38,7 +38,7 @@ llama-4-maverick-17b,structured_caution,ambiguous,600.0,0.9966666666666667,0.001
 llama-4-maverick-17b,structured_caution,borderline_edge_factual,130.0,0.9769230769230769,0.0,0.0
 llama-4-maverick-17b,structured_caution,borderline_obscure_real,200.0,0.925,0.02,0.005
 llama-4-maverick-17b,structured_caution,borderline_plausible_fake,200.0,0.86,0.14,0.0
-llama-4-maverick-17b,structured_caution,factual,500.0,0.898,0.048,0.02
+llama-4-maverick-17b,structured_caution,factual,500.0,0.958,0.016,0.018
 llama-4-maverick-17b,structured_caution,impossible,200.0,0.95,0.045,0.005
 llama-4-maverick-17b,structured_caution,nonexistent,600.0,0.9616666666666667,0.03666666666666667,0.0016666666666666668
 mixtral-8x7b,cot_verification,ambiguous,600.0,0.0,0.0,1.0
@@ -49,9 +49,9 @@ mixtral-8x7b,cot_verification,factual,500.0,0.844,0.096,0.0
 mixtral-8x7b,cot_verification,impossible,200.0,0.0,0.0,1.0
 mixtral-8x7b,cot_verification,nonexistent,600.0,0.515,0.16166666666666665,0.31666666666666665
 mixtral-8x7b,entity_aware,ambiguous,600.0,0.995,0.005,0.0
-mixtral-8x7b,entity_aware,borderline_edge_factual,130.0,0.9384615384615385,0.046153846153846156,0.0
-mixtral-8x7b,entity_aware,borderline_obscure_real,200.0,0.78,0.125,0.0
-mixtral-8x7b,entity_aware,borderline_plausible_fake,200.0,0.87,0.125,0.005
+mixtral-8x7b,entity_aware,borderline_edge_factual,130.0,0.9538461538461539,0.038461538461538464,0.0
+mixtral-8x7b,entity_aware,borderline_obscure_real,200.0,0.895,0.08,0.0
+mixtral-8x7b,entity_aware,borderline_plausible_fake,200.0,0.89,0.11,0.0
 mixtral-8x7b,entity_aware,factual,500.0,0.844,0.092,0.002
 mixtral-8x7b,entity_aware,impossible,200.0,0.99,0.01,0.0
 mixtral-8x7b,entity_aware,nonexistent,600.0,0.965,0.03333333333333333,0.0
@@ -71,8 +71,8 @@ mixtral-8x7b,fact_grounded,impossible,200.0,0.98,0.015,0.0
 mixtral-8x7b,fact_grounded,nonexistent,600.0,0.87,0.13,0.0
 mixtral-8x7b,no_prefix,ambiguous,600.0,0.9916666666666667,0.006666666666666667,0.0
 mixtral-8x7b,no_prefix,borderline_edge_factual,130.0,0.9153846153846154,0.03076923076923077,0.0
-mixtral-8x7b,no_prefix,borderline_obscure_real,200.0,0.765,0.105,0.04
-mixtral-8x7b,no_prefix,borderline_plausible_fake,200.0,0.49,0.385,0.12
+mixtral-8x7b,no_prefix,borderline_obscure_real,200.0,0.795,0.115,0.0
+mixtral-8x7b,no_prefix,borderline_plausible_fake,200.0,0.55,0.435,0.005
 mixtral-8x7b,no_prefix,factual,500.0,0.856,0.092,0.0
 mixtral-8x7b,no_prefix,impossible,200.0,0.87,0.095,0.0
 mixtral-8x7b,no_prefix,nonexistent,600.0,0.6983333333333334,0.295,0.0
@@ -80,6 +80,6 @@ mixtral-8x7b,structured_caution,ambiguous,600.0,0.9966666666666667,0.00166666666
 mixtral-8x7b,structured_caution,borderline_edge_factual,130.0,0.9538461538461539,0.03076923076923077,0.0
 mixtral-8x7b,structured_caution,borderline_obscure_real,200.0,0.845,0.09,0.005
 mixtral-8x7b,structured_caution,borderline_plausible_fake,200.0,0.83,0.155,0.0
-mixtral-8x7b,structured_caution,factual,500.0,0.782,0.136,0.004
+mixtral-8x7b,structured_caution,factual,500.0,0.886,0.096,0.002
 mixtral-8x7b,structured_caution,impossible,200.0,0.975,0.015,0.0
 mixtral-8x7b,structured_caution,nonexistent,600.0,0.8966666666666666,0.09833333333333333,0.0033333333333333335

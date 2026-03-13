@@ -1,0 +1,818 @@
+{
+  "mixtral-8x7b": {
+    "baseline": {
+      "total": 449,
+      "correct": 372,
+      "partial": 19,
+      "hallucination": 53,
+      "refusal": 5,
+      "accuracy": 0.8285077951002228,
+      "hallucination_rate": 0.11804008908685969
+    },
+    "best_prefix": {
+      "name": "entity_aware",
+      "total": 449,
+      "correct": 409,
+      "partial": 4,
+      "hallucination": 3,
+      "refusal": 33,
+      "accuracy": 0.910913140311804,
+      "hallucination_rate": 0.0066815144766146995
+    },
+    "t_all": {
+      "config": "configC",
+      "total": 449,
+      "correct": 424,
+      "partial": 3,
+      "hallucination": 6,
+      "refusal": 16,
+      "accuracy": 0.9443207126948775,
+      "hallucination_rate": 0.013363028953229399
+    },
+    "ablation": {
+      "T5_mixtral": {
+        "aggregate": {
+          "total": 449,
+          "correct": 416,
+          "partial": 3,
+          "hallucination": 16,
+          "refusal": 14,
+          "accuracy": 0.9265033407572383,
+          "hallucination_rate": 0.035634743875278395
+        },
+        "per_category": {
+          "ambiguous": {
+            "total": 120,
+            "correct": 120,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_edge_factual": {
+            "total": 20,
+            "correct": 20,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_obscure_real": {
+            "total": 30,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.03333333333333333
+          },
+          "borderline_plausible_fake": {
+            "total": 31,
+            "correct": 24,
+            "partial": 0,
+            "hallucination": 6,
+            "refusal": 1,
+            "accuracy": 0.7741935483870968,
+            "hallucination_rate": 0.1935483870967742
+          },
+          "factual": {
+            "total": 98,
+            "correct": 79,
+            "partial": 3,
+            "hallucination": 4,
+            "refusal": 12,
+            "accuracy": 0.8061224489795918,
+            "hallucination_rate": 0.04081632653061224
+          },
+          "impossible": {
+            "total": 30,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 1,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.0
+          },
+          "nonexistent": {
+            "total": 120,
+            "correct": 115,
+            "partial": 0,
+            "hallucination": 5,
+            "refusal": 0,
+            "accuracy": 0.9583333333333334,
+            "hallucination_rate": 0.041666666666666664
+          }
+        },
+        "mcnemar_vs_baseline": {
+          "ft_fixes": 53,
+          "ft_breaks": 9,
+          "chi2": 29.822580645161292,
+          "p_value": 4.734454828181356e-08
+        },
+        "mcnemar_vs_tall": {
+          "tall_fixes": 13,
+          "cond_fixes": 5,
+          "chi2": 2.7222222222222223,
+          "p_value": 0.09896015401940517
+        },
+        "mcnemar_vs_best_prefix": {
+          "ft_fixes": 18,
+          "prefix_fixes": 11,
+          "chi2": 1.2413793103448276,
+          "p_value": 0.2652053925915073
+        },
+        "template_split": {
+          "seen": {
+            "total": 27,
+            "correct": 26,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9629629629629629,
+            "hallucination_rate": 0.037037037037037035,
+            "n_prompts": 27
+          },
+          "novel": {
+            "total": 341,
+            "correct": 317,
+            "partial": 3,
+            "hallucination": 8,
+            "refusal": 13,
+            "accuracy": 0.9296187683284457,
+            "hallucination_rate": 0.02346041055718475,
+            "n_prompts": 341
+          },
+          "no_template": {
+            "total": 81,
+            "correct": 73,
+            "partial": 0,
+            "hallucination": 7,
+            "refusal": 1,
+            "accuracy": 0.9012345679012346,
+            "hallucination_rate": 0.08641975308641975,
+            "n_prompts": 81
+          }
+        }
+      },
+      "T10_mixtral": {
+        "aggregate": {
+          "total": 449,
+          "correct": 422,
+          "partial": 2,
+          "hallucination": 10,
+          "refusal": 15,
+          "accuracy": 0.9398663697104677,
+          "hallucination_rate": 0.022271714922048998
+        },
+        "per_category": {
+          "ambiguous": {
+            "total": 120,
+            "correct": 120,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_edge_factual": {
+            "total": 20,
+            "correct": 20,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_obscure_real": {
+            "total": 30,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.03333333333333333
+          },
+          "borderline_plausible_fake": {
+            "total": 31,
+            "correct": 27,
+            "partial": 0,
+            "hallucination": 4,
+            "refusal": 0,
+            "accuracy": 0.8709677419354839,
+            "hallucination_rate": 0.12903225806451613
+          },
+          "factual": {
+            "total": 98,
+            "correct": 78,
+            "partial": 2,
+            "hallucination": 3,
+            "refusal": 15,
+            "accuracy": 0.7959183673469388,
+            "hallucination_rate": 0.030612244897959183
+          },
+          "impossible": {
+            "total": 30,
+            "correct": 30,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "nonexistent": {
+            "total": 120,
+            "correct": 118,
+            "partial": 0,
+            "hallucination": 2,
+            "refusal": 0,
+            "accuracy": 0.9833333333333333,
+            "hallucination_rate": 0.016666666666666666
+          }
+        },
+        "mcnemar_vs_baseline": {
+          "ft_fixes": 54,
+          "ft_breaks": 4,
+          "chi2": 41.39655172413793,
+          "p_value": 1.242763669750957e-10
+        },
+        "mcnemar_vs_tall": {
+          "tall_fixes": 9,
+          "cond_fixes": 7,
+          "chi2": 0.0625,
+          "p_value": 0.8025873486341526
+        },
+        "mcnemar_vs_best_prefix": {
+          "ft_fixes": 17,
+          "prefix_fixes": 4,
+          "chi2": 6.857142857142857,
+          "p_value": 0.008828760952818593
+        },
+        "template_split": {
+          "seen": {
+            "total": 62,
+            "correct": 58,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 4,
+            "accuracy": 0.9354838709677419,
+            "hallucination_rate": 0.0,
+            "n_prompts": 62
+          },
+          "novel": {
+            "total": 306,
+            "correct": 288,
+            "partial": 2,
+            "hallucination": 5,
+            "refusal": 11,
+            "accuracy": 0.9411764705882353,
+            "hallucination_rate": 0.016339869281045753,
+            "n_prompts": 306
+          },
+          "no_template": {
+            "total": 81,
+            "correct": 76,
+            "partial": 0,
+            "hallucination": 5,
+            "refusal": 0,
+            "accuracy": 0.9382716049382716,
+            "hallucination_rate": 0.06172839506172839,
+            "n_prompts": 81
+          }
+        }
+      },
+      "R397_mixtral": {
+        "aggregate": {
+          "total": 449,
+          "correct": 418,
+          "partial": 2,
+          "hallucination": 14,
+          "refusal": 15,
+          "accuracy": 0.9309576837416481,
+          "hallucination_rate": 0.031180400890868598
+        },
+        "per_category": {
+          "ambiguous": {
+            "total": 120,
+            "correct": 120,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_edge_factual": {
+            "total": 20,
+            "correct": 20,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_obscure_real": {
+            "total": 30,
+            "correct": 27,
+            "partial": 0,
+            "hallucination": 3,
+            "refusal": 0,
+            "accuracy": 0.9,
+            "hallucination_rate": 0.1
+          },
+          "borderline_plausible_fake": {
+            "total": 31,
+            "correct": 25,
+            "partial": 0,
+            "hallucination": 4,
+            "refusal": 2,
+            "accuracy": 0.8064516129032258,
+            "hallucination_rate": 0.12903225806451613
+          },
+          "factual": {
+            "total": 98,
+            "correct": 80,
+            "partial": 2,
+            "hallucination": 3,
+            "refusal": 13,
+            "accuracy": 0.8163265306122449,
+            "hallucination_rate": 0.030612244897959183
+          },
+          "impossible": {
+            "total": 30,
+            "correct": 30,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "nonexistent": {
+            "total": 120,
+            "correct": 116,
+            "partial": 0,
+            "hallucination": 4,
+            "refusal": 0,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.03333333333333333
+          }
+        },
+        "mcnemar_vs_baseline": {
+          "ft_fixes": 54,
+          "ft_breaks": 8,
+          "chi2": 32.66129032258065,
+          "p_value": 1.0970033770263399e-08
+        },
+        "mcnemar_vs_tall": {
+          "tall_fixes": 13,
+          "cond_fixes": 7,
+          "chi2": 1.25,
+          "p_value": 0.2635524772829724
+        },
+        "mcnemar_vs_best_prefix": {
+          "ft_fixes": 20,
+          "prefix_fixes": 11,
+          "chi2": 2.064516129032258,
+          "p_value": 0.15076277502664115
+        },
+        "template_split": {}
+      }
+    },
+    "t5_vs_rn": {
+      "t5_label": "T5_mixtral",
+      "rn_label": "R397_mixtral",
+      "t5_stats": {
+        "total": 449,
+        "correct": 416,
+        "partial": 3,
+        "hallucination": 16,
+        "refusal": 14,
+        "accuracy": 0.9265033407572383,
+        "hallucination_rate": 0.035634743875278395
+      },
+      "rn_stats": {
+        "total": 449,
+        "correct": 418,
+        "partial": 2,
+        "hallucination": 14,
+        "refusal": 15,
+        "accuracy": 0.9309576837416481,
+        "hallucination_rate": 0.031180400890868598
+      },
+      "mcnemar": {
+        "rn_fixes": 13,
+        "t5_fixes": 11,
+        "chi2": 0.041666666666666664,
+        "p_value": 0.8382564863858263
+      }
+    }
+  },
+  "llama-4-maverick-17b": {
+    "baseline": {
+      "total": 449,
+      "correct": 407,
+      "partial": 15,
+      "hallucination": 26,
+      "refusal": 1,
+      "accuracy": 0.9064587973273942,
+      "hallucination_rate": 0.05790645879732739
+    },
+    "best_prefix": {
+      "name": "entity_aware",
+      "total": 449,
+      "correct": 422,
+      "partial": 14,
+      "hallucination": 11,
+      "refusal": 2,
+      "accuracy": 0.9398663697104677,
+      "hallucination_rate": 0.024498886414253896
+    },
+    "t_all": {
+      "config": "configA",
+      "total": 449,
+      "correct": 422,
+      "partial": 2,
+      "hallucination": 5,
+      "refusal": 20,
+      "accuracy": 0.9398663697104677,
+      "hallucination_rate": 0.011135857461024499
+    },
+    "ablation": {
+      "T5_llama": {
+        "aggregate": {
+          "total": 449,
+          "correct": 424,
+          "partial": 2,
+          "hallucination": 6,
+          "refusal": 17,
+          "accuracy": 0.9443207126948775,
+          "hallucination_rate": 0.013363028953229399
+        },
+        "per_category": {
+          "ambiguous": {
+            "total": 120,
+            "correct": 120,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_edge_factual": {
+            "total": 20,
+            "correct": 20,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_obscure_real": {
+            "total": 30,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 1,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.0
+          },
+          "borderline_plausible_fake": {
+            "total": 31,
+            "correct": 28,
+            "partial": 0,
+            "hallucination": 3,
+            "refusal": 0,
+            "accuracy": 0.9032258064516129,
+            "hallucination_rate": 0.0967741935483871
+          },
+          "factual": {
+            "total": 98,
+            "correct": 80,
+            "partial": 2,
+            "hallucination": 0,
+            "refusal": 16,
+            "accuracy": 0.8163265306122449,
+            "hallucination_rate": 0.0
+          },
+          "impossible": {
+            "total": 30,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.03333333333333333
+          },
+          "nonexistent": {
+            "total": 120,
+            "correct": 118,
+            "partial": 0,
+            "hallucination": 2,
+            "refusal": 0,
+            "accuracy": 0.9833333333333333,
+            "hallucination_rate": 0.016666666666666666
+          }
+        },
+        "mcnemar_vs_baseline": {
+          "ft_fixes": 22,
+          "ft_breaks": 5,
+          "chi2": 9.481481481481481,
+          "p_value": 0.0020755629257427355
+        },
+        "mcnemar_vs_tall": {
+          "tall_fixes": 5,
+          "cond_fixes": 7,
+          "chi2": 0.08333333333333333,
+          "p_value": 0.7728299926844475
+        },
+        "mcnemar_vs_best_prefix": {
+          "ft_fixes": 12,
+          "prefix_fixes": 10,
+          "chi2": 0.045454545454545456,
+          "p_value": 0.8311704095417624
+        },
+        "template_split": {
+          "seen": {
+            "total": 27,
+            "correct": 26,
+            "partial": 1,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 0.9629629629629629,
+            "hallucination_rate": 0.0,
+            "n_prompts": 27
+          },
+          "novel": {
+            "total": 341,
+            "correct": 321,
+            "partial": 1,
+            "hallucination": 3,
+            "refusal": 16,
+            "accuracy": 0.9413489736070382,
+            "hallucination_rate": 0.008797653958944282,
+            "n_prompts": 341
+          },
+          "no_template": {
+            "total": 81,
+            "correct": 77,
+            "partial": 0,
+            "hallucination": 3,
+            "refusal": 1,
+            "accuracy": 0.9506172839506173,
+            "hallucination_rate": 0.037037037037037035,
+            "n_prompts": 81
+          }
+        }
+      },
+      "T10_llama": {
+        "aggregate": {
+          "total": 449,
+          "correct": 430,
+          "partial": 0,
+          "hallucination": 6,
+          "refusal": 13,
+          "accuracy": 0.9576837416481069,
+          "hallucination_rate": 0.013363028953229399
+        },
+        "per_category": {
+          "ambiguous": {
+            "total": 120,
+            "correct": 120,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_edge_factual": {
+            "total": 20,
+            "correct": 20,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_obscure_real": {
+            "total": 30,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.03333333333333333
+          },
+          "borderline_plausible_fake": {
+            "total": 31,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 2,
+            "refusal": 0,
+            "accuracy": 0.9354838709677419,
+            "hallucination_rate": 0.06451612903225806
+          },
+          "factual": {
+            "total": 98,
+            "correct": 84,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 13,
+            "accuracy": 0.8571428571428571,
+            "hallucination_rate": 0.01020408163265306
+          },
+          "impossible": {
+            "total": 30,
+            "correct": 29,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9666666666666667,
+            "hallucination_rate": 0.03333333333333333
+          },
+          "nonexistent": {
+            "total": 120,
+            "correct": 119,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9916666666666667,
+            "hallucination_rate": 0.008333333333333333
+          }
+        },
+        "mcnemar_vs_baseline": {
+          "ft_fixes": 27,
+          "ft_breaks": 4,
+          "chi2": 15.612903225806452,
+          "p_value": 7.772240795322904e-05
+        },
+        "mcnemar_vs_tall": {
+          "tall_fixes": 4,
+          "cond_fixes": 12,
+          "chi2": 3.0625,
+          "p_value": 0.08011831372763423
+        },
+        "mcnemar_vs_best_prefix": {
+          "ft_fixes": 13,
+          "prefix_fixes": 5,
+          "chi2": 2.7222222222222223,
+          "p_value": 0.09896015401940517
+        },
+        "template_split": {
+          "seen": {
+            "total": 62,
+            "correct": 58,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 3,
+            "accuracy": 0.9354838709677419,
+            "hallucination_rate": 0.016129032258064516,
+            "n_prompts": 62
+          },
+          "novel": {
+            "total": 306,
+            "correct": 294,
+            "partial": 0,
+            "hallucination": 2,
+            "refusal": 10,
+            "accuracy": 0.9607843137254902,
+            "hallucination_rate": 0.006535947712418301,
+            "n_prompts": 306
+          },
+          "no_template": {
+            "total": 81,
+            "correct": 78,
+            "partial": 0,
+            "hallucination": 3,
+            "refusal": 0,
+            "accuracy": 0.9629629629629629,
+            "hallucination_rate": 0.037037037037037035,
+            "n_prompts": 81
+          }
+        }
+      },
+      "R402_llama": {
+        "aggregate": {
+          "total": 449,
+          "correct": 420,
+          "partial": 1,
+          "hallucination": 7,
+          "refusal": 21,
+          "accuracy": 0.9354120267260579,
+          "hallucination_rate": 0.015590200445434299
+        },
+        "per_category": {
+          "ambiguous": {
+            "total": 120,
+            "correct": 119,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 1,
+            "accuracy": 0.9916666666666667,
+            "hallucination_rate": 0.0
+          },
+          "borderline_edge_factual": {
+            "total": 20,
+            "correct": 20,
+            "partial": 0,
+            "hallucination": 0,
+            "refusal": 0,
+            "accuracy": 1.0,
+            "hallucination_rate": 0.0
+          },
+          "borderline_obscure_real": {
+            "total": 30,
+            "correct": 28,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 1,
+            "accuracy": 0.9333333333333333,
+            "hallucination_rate": 0.03333333333333333
+          },
+          "borderline_plausible_fake": {
+            "total": 31,
+            "correct": 26,
+            "partial": 0,
+            "hallucination": 2,
+            "refusal": 3,
+            "accuracy": 0.8387096774193549,
+            "hallucination_rate": 0.06451612903225806
+          },
+          "factual": {
+            "total": 98,
+            "correct": 81,
+            "partial": 1,
+            "hallucination": 0,
+            "refusal": 16,
+            "accuracy": 0.826530612244898,
+            "hallucination_rate": 0.0
+          },
+          "impossible": {
+            "total": 30,
+            "correct": 27,
+            "partial": 0,
+            "hallucination": 3,
+            "refusal": 0,
+            "accuracy": 0.9,
+            "hallucination_rate": 0.1
+          },
+          "nonexistent": {
+            "total": 120,
+            "correct": 119,
+            "partial": 0,
+            "hallucination": 1,
+            "refusal": 0,
+            "accuracy": 0.9916666666666667,
+            "hallucination_rate": 0.008333333333333333
+          }
+        },
+        "mcnemar_vs_baseline": {
+          "ft_fixes": 22,
+          "ft_breaks": 9,
+          "chi2": 4.645161290322581,
+          "p_value": 0.031141210595796665
+        },
+        "mcnemar_vs_tall": {
+          "tall_fixes": 10,
+          "cond_fixes": 8,
+          "chi2": 0.05555555555555555,
+          "p_value": 0.8136637157667919
+        },
+        "mcnemar_vs_best_prefix": {
+          "ft_fixes": 11,
+          "prefix_fixes": 13,
+          "chi2": 0.041666666666666664,
+          "p_value": 0.8382564863858263
+        },
+        "template_split": {}
+      }
+    },
+    "t5_vs_rn": {
+      "t5_label": "T5_llama",
+      "rn_label": "R402_llama",
+      "t5_stats": {
+        "total": 449,
+        "correct": 424,
+        "partial": 2,
+        "hallucination": 6,
+        "refusal": 17,
+        "accuracy": 0.9443207126948775,
+        "hallucination_rate": 0.013363028953229399
+      },
+      "rn_stats": {
+        "total": 449,
+        "correct": 420,
+        "partial": 1,
+        "hallucination": 7,
+        "refusal": 21,
+        "accuracy": 0.9354120267260579,
+        "hallucination_rate": 0.015590200445434299
+      },
+      "mcnemar": {
+        "rn_fixes": 4,
+        "t5_fixes": 8,
+        "chi2": 0.75,
+        "p_value": 0.3864762307712325
+      }
+    }
+  }
+}

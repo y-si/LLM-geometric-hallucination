@@ -1,0 +1,38 @@
+[
+  {
+    "label": "T5_mixtral",
+    "status": "skipped",
+    "answers": 449
+  },
+  {
+    "label": "R397_mixtral",
+    "status": "skipped",
+    "answers": 449
+  },
+  {
+    "label": "T10_mixtral",
+    "status": "skipped",
+    "answers": 449
+  },
+  {
+    "label": "T5_llama",
+    "status": "completed",
+    "total": 449,
+    "failed": 0,
+    "endpoint_id": "endpoint-54f74dd2-21b7-44fc-bbb1-ea2c72578046"
+  },
+  {
+    "label": "R402_llama",
+    "status": "completed",
+    "total": 449,
+    "failed": 0,
+    "endpoint_id": "endpoint-2f3ee502-4bb2-48f9-961f-541e1fe8720d"
+  },
+  {
+    "label": "T10_llama",
+    "status": "completed",
+    "total": 449,
+    "failed": 0,
+    "endpoint_id": "endpoint-20321493-c019-45d3-a6a2-d75820ef77a8"
+  }
+]

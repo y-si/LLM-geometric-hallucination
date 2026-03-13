@@ -49,28 +49,51 @@ class ConsensusJudge:
                 try:
                     results.append(f.result())
                 except Exception as e:
-                    print(f"Judge failed: {e}")
-                    results.append({"label": 3, "confidence": 0.0, "justification": "Judge failed"})
+                    print(f"WARNING: Judge failed: {e}")
+                    results.append({"label": 3, "confidence": 0.0, "justification": f"Error: {str(e)}", "failed": True})
         
-        # Aggregate
-        labels = [r['label'] for r in results]
-        
+        # Separate real vs failed judges
+        real_results = [r for r in results if not r.get("failed", False)]
+        failed_count = len(results) - len(real_results)
+
+        if failed_count > 0:
+            print(f"WARNING: {failed_count}/{len(results)} judges failed for this entry")
+
+        # Use only real judges for consensus (fall back to all if none succeeded)
+        vote_results = real_results if real_results else results
+
+        if not vote_results:
+            # All judges failed and results list is empty — should not happen but handle gracefully
+            return {
+                "label": 3,
+                "confidence": 0.0,
+                "justification": "All judges failed and produced no results",
+                "individual_judgments": results,
+                "agreement_rate": 0.0,
+                "individual_confidence_avg": 0.0
+            }
+
+        labels = [r['label'] for r in vote_results]
+
         # Majority vote
         counts = Counter(labels)
         majority_label, majority_count = counts.most_common(1)[0]
-        
+
         # Calculate confidence based on agreement rate
         # e.g., if 3/3 agree → 1.0, if 2/3 agree → 0.67
         total_judges = len(labels)
         agreement_rate = majority_count / total_judges
-        
+
         # Weight by average individual confidence for nuance
         # Final confidence = agreement_rate * avg_individual_confidence
-        avg_individual_confidence = sum(r['confidence'] for r in results) / len(results)
+        avg_individual_confidence = sum(r['confidence'] for r in vote_results) / len(vote_results)
         consensus_confidence = agreement_rate * avg_individual_confidence
-        
-        # Combine justifications
-        combined_justification = " | ".join([f"{j.model_name}: {r['justification']}" for j, r in zip(self.judges, results)])
+
+        # Combine justifications (use .get() to handle missing keys)
+        combined_justification = " | ".join([
+            f"{j.model_name}: {r.get('justification', 'No justification')}"
+            for j, r in zip(self.judges, results)
+        ])
         
         return {
             "label": majority_label,

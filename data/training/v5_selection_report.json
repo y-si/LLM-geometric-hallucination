@@ -1,24 +1,22 @@
 {
   "mixtral-8x7b": {
-    "training_size": 2402,
-    "unfixable_size": 28,
+    "training_size": 2403,
+    "unfixable_size": 27,
     "selection_counts": {
-      "selected_correct": 2374,
-      "excluded_unfixable": 28,
-      "selected_partial": 26,
-      "selected_refusal": 2
+      "selected_correct": 2381,
+      "excluded_unfixable": 27,
+      "selected_partial": 22
     },
     "source_distribution": {
-      "epistemic_humility": 371,
-      "structured_caution": 319,
-      "baseline": 641,
-      "entity_aware": 701,
-      "fact_grounded": 370
+      "epistemic_humility": 239,
+      "structured_caution": 490,
+      "baseline": 485,
+      "entity_aware": 957,
+      "fact_grounded": 232
     },
     "label_distribution": {
-      "0": 2374,
-      "1": 26,
-      "3": 2
+      "0": 2381,
+      "1": 22
     },
     "category_breakdown": {
       "ambiguous": {
@@ -28,20 +26,18 @@
         "correct": 130
       },
       "borderline_plausible_fake": {
-        "correct": 192,
-        "unfixable": 8
+        "correct": 193,
+        "unfixable": 7
       },
       "borderline_obscure_real": {
-        "correct": 191,
-        "partial": 7,
-        "unfixable": 1,
-        "refusal": 1
+        "correct": 193,
+        "partial": 6,
+        "unfixable": 1
       },
       "factual": {
-        "correct": 475,
-        "partial": 19,
-        "unfixable": 5,
-        "refusal": 1
+        "correct": 479,
+        "partial": 16,
+        "unfixable": 5
       },
       "impossible": {
         "correct": 199,
@@ -59,22 +55,22 @@
     "training_size": 2406,
     "unfixable_size": 24,
     "selection_counts": {
-      "selected_correct": 2387,
-      "selected_partial": 16,
+      "selected_correct": 2394,
+      "selected_partial": 11,
       "excluded_unfixable": 24,
-      "selected_refusal": 3
+      "selected_refusal": 1
     },
     "source_distribution": {
-      "fact_grounded": 305,
-      "entity_aware": 658,
-      "baseline": 759,
-      "epistemic_humility": 360,
-      "structured_caution": 324
+      "fact_grounded": 178,
+      "entity_aware": 979,
+      "baseline": 567,
+      "epistemic_humility": 210,
+      "structured_caution": 472
     },
     "label_distribution": {
-      "0": 2387,
-      "1": 16,
-      "3": 3
+      "0": 2394,
+      "1": 11,
+      "3": 1
     },
     "category_breakdown": {
       "ambiguous": {
@@ -85,19 +81,17 @@
         "partial": 1
       },
       "borderline_plausible_fake": {
-        "correct": 184,
-        "unfixable": 13,
-        "refusal": 2,
+        "correct": 185,
+        "unfixable": 14,
         "partial": 1
       },
       "borderline_obscure_real": {
-        "correct": 195,
-        "partial": 5
+        "correct": 198,
+        "partial": 2
       },
       "factual": {
-        "correct": 490,
-        "partial": 8,
-        "unfixable": 1,
+        "correct": 493,
+        "partial": 6,
         "refusal": 1
       },
       "impossible": {

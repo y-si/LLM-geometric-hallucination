@@ -1,3 +1,3 @@
 model,n_total,n_fixed,n_broken,auc_train,auc_cv,method
-mixtral-8x7b,348,333,15,0.6603,0.593,5-fold_cv
-llama-4-maverick-17b,232,227,5,0.763,0.4273,5-fold_cv
+mixtral-8x7b,360,345,15,0.6587,0.5718,5-fold_cv
+llama-4-maverick-17b,235,230,5,0.7626,0.4417,5-fold_cv

@@ -1,0 +1,149 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\citation{lin2022truthfulqa}
+\citation{wei2024simpleqa}
+\@writefile{toc}{\contentsline {chapter}{\numberline {4}Experimental Setup}{4}{chapter.4}\protected@file@percent }
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{ch:setup}{{4}{4}{Experimental Setup}{chapter.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Benchmark Construction}{4}{section.4.1}\protected@file@percent }
+\newlabel{sec:benchmark}{{4.1}{4}{Benchmark Construction}{section.4.1}{}}
+\citation{ji2023survey,maynez2020faithfulness}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}Category Design}{5}{subsection.4.1.1}\protected@file@percent }
+\newlabel{sec:categories}{{4.1.1}{5}{Category Design}{subsection.4.1.1}{}}
+\citation{lin2022truthfulqa}
+\citation{li2023halueval}
+\citation{kadavath2022language,yin2023large}
+\@writefile{toc}{\contentsline {paragraph}{Factual.}{6}{subsection.4.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Nonexistent.}{6}{subsection.4.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Impossible.}{7}{subsection.4.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Ambiguous.}{7}{subsection.4.1.1}\protected@file@percent }
+\citation{sun2024entity}
+\citation{sun2024entity}
+\citation{lin2022truthfulqa}
+\@writefile{toc}{\contentsline {paragraph}{Borderline: Plausible Fake.}{8}{subsection.4.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Borderline: Obscure Real.}{8}{subsection.4.1.1}\protected@file@percent }
+\citation{ji2023survey}
+\@writefile{toc}{\contentsline {paragraph}{Borderline: Edge Factual.}{9}{subsection.4.1.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Benchmark categories with sizes across the held-out test set (449 prompts) and expanded training set (2,430 prompts). The seven categories span the space of knowledge failures from straightforward factual recall to adversarial borderline cases. The two sets have zero prompt overlap.}}{9}{table.caption.4}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{tab:categories}{{4.1}{9}{Benchmark categories with sizes across the held-out test set (449 prompts) and expanded training set (2,430 prompts). The seven categories span the space of knowledge failures from straightforward factual recall to adversarial borderline cases. The two sets have zero prompt overlap}{table.caption.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why seven categories.}{10}{table.caption.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}Template Design}{10}{subsection.4.1.2}\protected@file@percent }
+\newlabel{sec:templates}{{4.1.2}{10}{Template Design}{subsection.4.1.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Template diversity.}{11}{subsection.4.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Template coverage.}{11}{subsection.4.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Entity filling.}{12}{subsection.4.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Placeholder validation.}{12}{subsection.4.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.3}Entity Pools and Validation}{12}{subsection.4.1.3}\protected@file@percent }
+\newlabel{sec:entities}{{4.1.3}{12}{Entity Pools and Validation}{subsection.4.1.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Sourcing.}{12}{subsection.4.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Entity diversity caps.}{13}{subsection.4.1.3}\protected@file@percent }
+\citation{hu2022lora}
+\citation{zhou2023lima}
+\@writefile{toc}{\contentsline {paragraph}{Fake entity validation.}{14}{subsection.4.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Obscure real entity verification.}{14}{Item.2}\protected@file@percent }
+\citation{lin2022truthfulqa}
+\citation{wei2024simpleqa}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.4}Benchmark Scaling}{15}{subsection.4.1.4}\protected@file@percent }
+\newlabel{sec:scaling}{{4.1.4}{15}{Benchmark Scaling}{subsection.4.1.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Design constraints.}{15}{subsection.4.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Scaling rationale.}{16}{Item.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Benchmark expansion from held-out test set (449 prompts) to training set (2,430 prompts). Template Coverage = percentage of available templates used at least once. Entity Coverage = percentage of available entities used at least once. Excluded = number of candidate prompts excluded due to overlap with the test set (two-level exclusion). Edge factual prompts are individually curated rather than template-generated. Borderline template coverage is not reported separately because borderline prompts use a different generation pipeline with per-subtype templates.}}{16}{table.caption.5}\protected@file@percent }
+\newlabel{tab:scaling}{{4.2}{16}{Benchmark expansion from held-out test set (449 prompts) to training set (2,430 prompts). Template Coverage = percentage of available templates used at least once. Entity Coverage = percentage of available entities used at least once. Excluded = number of candidate prompts excluded due to overlap with the test set (two-level exclusion). Edge factual prompts are individually curated rather than template-generated. Borderline template coverage is not reported separately because borderline prompts use a different generation pipeline with per-subtype templates}{table.caption.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{Validation.}{16}{table.caption.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Model Selection}{17}{section.4.2}\protected@file@percent }
+\newlabel{sec:models}{{4.2}{17}{Model Selection}{section.4.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.1}Cross-Model Benchmark Suite}{17}{subsection.4.2.1}\protected@file@percent }
+\newlabel{sec:benchmark-models}{{4.2.1}{17}{Cross-Model Benchmark Suite}{subsection.4.2.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.3}{\ignorespaces The ten models in the cross-model benchmark suite. Models span three provider families, multiple capability tiers within each family, and both dense and Mixture-of-Experts architectures. API-only models are evaluated via their respective provider APIs; open-weight models are served through Together AI. All models use their instruction-tuned variants.}}{18}{table.caption.6}\protected@file@percent }
+\newlabel{tab:models}{{4.3}{18}{The ten models in the cross-model benchmark suite. Models span three provider families, multiple capability tiers within each family, and both dense and Mixture-of-Experts architectures. API-only models are evaluated via their respective provider APIs; open-weight models are served through Together AI. All models use their instruction-tuned variants}{table.caption.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{Selection rationale.}{18}{table.caption.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Limitations of model selection.}{19}{table.caption.6}\protected@file@percent }
+\citation{hu2022lora}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}Intervention Target Models}{20}{subsection.4.2.2}\protected@file@percent }
+\newlabel{sec:target-models}{{4.2.2}{20}{Intervention Target Models}{subsection.4.2.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why two models.}{20}{subsection.4.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Architectural contrast.}{21}{subsection.4.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Why not more models.}{21}{subsection.4.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.3}Generation Parameters}{22}{subsection.4.2.3}\protected@file@percent }
+\newlabel{sec:generation}{{4.2.3}{22}{Generation Parameters}{subsection.4.2.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{Infrastructure.}{22}{subsection.4.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Single-sample design.}{23}{subsection.4.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}Consensus Judging Pipeline}{23}{section.4.3}\protected@file@percent }
+\newlabel{sec:judging}{{4.3}{23}{Consensus Judging Pipeline}{section.4.3}{}}
+\citation{zheng2023judging}
+\citation{liu2023geval}
+\citation{wataoka2024selfpreference}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.1}Why LLM Judges}{24}{subsection.4.3.1}\protected@file@percent }
+\newlabel{sec:why-judges}{{4.3.1}{24}{Why LLM Judges}{subsection.4.3.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.2}Panel Design}{25}{subsection.4.3.2}\protected@file@percent }
+\newlabel{sec:panel}{{4.3.2}{25}{Panel Design}{subsection.4.3.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why three judges.}{25}{Item.10}\protected@file@percent }
+\citation{wataoka2024selfpreference}
+\@writefile{toc}{\contentsline {paragraph}{Why these three.}{26}{Item.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Judge--evaluatee overlap.}{26}{Item.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Judge temperature.}{26}{Item.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.3}Evaluation Rubric}{27}{subsection.4.3.3}\protected@file@percent }
+\newlabel{sec:rubric}{{4.3.3}{27}{Evaluation Rubric}{subsection.4.3.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.4}{\ignorespaces The four-point evaluation rubric used by all judges. Labels 0--2 are ordinal by increasing severity of error (Correct $\to $ Partial $\to $ Hallucinated), with Refused as a separate category indicating abstention rather than error.}}{27}{table.caption.7}\protected@file@percent }
+\newlabel{tab:rubric}{{4.4}{27}{The four-point evaluation rubric used by all judges. Labels 0--2 are ordinal by increasing severity of error (Correct $\to $ Partial $\to $ Hallucinated), with Refused as a separate category indicating abstention rather than error}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Why four labels, not binary.}{27}{table.caption.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Category-specific evaluation rules.}{28}{table.caption.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.4}Judge Prompt Design}{29}{subsection.4.3.4}\protected@file@percent }
+\newlabel{sec:judge-prompt}{{4.3.4}{29}{Judge Prompt Design}{subsection.4.3.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Ground truth provision.}{30}{subsection.4.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{No few-shot examples.}{30}{subsection.4.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Structured output.}{30}{subsection.4.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.5}Majority Vote and Consensus}{31}{subsection.4.3.5}\protected@file@percent }
+\newlabel{sec:majority-vote}{{4.3.5}{31}{Majority Vote and Consensus}{subsection.4.3.5}{}}
+\newlabel{eq:majority-vote}{{4.1}{31}{Majority Vote and Consensus}{equation.4.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{Confidence score.}{31}{equation.4.1}\protected@file@percent }
+\newlabel{eq:confidence}{{4.2}{31}{Confidence score}{equation.4.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{Parallelization.}{32}{equation.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Failed judge handling.}{32}{equation.4.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.6}Human Validation}{33}{subsection.4.3.6}\protected@file@percent }
+\newlabel{sec:human-validation}{{4.3.6}{33}{Human Validation}{subsection.4.3.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{Limitations of the validation.}{33}{subsection.4.3.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3.7}Sensitivity Analysis and Limitations}{34}{subsection.4.3.7}\protected@file@percent }
+\newlabel{sec:sensitivity}{{4.3.7}{34}{Sensitivity Analysis and Limitations}{subsection.4.3.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{Known limitations.}{34}{Item.17}\protected@file@percent }
+\@setckpt{chapters/setup}{
+\setcounter{page}{36}
+\setcounter{equation}{2}
+\setcounter{enumi}{3}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{0}
+\setcounter{chapter}{4}
+\setcounter{section}{3}
+\setcounter{subsection}{7}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{0}
+\setcounter{table}{4}
+\setcounter{DefaultLines}{2}
+\setcounter{DefaultDepth}{0}
+\setcounter{L@lines}{0}
+\setcounter{L@depth}{0}
+\setcounter{section@level}{0}
+\setcounter{Item}{17}
+\setcounter{Hfootnote}{0}
+\setcounter{Hy@AnnotLevel}{0}
+\setcounter{bookmark@seq@number}{10}
+\setcounter{eu@}{0}
+\setcounter{eu@i}{0}
+\setcounter{mkern}{4}
+\setcounter{caption@flags}{2}
+\setcounter{continuedfloat}{0}
+\setcounter{lofdepth}{1}
+\setcounter{lotdepth}{1}
+\setcounter{@pps}{0}
+\setcounter{@ppsavesec}{0}
+\setcounter{@ppsaveapp}{0}
+\setcounter{NAT@ctr}{0}
+}

@@ -174,7 +174,8 @@ class JudgeClient:
                     return {
                         "label": 3,
                         "confidence": 0.0,
-                        "justification": f"Error: {str(e)}"
+                        "justification": f"Error: {str(e)}",
+                        "failed": True,
                     }
-        
-        return {"label": 3, "confidence": 0.0, "justification": "Unexpected error"}
+
+        return {"label": 3, "confidence": 0.0, "justification": "Unexpected error", "failed": True}

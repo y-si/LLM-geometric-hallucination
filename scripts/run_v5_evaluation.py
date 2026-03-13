@@ -73,14 +73,15 @@ def load_finetuned_models():
     for job in data["jobs"]:
         if job["status"] != "completed":
             continue
-        output_name = job.get("output_name", "unknown")
-        if output_name == "unknown":
+        # Use output_name — all models require dedicated endpoints
+        model_id = job.get("output_name", "unknown")
+        if model_id == "unknown":
             print(f"  WARNING: Job {job['job_id']} has no output_name, skipping")
             continue
         models.append({
             "base_model": job["model"],
             "config": job["config"],
-            "together_model_id": output_name,
+            "together_model_id": model_id,
             "job_id": job["job_id"],
         })
     return models
@@ -366,6 +367,12 @@ def main():
         default=None,
         help="Filter to a single config (e.g. A)",
     )
+    parser.add_argument(
+        "--endpoint",
+        type=str,
+        default=None,
+        help="Override model ID with dedicated endpoint string (from Together dashboard)",
+    )
     args = parser.parse_args()
 
     # Load V3 prompts
@@ -392,6 +399,14 @@ def main():
     if not ft_models:
         print("No fine-tuned models match the specified filters.")
         sys.exit(1)
+
+    # Override model ID with dedicated endpoint if provided
+    if args.endpoint:
+        if len(ft_models) != 1:
+            print("ERROR: --endpoint requires exactly one model (use --model and --config to filter)")
+            sys.exit(1)
+        ft_models[0]["together_model_id"] = args.endpoint
+        print(f"\nUsing dedicated endpoint: {args.endpoint}")
 
     print(f"\nEvaluating {len(ft_models)} models on {len(prompts)} V3 prompts:")
     for m in ft_models:

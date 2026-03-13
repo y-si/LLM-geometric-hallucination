@@ -1,0 +1,935 @@
+{
+  "description": "Pre-registered sensitivity analysis (setup.tex Section 4.3.7)",
+  "judge_ordering": [
+    "gpt-5.1",
+    "claude-opus-4.5",
+    "llama-4-maverick"
+  ],
+  "checks": {
+    "v5_baselines": {
+      "unanimous_only": {
+        "source": "v5_baselines",
+        "total_all": 4860,
+        "total_unanimous": 4290,
+        "fraction_unanimous": 0.8827160493827161,
+        "all_data": {
+          "total": 4860,
+          "correct": 4141,
+          "partial": 93,
+          "hallucination": 595,
+          "refusal": 31,
+          "accuracy": 0.8520576131687243,
+          "hallucination_rate": 0.12242798353909465
+        },
+        "unanimous_only": {
+          "total": 4290,
+          "correct": 3846,
+          "partial": 18,
+          "hallucination": 409,
+          "refusal": 17,
+          "accuracy": 0.8965034965034965,
+          "hallucination_rate": 0.09533799533799533
+        },
+        "per_category": {
+          "ambiguous": {
+            "total_all": 1200,
+            "total_unanimous": 1149,
+            "fraction_unanimous": 0.9575,
+            "all_accuracy": 0.9875,
+            "unanimous_accuracy": 0.999129677980853
+          },
+          "borderline_edge_factual": {
+            "total_all": 260,
+            "total_unanimous": 248,
+            "fraction_unanimous": 0.9538461538461539,
+            "all_accuracy": 0.9423076923076923,
+            "unanimous_accuracy": 0.967741935483871
+          },
+          "borderline_obscure_real": {
+            "total_all": 400,
+            "total_unanimous": 309,
+            "fraction_unanimous": 0.7725,
+            "all_accuracy": 0.865,
+            "unanimous_accuracy": 0.9676375404530745
+          },
+          "borderline_plausible_fake": {
+            "total_all": 400,
+            "total_unanimous": 342,
+            "fraction_unanimous": 0.855,
+            "all_accuracy": 0.595,
+            "unanimous_accuracy": 0.6081871345029239
+          },
+          "factual": {
+            "total_all": 1000,
+            "total_unanimous": 843,
+            "fraction_unanimous": 0.843,
+            "all_accuracy": 0.884,
+            "unanimous_accuracy": 0.9584816132858838
+          },
+          "impossible": {
+            "total_all": 400,
+            "total_unanimous": 339,
+            "fraction_unanimous": 0.8475,
+            "all_accuracy": 0.85,
+            "unanimous_accuracy": 0.9351032448377581
+          },
+          "nonexistent": {
+            "total_all": 1200,
+            "total_unanimous": 1060,
+            "fraction_unanimous": 0.8833333333333333,
+            "all_accuracy": 0.7525,
+            "unanimous_accuracy": 0.779245283018868
+          }
+        }
+      },
+      "judge_removal": {
+        "source": "v5_baselines",
+        "total": 4860,
+        "original": {
+          "total": 4860,
+          "correct": 4141,
+          "partial": 93,
+          "hallucination": 595,
+          "refusal": 31,
+          "accuracy": 0.8520576131687243,
+          "hallucination_rate": 0.12242798353909465
+        },
+        "subsets": {
+          "without_gpt-5.1": {
+            "kept_judges": [
+              "claude-opus-4.5",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "gpt-5.1",
+            "labels_changed": 161,
+            "fraction_changed": 0.0331275720164609,
+            "total": 4860,
+            "correct": 4262,
+            "partial": 60,
+            "hallucination": 501,
+            "refusal": 37,
+            "accuracy": 0.8769547325102881,
+            "hallucination_rate": 0.10308641975308643
+          },
+          "without_claude-opus-4.5": {
+            "kept_judges": [
+              "gpt-5.1",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "claude-opus-4.5",
+            "labels_changed": 171,
+            "fraction_changed": 0.03518518518518519,
+            "total": 4860,
+            "correct": 4200,
+            "partial": 37,
+            "hallucination": 579,
+            "refusal": 44,
+            "accuracy": 0.8641975308641975,
+            "hallucination_rate": 0.1191358024691358
+          },
+          "without_llama-4-maverick": {
+            "kept_judges": [
+              "gpt-5.1",
+              "claude-opus-4.5"
+            ],
+            "excluded_judge": "llama-4-maverick",
+            "labels_changed": 148,
+            "fraction_changed": 0.030452674897119343,
+            "total": 4860,
+            "correct": 4071,
+            "partial": 84,
+            "hallucination": 684,
+            "refusal": 21,
+            "accuracy": 0.8376543209876544,
+            "hallucination_rate": 0.14074074074074075
+          }
+        }
+      },
+      "self_eval_bias": {
+        "source": "v5_baselines",
+        "llama_generated_n": 2430,
+        "mixtral_generated_n": 2430,
+        "llama_judge_on_llama_responses": {
+          "total": 2430,
+          "correct": 2161,
+          "partial": 26,
+          "hallucination": 197,
+          "refusal": 46,
+          "accuracy": 0.8893004115226337,
+          "hallucination_rate": 0.08106995884773663
+        },
+        "llama_judge_on_mixtral_responses": {
+          "total": 2430,
+          "correct": 2084,
+          "partial": 76,
+          "hallucination": 264,
+          "refusal": 6,
+          "accuracy": 0.8576131687242798,
+          "hallucination_rate": 0.10864197530864197
+        },
+        "consensus_on_llama_responses": {
+          "total": 2430,
+          "correct": 2137,
+          "partial": 28,
+          "hallucination": 235,
+          "refusal": 30,
+          "accuracy": 0.8794238683127572,
+          "hallucination_rate": 0.09670781893004116
+        },
+        "consensus_on_mixtral_responses": {
+          "total": 2430,
+          "correct": 2004,
+          "partial": 65,
+          "hallucination": 360,
+          "refusal": 1,
+          "accuracy": 0.8246913580246914,
+          "hallucination_rate": 0.14814814814814814
+        },
+        "llama_judge_accuracy_diff": 0.03168724279835389,
+        "llama_judge_halluc_rate_diff": -0.027572016460905346,
+        "consensus_accuracy_diff": 0.054732510288065805,
+        "excess_llama_judge_leniency": -0.023045267489711918
+      }
+    },
+    "v5_prefixes": {
+      "unanimous_only": {
+        "source": "v5_prefixes",
+        "total_all": 19439,
+        "total_unanimous": 17621,
+        "fraction_unanimous": 0.9064766706106281,
+        "all_data": {
+          "total": 19439,
+          "correct": 17995,
+          "partial": 274,
+          "hallucination": 1075,
+          "refusal": 95,
+          "accuracy": 0.9257163434333042,
+          "hallucination_rate": 0.055301198621328256
+        },
+        "unanimous_only": {
+          "total": 17621,
+          "correct": 16935,
+          "partial": 56,
+          "hallucination": 579,
+          "refusal": 51,
+          "accuracy": 0.9610691788207253,
+          "hallucination_rate": 0.032858521082798936
+        },
+        "per_category": {
+          "ambiguous": {
+            "total_all": 4800,
+            "total_unanimous": 4713,
+            "fraction_unanimous": 0.981875,
+            "all_accuracy": 0.9945833333333334,
+            "unanimous_accuracy": 0.9991512836834288
+          },
+          "borderline_edge_factual": {
+            "total_all": 1040,
+            "total_unanimous": 990,
+            "fraction_unanimous": 0.9519230769230769,
+            "all_accuracy": 0.9605769230769231,
+            "unanimous_accuracy": 0.9838383838383838
+          },
+          "borderline_obscure_real": {
+            "total_all": 1600,
+            "total_unanimous": 1256,
+            "fraction_unanimous": 0.785,
+            "all_accuracy": 0.876875,
+            "unanimous_accuracy": 0.9777070063694268
+          },
+          "borderline_plausible_fake": {
+            "total_all": 1600,
+            "total_unanimous": 1347,
+            "fraction_unanimous": 0.841875,
+            "all_accuracy": 0.825,
+            "unanimous_accuracy": 0.852264291017075
+          },
+          "factual": {
+            "total_all": 4000,
+            "total_unanimous": 3409,
+            "fraction_unanimous": 0.85225,
+            "all_accuracy": 0.89625,
+            "unanimous_accuracy": 0.960105602816075
+          },
+          "impossible": {
+            "total_all": 1600,
+            "total_unanimous": 1491,
+            "fraction_unanimous": 0.931875,
+            "all_accuracy": 0.95125,
+            "unanimous_accuracy": 0.9778672032193159
+          },
+          "nonexistent": {
+            "total_all": 4799,
+            "total_unanimous": 4415,
+            "fraction_unanimous": 0.9199833298603876,
+            "all_accuracy": 0.9151906647218171,
+            "unanimous_accuracy": 0.9388448471121178
+          }
+        }
+      },
+      "judge_removal": {
+        "source": "v5_prefixes",
+        "total": 19439,
+        "original": {
+          "total": 19439,
+          "correct": 17995,
+          "partial": 274,
+          "hallucination": 1075,
+          "refusal": 95,
+          "accuracy": 0.9257163434333042,
+          "hallucination_rate": 0.055301198621328256
+        },
+        "subsets": {
+          "without_gpt-5.1": {
+            "kept_judges": [
+              "claude-opus-4.5",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "gpt-5.1",
+            "labels_changed": 621,
+            "fraction_changed": 0.03194608776171614,
+            "total": 19439,
+            "correct": 18270,
+            "partial": 235,
+            "hallucination": 752,
+            "refusal": 182,
+            "accuracy": 0.9398631616852718,
+            "hallucination_rate": 0.03868511754719893
+          },
+          "without_claude-opus-4.5": {
+            "kept_judges": [
+              "gpt-5.1",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "claude-opus-4.5",
+            "labels_changed": 422,
+            "fraction_changed": 0.021708935644837696,
+            "total": 19439,
+            "correct": 18126,
+            "partial": 95,
+            "hallucination": 1077,
+            "refusal": 141,
+            "accuracy": 0.932455373218787,
+            "hallucination_rate": 0.05540408457225166
+          },
+          "without_llama-4-maverick": {
+            "kept_judges": [
+              "gpt-5.1",
+              "claude-opus-4.5"
+            ],
+            "excluded_judge": "llama-4-maverick",
+            "labels_changed": 486,
+            "fraction_changed": 0.025001286074386543,
+            "total": 19439,
+            "correct": 17677,
+            "partial": 275,
+            "hallucination": 1375,
+            "refusal": 112,
+            "accuracy": 0.9093574772364834,
+            "hallucination_rate": 0.07073409125983847
+          }
+        }
+      },
+      "self_eval_bias": {
+        "source": "v5_prefixes",
+        "llama_generated_n": 9719,
+        "mixtral_generated_n": 9720,
+        "llama_judge_on_llama_responses": {
+          "total": 9719,
+          "correct": 9212,
+          "partial": 94,
+          "hallucination": 237,
+          "refusal": 176,
+          "accuracy": 0.9478341393147444,
+          "hallucination_rate": 0.024385224817368042
+        },
+        "llama_judge_on_mixtral_responses": {
+          "total": 9720,
+          "correct": 8985,
+          "partial": 244,
+          "hallucination": 431,
+          "refusal": 60,
+          "accuracy": 0.9243827160493827,
+          "hallucination_rate": 0.04434156378600823
+        },
+        "consensus_on_llama_responses": {
+          "total": 9719,
+          "correct": 9185,
+          "partial": 87,
+          "hallucination": 375,
+          "refusal": 72,
+          "accuracy": 0.9450560757279556,
+          "hallucination_rate": 0.03858421648317728
+        },
+        "consensus_on_mixtral_responses": {
+          "total": 9720,
+          "correct": 8810,
+          "partial": 187,
+          "hallucination": 700,
+          "refusal": 23,
+          "accuracy": 0.9063786008230452,
+          "hallucination_rate": 0.0720164609053498
+        },
+        "llama_judge_accuracy_diff": 0.02345142326536165,
+        "llama_judge_halluc_rate_diff": -0.01995633896864019,
+        "consensus_accuracy_diff": 0.03867747490491036,
+        "excess_llama_judge_leniency": -0.01522605163954871
+      }
+    },
+    "v5_finetuned": {
+      "unanimous_only": {
+        "source": "v5_finetuned",
+        "total_all": 1796,
+        "total_unanimous": 1665,
+        "fraction_unanimous": 0.9270601336302895,
+        "all_data": {
+          "total": 1796,
+          "correct": 1683,
+          "partial": 13,
+          "hallucination": 27,
+          "refusal": 73,
+          "accuracy": 0.9370824053452116,
+          "hallucination_rate": 0.015033407572383074
+        },
+        "unanimous_only": {
+          "total": 1665,
+          "correct": 1629,
+          "partial": 10,
+          "hallucination": 20,
+          "refusal": 6,
+          "accuracy": 0.9783783783783784,
+          "hallucination_rate": 0.012012012012012012
+        },
+        "per_category": {
+          "ambiguous": {
+            "total_all": 480,
+            "total_unanimous": 477,
+            "fraction_unanimous": 0.99375,
+            "all_accuracy": 1.0,
+            "unanimous_accuracy": 1.0
+          },
+          "borderline_edge_factual": {
+            "total_all": 80,
+            "total_unanimous": 80,
+            "fraction_unanimous": 1.0,
+            "all_accuracy": 1.0,
+            "unanimous_accuracy": 1.0
+          },
+          "borderline_obscure_real": {
+            "total_all": 120,
+            "total_unanimous": 100,
+            "fraction_unanimous": 0.8333333333333334,
+            "all_accuracy": 0.9583333333333334,
+            "unanimous_accuracy": 0.96
+          },
+          "borderline_plausible_fake": {
+            "total_all": 124,
+            "total_unanimous": 102,
+            "fraction_unanimous": 0.8225806451612904,
+            "all_accuracy": 0.8225806451612904,
+            "unanimous_accuracy": 0.9215686274509803
+          },
+          "factual": {
+            "total_all": 392,
+            "total_unanimous": 318,
+            "fraction_unanimous": 0.8112244897959183,
+            "all_accuracy": 0.8035714285714286,
+            "unanimous_accuracy": 0.940251572327044
+          },
+          "impossible": {
+            "total_all": 120,
+            "total_unanimous": 115,
+            "fraction_unanimous": 0.9583333333333334,
+            "all_accuracy": 0.9833333333333333,
+            "unanimous_accuracy": 0.991304347826087
+          },
+          "nonexistent": {
+            "total_all": 480,
+            "total_unanimous": 473,
+            "fraction_unanimous": 0.9854166666666667,
+            "all_accuracy": 0.9854166666666667,
+            "unanimous_accuracy": 0.9915433403805497
+          }
+        }
+      },
+      "judge_removal": {
+        "source": "v5_finetuned",
+        "total": 1796,
+        "original": {
+          "total": 1796,
+          "correct": 1683,
+          "partial": 13,
+          "hallucination": 27,
+          "refusal": 73,
+          "accuracy": 0.9370824053452116,
+          "hallucination_rate": 0.015033407572383074
+        },
+        "subsets": {
+          "without_gpt-5.1": {
+            "kept_judges": [
+              "claude-opus-4.5",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "gpt-5.1",
+            "labels_changed": 0,
+            "fraction_changed": 0.0,
+            "total": 1796,
+            "correct": 1683,
+            "partial": 13,
+            "hallucination": 27,
+            "refusal": 73,
+            "accuracy": 0.9370824053452116,
+            "hallucination_rate": 0.015033407572383074
+          },
+          "without_claude-opus-4.5": {
+            "kept_judges": [
+              "gpt-5.1",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "claude-opus-4.5",
+            "labels_changed": 16,
+            "fraction_changed": 0.008908685968819599,
+            "total": 1796,
+            "correct": 1671,
+            "partial": 19,
+            "hallucination": 27,
+            "refusal": 79,
+            "accuracy": 0.9304008908685969,
+            "hallucination_rate": 0.015033407572383074
+          },
+          "without_llama-4-maverick": {
+            "kept_judges": [
+              "gpt-5.1",
+              "claude-opus-4.5"
+            ],
+            "excluded_judge": "llama-4-maverick",
+            "labels_changed": 115,
+            "fraction_changed": 0.06403118040089087,
+            "total": 1796,
+            "correct": 1674,
+            "partial": 85,
+            "hallucination": 26,
+            "refusal": 11,
+            "accuracy": 0.9320712694877505,
+            "hallucination_rate": 0.014476614699331848
+          }
+        }
+      },
+      "self_eval_bias": {
+        "source": "v5_finetuned",
+        "llama_generated_n": 449,
+        "mixtral_generated_n": 1347,
+        "llama_judge_on_llama_responses": {
+          "total": 449,
+          "correct": 420,
+          "partial": 2,
+          "hallucination": 5,
+          "refusal": 22,
+          "accuracy": 0.9354120267260579,
+          "hallucination_rate": 0.011135857461024499
+        },
+        "llama_judge_on_mixtral_responses": {
+          "total": 1347,
+          "correct": 1251,
+          "partial": 17,
+          "hallucination": 22,
+          "refusal": 57,
+          "accuracy": 0.9287305122494433,
+          "hallucination_rate": 0.016332590942835932
+        },
+        "consensus_on_llama_responses": {
+          "total": 449,
+          "correct": 422,
+          "partial": 2,
+          "hallucination": 5,
+          "refusal": 20,
+          "accuracy": 0.9398663697104677,
+          "hallucination_rate": 0.011135857461024499
+        },
+        "consensus_on_mixtral_responses": {
+          "total": 1347,
+          "correct": 1261,
+          "partial": 11,
+          "hallucination": 22,
+          "refusal": 53,
+          "accuracy": 0.9361544172234595,
+          "hallucination_rate": 0.016332590942835932
+        },
+        "llama_judge_accuracy_diff": 0.006681514476614692,
+        "llama_judge_halluc_rate_diff": -0.005196733481811433,
+        "consensus_accuracy_diff": 0.0037119524870081744,
+        "excess_llama_judge_leniency": 0.0029695619896065173
+      }
+    },
+    "ablation": {
+      "unanimous_only": {
+        "source": "ablation",
+        "total_all": 2694,
+        "total_unanimous": 2525,
+        "fraction_unanimous": 0.937268002969562,
+        "all_data": {
+          "total": 2694,
+          "correct": 2530,
+          "partial": 10,
+          "hallucination": 59,
+          "refusal": 95,
+          "accuracy": 0.9391239792130661,
+          "hallucination_rate": 0.02190051967334818
+        },
+        "unanimous_only": {
+          "total": 2525,
+          "correct": 2457,
+          "partial": 6,
+          "hallucination": 38,
+          "refusal": 24,
+          "accuracy": 0.973069306930693,
+          "hallucination_rate": 0.015049504950495049
+        },
+        "per_category": {
+          "ambiguous": {
+            "total_all": 720,
+            "total_unanimous": 719,
+            "fraction_unanimous": 0.9986111111111111,
+            "all_accuracy": 0.9986111111111111,
+            "unanimous_accuracy": 1.0
+          },
+          "borderline_edge_factual": {
+            "total_all": 120,
+            "total_unanimous": 119,
+            "fraction_unanimous": 0.9916666666666667,
+            "all_accuracy": 1.0,
+            "unanimous_accuracy": 1.0
+          },
+          "borderline_obscure_real": {
+            "total_all": 180,
+            "total_unanimous": 159,
+            "fraction_unanimous": 0.8833333333333333,
+            "all_accuracy": 0.95,
+            "unanimous_accuracy": 0.9874213836477987
+          },
+          "borderline_plausible_fake": {
+            "total_all": 186,
+            "total_unanimous": 154,
+            "fraction_unanimous": 0.8279569892473119,
+            "all_accuracy": 0.8548387096774194,
+            "unanimous_accuracy": 0.9090909090909091
+          },
+          "factual": {
+            "total_all": 588,
+            "total_unanimous": 492,
+            "fraction_unanimous": 0.8367346938775511,
+            "all_accuracy": 0.8197278911564626,
+            "unanimous_accuracy": 0.9227642276422764
+          },
+          "impossible": {
+            "total_all": 180,
+            "total_unanimous": 168,
+            "fraction_unanimous": 0.9333333333333333,
+            "all_accuracy": 0.9666666666666667,
+            "unanimous_accuracy": 0.9940476190476191
+          },
+          "nonexistent": {
+            "total_all": 720,
+            "total_unanimous": 714,
+            "fraction_unanimous": 0.9916666666666667,
+            "all_accuracy": 0.9791666666666666,
+            "unanimous_accuracy": 0.9817927170868347
+          }
+        }
+      },
+      "judge_removal": {
+        "source": "ablation",
+        "total": 2694,
+        "original": {
+          "total": 2694,
+          "correct": 2530,
+          "partial": 10,
+          "hallucination": 59,
+          "refusal": 95,
+          "accuracy": 0.9391239792130661,
+          "hallucination_rate": 0.02190051967334818
+        },
+        "subsets": {
+          "without_gpt-5.1": {
+            "kept_judges": [
+              "claude-opus-4.5",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "gpt-5.1",
+            "labels_changed": 62,
+            "fraction_changed": 0.02301410541945063,
+            "total": 2694,
+            "correct": 2513,
+            "partial": 23,
+            "hallucination": 41,
+            "refusal": 117,
+            "accuracy": 0.9328136599851522,
+            "hallucination_rate": 0.015219005196733483
+          },
+          "without_claude-opus-4.5": {
+            "kept_judges": [
+              "gpt-5.1",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "claude-opus-4.5",
+            "labels_changed": 0,
+            "fraction_changed": 0.0,
+            "total": 2694,
+            "correct": 2530,
+            "partial": 10,
+            "hallucination": 59,
+            "refusal": 95,
+            "accuracy": 0.9391239792130661,
+            "hallucination_rate": 0.02190051967334818
+          },
+          "without_llama-4-maverick": {
+            "kept_judges": [
+              "gpt-5.1",
+              "claude-opus-4.5"
+            ],
+            "excluded_judge": "llama-4-maverick",
+            "labels_changed": 107,
+            "fraction_changed": 0.03971789161098738,
+            "total": 2694,
+            "correct": 2508,
+            "partial": 79,
+            "hallucination": 74,
+            "refusal": 33,
+            "accuracy": 0.9309576837416481,
+            "hallucination_rate": 0.02746844840386043
+          }
+        }
+      },
+      "self_eval_bias": {
+        "source": "ablation",
+        "llama_generated_n": 1347,
+        "mixtral_generated_n": 1347,
+        "llama_judge_on_llama_responses": {
+          "total": 1347,
+          "correct": 1258,
+          "partial": 10,
+          "hallucination": 11,
+          "refusal": 68,
+          "accuracy": 0.9339272457312546,
+          "hallucination_rate": 0.008166295471417966
+        },
+        "llama_judge_on_mixtral_responses": {
+          "total": 1347,
+          "correct": 1255,
+          "partial": 13,
+          "hallucination": 30,
+          "refusal": 49,
+          "accuracy": 0.9317000742390498,
+          "hallucination_rate": 0.022271714922048998
+        },
+        "consensus_on_llama_responses": {
+          "total": 1347,
+          "correct": 1274,
+          "partial": 3,
+          "hallucination": 19,
+          "refusal": 51,
+          "accuracy": 0.9458054936896808,
+          "hallucination_rate": 0.014105419450631032
+        },
+        "consensus_on_mixtral_responses": {
+          "total": 1347,
+          "correct": 1256,
+          "partial": 7,
+          "hallucination": 40,
+          "refusal": 44,
+          "accuracy": 0.9324424647364514,
+          "hallucination_rate": 0.02969561989606533
+        },
+        "llama_judge_accuracy_diff": 0.00222717149220486,
+        "llama_judge_halluc_rate_diff": -0.014105419450631032,
+        "consensus_accuracy_diff": 0.013363028953229383,
+        "excess_llama_judge_leniency": -0.011135857461024523
+      }
+    },
+    "combined": {
+      "unanimous_only": {
+        "source": "combined",
+        "total_all": 28789,
+        "total_unanimous": 26101,
+        "fraction_unanimous": 0.906631004897704,
+        "all_data": {
+          "total": 28789,
+          "correct": 26349,
+          "partial": 390,
+          "hallucination": 1756,
+          "refusal": 294,
+          "accuracy": 0.9152454062315468,
+          "hallucination_rate": 0.06099551912188683
+        },
+        "unanimous_only": {
+          "total": 26101,
+          "correct": 24867,
+          "partial": 90,
+          "hallucination": 1046,
+          "refusal": 98,
+          "accuracy": 0.9527221179265162,
+          "hallucination_rate": 0.04007509290831769
+        },
+        "per_category": {
+          "ambiguous": {
+            "total_all": 7200,
+            "total_unanimous": 7058,
+            "fraction_unanimous": 0.9802777777777778,
+            "all_accuracy": 0.9941666666666666,
+            "unanimous_accuracy": 0.9992915840181354
+          },
+          "borderline_edge_factual": {
+            "total_all": 1500,
+            "total_unanimous": 1437,
+            "fraction_unanimous": 0.958,
+            "all_accuracy": 0.9626666666666667,
+            "unanimous_accuracy": 0.9832985386221295
+          },
+          "borderline_obscure_real": {
+            "total_all": 2300,
+            "total_unanimous": 1824,
+            "fraction_unanimous": 0.7930434782608695,
+            "all_accuracy": 0.8847826086956522,
+            "unanimous_accuracy": 0.9758771929824561
+          },
+          "borderline_plausible_fake": {
+            "total_all": 2310,
+            "total_unanimous": 1945,
+            "fraction_unanimous": 0.841991341991342,
+            "all_accuracy": 0.7874458874458874,
+            "unanimous_accuracy": 0.8174807197943444
+          },
+          "factual": {
+            "total_all": 5980,
+            "total_unanimous": 5062,
+            "fraction_unanimous": 0.8464882943143812,
+            "all_accuracy": 0.8806020066889632,
+            "unanimous_accuracy": 0.9549585144211774
+          },
+          "impossible": {
+            "total_all": 2300,
+            "total_unanimous": 2113,
+            "fraction_unanimous": 0.918695652173913,
+            "all_accuracy": 0.9365217391304348,
+            "unanimous_accuracy": 0.9730241362991008
+          },
+          "nonexistent": {
+            "total_all": 7199,
+            "total_unanimous": 6662,
+            "fraction_unanimous": 0.9254063064314488,
+            "all_accuracy": 0.8991526600916794,
+            "unanimous_accuracy": 0.9217952566796758
+          }
+        }
+      },
+      "judge_removal": {
+        "source": "combined",
+        "total": 28789,
+        "original": {
+          "total": 28789,
+          "correct": 26349,
+          "partial": 390,
+          "hallucination": 1756,
+          "refusal": 294,
+          "accuracy": 0.9152454062315468,
+          "hallucination_rate": 0.06099551912188683
+        },
+        "subsets": {
+          "without_gpt-5.1": {
+            "kept_judges": [
+              "claude-opus-4.5",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "gpt-5.1",
+            "labels_changed": 844,
+            "fraction_changed": 0.02931675292646497,
+            "total": 28789,
+            "correct": 26728,
+            "partial": 331,
+            "hallucination": 1321,
+            "refusal": 409,
+            "accuracy": 0.9284101566570565,
+            "hallucination_rate": 0.04588558129841259
+          },
+          "without_claude-opus-4.5": {
+            "kept_judges": [
+              "gpt-5.1",
+              "llama-4-maverick"
+            ],
+            "excluded_judge": "claude-opus-4.5",
+            "labels_changed": 609,
+            "fraction_changed": 0.02115391295286394,
+            "total": 28789,
+            "correct": 26527,
+            "partial": 161,
+            "hallucination": 1742,
+            "refusal": 359,
+            "accuracy": 0.9214283233179339,
+            "hallucination_rate": 0.060509222272395705
+          },
+          "without_llama-4-maverick": {
+            "kept_judges": [
+              "gpt-5.1",
+              "claude-opus-4.5"
+            ],
+            "excluded_judge": "llama-4-maverick",
+            "labels_changed": 856,
+            "fraction_changed": 0.02973357879745736,
+            "total": 28789,
+            "correct": 25930,
+            "partial": 523,
+            "hallucination": 2159,
+            "refusal": 177,
+            "accuracy": 0.9006912362360624,
+            "hallucination_rate": 0.07499392128938136
+          }
+        }
+      },
+      "self_eval_bias": {
+        "source": "combined",
+        "llama_generated_n": 13945,
+        "mixtral_generated_n": 14844,
+        "llama_judge_on_llama_responses": {
+          "total": 13945,
+          "correct": 13051,
+          "partial": 132,
+          "hallucination": 450,
+          "refusal": 312,
+          "accuracy": 0.9358910003585514,
+          "hallucination_rate": 0.0322696306920043
+        },
+        "llama_judge_on_mixtral_responses": {
+          "total": 14844,
+          "correct": 13575,
+          "partial": 350,
+          "hallucination": 747,
+          "refusal": 172,
+          "accuracy": 0.9145109135004043,
+          "hallucination_rate": 0.05032336297493937
+        },
+        "consensus_on_llama_responses": {
+          "total": 13945,
+          "correct": 13018,
+          "partial": 120,
+          "hallucination": 634,
+          "refusal": 173,
+          "accuracy": 0.9335245607744711,
+          "hallucination_rate": 0.045464324130512726
+        },
+        "consensus_on_mixtral_responses": {
+          "total": 14844,
+          "correct": 13331,
+          "partial": 270,
+          "hallucination": 1122,
+          "refusal": 121,
+          "accuracy": 0.8980732956076529,
+          "hallucination_rate": 0.07558609539207761
+        },
+        "llama_judge_accuracy_diff": 0.021380086858147185,
+        "llama_judge_halluc_rate_diff": -0.018053732282935067,
+        "consensus_accuracy_diff": 0.03545126516681818,
+        "excess_llama_judge_leniency": -0.014071178308670995
+      }
+    }
+  }
+}

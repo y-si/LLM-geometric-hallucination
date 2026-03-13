@@ -4,6 +4,9 @@
 
 \documentclass{Dissertate}
 
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, decorations.pathreplacing, calc}
+
 \begin{document}
 
 % the front matter
@@ -22,22 +25,24 @@
 % \doublespacing
 
 % include each chapter...
-\setcounter{chapter}{-1}  % start chapter numbering at 0
+% \setcounter{chapter}{-1}  % start chapter numbering at 0
 \include{chapters/introduction}
-\include{chapters/chapter1}
-\include{chapters/chapter2}
-\include{chapters/chapter3}
-\include{chapters/conclusion}
+\include{chapters/background}
+\include{chapters/litreview}
+\include{chapters/setup}
+\include{chapters/geo-predict-hallucinations}
+\include{chapters/prompts-reduce-hallucination}
+\include{chapters/geo-guide-intervention}
+\include{chapters/discussion}
 
 \setstretch{\dnormalspacing}
-
 % the back matter
 \backmatter
 
-% \clearpage
-% \bibliography{references}
-% \addcontentsline{toc}{chapter}{References}
-% \bibliographystyle{apalike2}
+\clearpage
+\bibliography{references}
+\addcontentsline{toc}{chapter}{References}
+\bibliographystyle{apalike2}
 
 % \include{endmatter/colophon}
 

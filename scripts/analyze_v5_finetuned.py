@@ -43,6 +43,22 @@ def load_v3_ids():
     return {p["id"] for p in prompts}
 
 
+def deduplicate_results(results):
+    """Remove duplicate entries (keep first occurrence per ID).
+
+    The V3 baseline files have 538 entries with 453 unique IDs — borderline
+    prompts are duplicated (some with inconsistent labels).  Deduplicating
+    to first-occurrence ensures each prompt is counted exactly once.
+    """
+    seen = set()
+    deduped = []
+    for r in results:
+        if r["id"] not in seen:
+            deduped.append(r)
+            seen.add(r["id"])
+    return deduped
+
+
 def label_stats(results, id_filter=None):
     """Compute label distribution from judged results."""
     if id_filter:
@@ -132,7 +148,7 @@ def main():
         if not v3_path.exists():
             print(f"  V3 baseline not found at {v3_path}, skipping")
             continue
-        v3_baseline = read_jsonl(v3_path)
+        v3_baseline = deduplicate_results(read_jsonl(v3_path))
         bl_stats = label_stats(v3_baseline, v3_ids)
         print(f"\n  V3 Baseline (no prefix):")
         print(f"    {bl_stats['correct']}/{bl_stats['total']} correct "
@@ -147,7 +163,7 @@ def main():
             pf_path = V4_PREFIX_DIR / model / prefix / "judged_answers.jsonl"
             if not pf_path.exists():
                 continue
-            pf_results = read_jsonl(pf_path)
+            pf_results = deduplicate_results(read_jsonl(pf_path))
             pf_stats = label_stats(pf_results, v3_ids)
             if best_prefix_stats is None or pf_stats["accuracy"] > best_prefix_stats["accuracy"]:
                 best_prefix_name = prefix
@@ -168,7 +184,7 @@ def main():
         for prefix in NON_COT_PREFIXES:
             pf_path = V4_PREFIX_DIR / model / prefix / "judged_answers.jsonl"
             if pf_path.exists():
-                all_v4_sources[prefix] = read_jsonl(pf_path)
+                all_v4_sources[prefix] = deduplicate_results(read_jsonl(pf_path))
 
         for pid in v3_ids:
             best_label = None

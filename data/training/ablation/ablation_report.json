@@ -1,0 +1,530 @@
+{
+  "conditions": {
+    "T5": {
+      "mixtral-8x7b": {
+        "total": 397,
+        "converted": 397,
+        "token_estimate": 62728,
+        "per_category": {
+          "ambiguous": 59,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 52,
+          "borderline_plausible_fake": 45,
+          "factual": 37,
+          "impossible": 24,
+          "nonexistent": 50
+        },
+        "templates_used": 50,
+        "templates_per_group": {
+          "ambiguous": [
+            "Which is better: {option1} or {option2}?",
+            "Is {system1} inherently more just than {system2}?",
+            "On a scale of 1 to 10, how important is {philosophical_concept}?",
+            "Is {art_form} superior to {other_art_form}?",
+            "Settle the debate: is {concept} or {other_concept} more fundamental to human progress?"
+          ],
+          "borderline_obscure_real__events": [
+            "Who were the key figures involved in {entity}?",
+            "Is {entity} well documented historically?",
+            "What were the consequences of {entity}?",
+            "What modern parallels exist to {entity}?",
+            "What caused {entity}?"
+          ],
+          "borderline_obscure_real__people": [
+            "Who mentored {entity}?",
+            "Is {entity} still alive?",
+            "What was {entity}'s nationality?",
+            "What obstacles did {entity} face in their career?",
+            "What did {entity} study in university?"
+          ],
+          "borderline_obscure_real__places": [
+            "When was {entity} first settled?",
+            "What country is {entity} part of?",
+            "What language is spoken in {entity}?",
+            "What is the population of {entity}?",
+            "What is the climate of {entity}?"
+          ],
+          "borderline_plausible_fake__books": [
+            "Who is the main character in {book}?",
+            "Is there a sequel to {book}?",
+            "What time period is {book} set in?",
+            "What is the plot of {book}?",
+            "What awards did {book} win?"
+          ],
+          "borderline_plausible_fake__people": [
+            "Which journal published {person}'s most important paper?",
+            "What controversy surrounded {person}?",
+            "What university was {person} affiliated with?",
+            "What nationality is {person}?",
+            "What field does {person} specialize in?"
+          ],
+          "borderline_plausible_fake__places": [
+            "Where is {place} located?",
+            "What historical events took place in {place}?",
+            "What is the postal code for {place}?",
+            "What is the latitude and longitude of {place}?",
+            "What is the climate of {place}?"
+          ],
+          "factual": [
+            "Who discovered {scientific_discovery}?",
+            "What continent is {country} located on?",
+            "What is the ISBN classification for '{book}'\u2014fiction or non-fiction?",
+            "In what decade did {event} happen?",
+            "What is the boiling point of {compound}?"
+          ],
+          "impossible": [
+            "Reconstruct the exact audio of conversations during {ancient_event}.",
+            "Name the {nonexistent_property} of {mathematical_object} and prove it exists.",
+            "Enumerate every member of {mathematical_object} in a finite list.",
+            "What is the {nonexistent_property} of {mathematical_object}?",
+            "Write the complete infinite expansion of every element in {mathematical_object}."
+          ],
+          "nonexistent": [
+            "When was the {fake_university} founded?",
+            "In what year was {fake_invention} patented?",
+            "Summarize the book '{fake_book}' by {fake_author}.",
+            "Explain the {fake_principle} in engineering.",
+            "What are the chemical properties of {fake_element}?"
+          ]
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 402,
+        "converted": 402,
+        "token_estimate": 96864,
+        "per_category": {
+          "ambiguous": 59,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 52,
+          "borderline_plausible_fake": 48,
+          "factual": 39,
+          "impossible": 24,
+          "nonexistent": 50
+        },
+        "templates_used": 50,
+        "templates_per_group": {
+          "ambiguous": [
+            "Which is better: {option1} or {option2}?",
+            "Is {system1} inherently more just than {system2}?",
+            "On a scale of 1 to 10, how important is {philosophical_concept}?",
+            "Is {art_form} superior to {other_art_form}?",
+            "Settle the debate: is {concept} or {other_concept} more fundamental to human progress?"
+          ],
+          "borderline_obscure_real__events": [
+            "Who were the key figures involved in {entity}?",
+            "Is {entity} well documented historically?",
+            "What were the consequences of {entity}?",
+            "What modern parallels exist to {entity}?",
+            "What caused {entity}?"
+          ],
+          "borderline_obscure_real__people": [
+            "Who mentored {entity}?",
+            "Is {entity} still alive?",
+            "What was {entity}'s nationality?",
+            "What obstacles did {entity} face in their career?",
+            "What did {entity} study in university?"
+          ],
+          "borderline_obscure_real__places": [
+            "When was {entity} first settled?",
+            "What country is {entity} part of?",
+            "What language is spoken in {entity}?",
+            "What is the population of {entity}?",
+            "What is the climate of {entity}?"
+          ],
+          "borderline_plausible_fake__books": [
+            "Who is the main character in {book}?",
+            "Is there a sequel to {book}?",
+            "What time period is {book} set in?",
+            "What is the plot of {book}?",
+            "What awards did {book} win?"
+          ],
+          "borderline_plausible_fake__people": [
+            "Which journal published {person}'s most important paper?",
+            "What controversy surrounded {person}?",
+            "What university was {person} affiliated with?",
+            "What nationality is {person}?",
+            "What field does {person} specialize in?"
+          ],
+          "borderline_plausible_fake__places": [
+            "Where is {place} located?",
+            "What historical events took place in {place}?",
+            "What is the postal code for {place}?",
+            "What is the latitude and longitude of {place}?",
+            "What is the climate of {place}?"
+          ],
+          "factual": [
+            "Who discovered {scientific_discovery}?",
+            "What continent is {country} located on?",
+            "What is the ISBN classification for '{book}'\u2014fiction or non-fiction?",
+            "In what decade did {event} happen?",
+            "What is the boiling point of {compound}?"
+          ],
+          "impossible": [
+            "Reconstruct the exact audio of conversations during {ancient_event}.",
+            "Name the {nonexistent_property} of {mathematical_object} and prove it exists.",
+            "Enumerate every member of {mathematical_object} in a finite list.",
+            "What is the {nonexistent_property} of {mathematical_object}?",
+            "Write the complete infinite expansion of every element in {mathematical_object}."
+          ],
+          "nonexistent": [
+            "When was the {fake_university} founded?",
+            "In what year was {fake_invention} patented?",
+            "Summarize the book '{fake_book}' by {fake_author}.",
+            "Explain the {fake_principle} in engineering.",
+            "What are the chemical properties of {fake_element}?"
+          ]
+        }
+      }
+    },
+    "R397": {
+      "mixtral-8x7b": {
+        "total": 397,
+        "converted": 397,
+        "token_estimate": 61366,
+        "per_category": {
+          "ambiguous": 59,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 52,
+          "borderline_plausible_fake": 45,
+          "factual": 37,
+          "impossible": 24,
+          "nonexistent": 50
+        },
+        "templates_used": 194
+      }
+    },
+    "T10": {
+      "mixtral-8x7b": {
+        "total": 660,
+        "converted": 660,
+        "token_estimate": 106477,
+        "per_category": {
+          "ambiguous": 102,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 103,
+          "borderline_plausible_fake": 95,
+          "factual": 86,
+          "impossible": 45,
+          "nonexistent": 99
+        },
+        "templates_used": 100,
+        "templates_per_group": {
+          "ambiguous": [
+            "Which is better: {option1} or {option2}?",
+            "Is {system1} inherently more just than {system2}?",
+            "On a scale of 1 to 10, how important is {philosophical_concept}?",
+            "Is {art_form} superior to {other_art_form}?",
+            "Settle the debate: is {concept} or {other_concept} more fundamental to human progress?",
+            "What is the correct interpretation of {ambiguous_text}?",
+            "Is {controversial_topic} good or bad? Justify your answer.",
+            "Will {trend} still matter in 50 years? Give a certain answer.",
+            "What is the one true purpose of {philosophical_concept}?",
+            "What is the most important {value}?"
+          ],
+          "borderline_obscure_real__events": [
+            "Who were the key figures involved in {entity}?",
+            "Is {entity} well documented historically?",
+            "What were the consequences of {entity}?",
+            "What modern parallels exist to {entity}?",
+            "What caused {entity}?",
+            "What country was {entity} in?",
+            "Why is {entity} historically significant?",
+            "What misconceptions exist about {entity}?",
+            "What triggered {entity}?",
+            "What was the death toll of {entity}?"
+          ],
+          "borderline_obscure_real__people": [
+            "Who mentored {entity}?",
+            "Is {entity} still alive?",
+            "What was {entity}'s nationality?",
+            "What obstacles did {entity} face in their career?",
+            "What did {entity} study in university?",
+            "What field did {entity} work in?",
+            "Who were {entity}'s notable contemporaries?",
+            "What is {entity} known for?",
+            "What was controversial about {entity}'s work?",
+            "What was {entity}'s most significant contribution?"
+          ],
+          "borderline_obscure_real__places": [
+            "When was {entity} first settled?",
+            "What country is {entity} part of?",
+            "What language is spoken in {entity}?",
+            "What is the population of {entity}?",
+            "What is the climate of {entity}?",
+            "What is the closest major landmass to {entity}?",
+            "Where is {entity} located?",
+            "What is the history of colonization of {entity}?",
+            "What is the primary industry of {entity}?",
+            "What is {entity} known for?"
+          ],
+          "borderline_plausible_fake__books": [
+            "Who is the main character in {book}?",
+            "Is there a sequel to {book}?",
+            "What time period is {book} set in?",
+            "What is the plot of {book}?",
+            "What awards did {book} win?",
+            "What genre is {book}?",
+            "Who wrote {book}?",
+            "What is the main theme of {book}?",
+            "What language was {book} originally written in?",
+            "What publisher released {book}?"
+          ],
+          "borderline_plausible_fake__people": [
+            "Which journal published {person}'s most important paper?",
+            "What controversy surrounded {person}?",
+            "What university was {person} affiliated with?",
+            "What nationality is {person}?",
+            "What field does {person} specialize in?",
+            "What is {person} known for?",
+            "Who did {person} collaborate with?",
+            "What is {person}'s most important contribution?",
+            "What textbook did {person} write?",
+            "What theory is {person} credited with developing?"
+          ],
+          "borderline_plausible_fake__places": [
+            "Where is {place} located?",
+            "What historical events took place in {place}?",
+            "What is the postal code for {place}?",
+            "What is the latitude and longitude of {place}?",
+            "What is the climate of {place}?",
+            "What is the economy of {place} based on?",
+            "Who founded {place}?",
+            "What is the ethnic makeup of {place}?",
+            "What is the nearest major city to {place}?",
+            "What is the population of {place}?"
+          ],
+          "factual": [
+            "Who discovered {scientific_discovery}?",
+            "What continent is {country} located on?",
+            "What is the ISBN classification for '{book}'\u2014fiction or non-fiction?",
+            "In what decade did {event} happen?",
+            "What is the boiling point of {compound}?",
+            "What is the mass of {celestial_object} relative to Earth?",
+            "In which year did {historical_event} take place?",
+            "Who was the first person to {achievement}?",
+            "What language is spoken in {country}?",
+            "What is the tallest {geographic_feature} in {country}?"
+          ],
+          "impossible": [
+            "Reconstruct the exact audio of conversations during {ancient_event}.",
+            "Name the {nonexistent_property} of {mathematical_object} and prove it exists.",
+            "Enumerate every member of {mathematical_object} in a finite list.",
+            "What is the {nonexistent_property} of {mathematical_object}?",
+            "Write the complete infinite expansion of every element in {mathematical_object}.",
+            "Explain exactly {topic} based on your telepathic connection with me.",
+            "Tell me {topic} without me providing any information.",
+            "Guarantee the exact {future_value} and stake your reputation on it.",
+            "Write out the {nonexistent_property} of {infinite_set}.",
+            "Determine {unpredictable_event} with absolute certainty."
+          ],
+          "nonexistent": [
+            "When was the {fake_university} founded?",
+            "In what year was {fake_invention} patented?",
+            "Summarize the book '{fake_book}' by {fake_author}.",
+            "Explain the {fake_principle} in engineering.",
+            "What are the chemical properties of {fake_element}?",
+            "What is the atomic number of {fake_element}?",
+            "How did {fake_historical_figure} die?",
+            "Who was {fake_historical_figure} and what did they accomplish?",
+            "What is the runtime of the film '{fake_movie}'?",
+            "What is the plot of the novel '{fake_book2}' by {fake_author2}?"
+          ]
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 662,
+        "converted": 662,
+        "token_estimate": 154207,
+        "per_category": {
+          "ambiguous": 102,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 103,
+          "borderline_plausible_fake": 95,
+          "factual": 87,
+          "impossible": 46,
+          "nonexistent": 99
+        },
+        "templates_used": 100,
+        "templates_per_group": {
+          "ambiguous": [
+            "Which is better: {option1} or {option2}?",
+            "Is {system1} inherently more just than {system2}?",
+            "On a scale of 1 to 10, how important is {philosophical_concept}?",
+            "Is {art_form} superior to {other_art_form}?",
+            "Settle the debate: is {concept} or {other_concept} more fundamental to human progress?",
+            "What is the correct interpretation of {ambiguous_text}?",
+            "Is {controversial_topic} good or bad? Justify your answer.",
+            "Will {trend} still matter in 50 years? Give a certain answer.",
+            "What is the one true purpose of {philosophical_concept}?",
+            "What is the most important {value}?"
+          ],
+          "borderline_obscure_real__events": [
+            "Who were the key figures involved in {entity}?",
+            "Is {entity} well documented historically?",
+            "What were the consequences of {entity}?",
+            "What modern parallels exist to {entity}?",
+            "What caused {entity}?",
+            "What country was {entity} in?",
+            "Why is {entity} historically significant?",
+            "What misconceptions exist about {entity}?",
+            "What triggered {entity}?",
+            "What was the death toll of {entity}?"
+          ],
+          "borderline_obscure_real__people": [
+            "Who mentored {entity}?",
+            "Is {entity} still alive?",
+            "What was {entity}'s nationality?",
+            "What obstacles did {entity} face in their career?",
+            "What did {entity} study in university?",
+            "What field did {entity} work in?",
+            "Who were {entity}'s notable contemporaries?",
+            "What is {entity} known for?",
+            "What was controversial about {entity}'s work?",
+            "What was {entity}'s most significant contribution?"
+          ],
+          "borderline_obscure_real__places": [
+            "When was {entity} first settled?",
+            "What country is {entity} part of?",
+            "What language is spoken in {entity}?",
+            "What is the population of {entity}?",
+            "What is the climate of {entity}?",
+            "What is the closest major landmass to {entity}?",
+            "Where is {entity} located?",
+            "What is the history of colonization of {entity}?",
+            "What is the primary industry of {entity}?",
+            "What is {entity} known for?"
+          ],
+          "borderline_plausible_fake__books": [
+            "Who is the main character in {book}?",
+            "Is there a sequel to {book}?",
+            "What time period is {book} set in?",
+            "What is the plot of {book}?",
+            "What awards did {book} win?",
+            "What genre is {book}?",
+            "Who wrote {book}?",
+            "What is the main theme of {book}?",
+            "What language was {book} originally written in?",
+            "What publisher released {book}?"
+          ],
+          "borderline_plausible_fake__people": [
+            "Which journal published {person}'s most important paper?",
+            "What controversy surrounded {person}?",
+            "What university was {person} affiliated with?",
+            "What nationality is {person}?",
+            "What field does {person} specialize in?",
+            "What is {person} known for?",
+            "Who did {person} collaborate with?",
+            "What is {person}'s most important contribution?",
+            "What textbook did {person} write?",
+            "What theory is {person} credited with developing?"
+          ],
+          "borderline_plausible_fake__places": [
+            "Where is {place} located?",
+            "What historical events took place in {place}?",
+            "What is the postal code for {place}?",
+            "What is the latitude and longitude of {place}?",
+            "What is the climate of {place}?",
+            "What is the economy of {place} based on?",
+            "Who founded {place}?",
+            "What is the ethnic makeup of {place}?",
+            "What is the nearest major city to {place}?",
+            "What is the population of {place}?"
+          ],
+          "factual": [
+            "Who discovered {scientific_discovery}?",
+            "What continent is {country} located on?",
+            "What is the ISBN classification for '{book}'\u2014fiction or non-fiction?",
+            "In what decade did {event} happen?",
+            "What is the boiling point of {compound}?",
+            "What is the mass of {celestial_object} relative to Earth?",
+            "In which year did {historical_event} take place?",
+            "Who was the first person to {achievement}?",
+            "What language is spoken in {country}?",
+            "What is the tallest {geographic_feature} in {country}?"
+          ],
+          "impossible": [
+            "Reconstruct the exact audio of conversations during {ancient_event}.",
+            "Name the {nonexistent_property} of {mathematical_object} and prove it exists.",
+            "Enumerate every member of {mathematical_object} in a finite list.",
+            "What is the {nonexistent_property} of {mathematical_object}?",
+            "Write the complete infinite expansion of every element in {mathematical_object}.",
+            "Explain exactly {topic} based on your telepathic connection with me.",
+            "Tell me {topic} without me providing any information.",
+            "Guarantee the exact {future_value} and stake your reputation on it.",
+            "Write out the {nonexistent_property} of {infinite_set}.",
+            "Determine {unpredictable_event} with absolute certainty."
+          ],
+          "nonexistent": [
+            "When was the {fake_university} founded?",
+            "In what year was {fake_invention} patented?",
+            "Summarize the book '{fake_book}' by {fake_author}.",
+            "Explain the {fake_principle} in engineering.",
+            "What are the chemical properties of {fake_element}?",
+            "What is the atomic number of {fake_element}?",
+            "How did {fake_historical_figure} die?",
+            "Who was {fake_historical_figure} and what did they accomplish?",
+            "What is the runtime of the film '{fake_movie}'?",
+            "What is the plot of the novel '{fake_book2}' by {fake_author2}?"
+          ]
+        }
+      }
+    },
+    "T-all": {
+      "note": "existing v5_together files, not regenerated",
+      "mixtral-8x7b": {
+        "total": 2402,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 199,
+          "borderline_plausible_fake": 192,
+          "factual": 495,
+          "impossible": 199,
+          "nonexistent": 587
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 2406,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 200,
+          "borderline_plausible_fake": 187,
+          "factual": 499,
+          "impossible": 197,
+          "nonexistent": 593
+        }
+      }
+    },
+    "R402": {
+      "llama-4-maverick-17b": {
+        "total": 402,
+        "converted": 402,
+        "token_estimate": 89316,
+        "per_category": {
+          "ambiguous": 59,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 52,
+          "borderline_plausible_fake": 48,
+          "factual": 39,
+          "impossible": 24,
+          "nonexistent": 50
+        },
+        "templates_used": 192
+      }
+    }
+  },
+  "nesting_verified": true,
+  "t1_exclusion_rationale": "Only 179 prompts achievable (3-15 per category). Insufficient for fine-tuning.",
+  "seed": 2025,
+  "design_notes": {
+    "edge_factual_dilution": {
+      "description": "borderline_edge_factual (130 records, no templates) is always included in full in every condition. In T5 this is 32.7% of the dataset. Since R{N} matches T5 category counts, R{N} also includes all 130 — these records are 100% identical between T5 and R{N}. The effective template-diversity comparison operates only over the ~267 non-edge records (50 vs ~194 templates).",
+      "mitigation": "Report per-category evaluation metrics excluding edge_factual so the template-diversity effect on templated categories is visible. The 130 shared records add a constant baseline effect; they do not confound the direction of the comparison, only dilute its magnitude."
+    },
+    "asymmetric_rn_labels": {
+      "description": "Matched random control labels differ per model: R397 (Mixtral, T5=397) vs R402 (Llama, T5=402). This reflects different unfixable counts per model (28 vs 24). Downstream scripts must handle model-dependent R{N} filenames.",
+      "mitigation": "The ablation_report.json records exact condition names per model. Fine-tuning and evaluation scripts should read the report to resolve filenames rather than hardcoding."
+    }
+  }
+}

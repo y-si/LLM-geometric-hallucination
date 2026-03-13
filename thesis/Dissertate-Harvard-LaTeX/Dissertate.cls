@@ -120,7 +120,7 @@
 
 % References.
 \renewcommand\bibname{References}
-\RequirePackage[super,comma,numbers]{natbib}
+\RequirePackage[square,comma,numbers]{natbib}
 \renewcommand{\bibnumfmt}[1]{[#1]}
 \RequirePackage[palatino]{quotchap}
 \renewcommand*{\chapterheadstartvskip}{\vspace*{-0.5\baselineskip}}
@@ -223,7 +223,7 @@
 	\theauthor\\ to\\ The Department of \@department\\
 	\vspace{12pt}
 	in partial fulfillment of the requirements\\
-	for the degree of\\ \@degree\\
+	for the degree with honors of\\ \@degree\\
 	in the subject of\\ \@field\\
 	\vspace{12pt}
 	\@university\\ \@universitycity, \@universitystate\\

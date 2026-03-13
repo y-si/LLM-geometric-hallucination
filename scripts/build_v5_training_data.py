@@ -7,7 +7,9 @@ For each V5 prompt, selects the single best response across:
 Selection priority: correct (0) > partial (1) > refusal (3) > hallucination (2)
 Tiebreaker within same label: highest judge_confidence.
 
-CoT Verification excluded (62-68% refusal rate, uniquely saves <0.05% prompts).
+CoT Verification excluded (original 62-68% refusal rate was API failure artifact — see
+JUDGE_CONTAMINATION_ISSUE.md — but CoT still excluded because non-CoT prefixes already
+achieve 98-99% correct, and CoT's verbose reasoning-chain format is unsuitable for training).
 Baseline included as candidate (prevents 6 regression cases where baseline correct but all prefixes hallucinate).
 """
 

@@ -82,6 +82,7 @@
       "launched_at": "2026-03-05T17:04:50.688285",
       "status": "completed",
       "output_name": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-v5-llama-cfgA-acef853f",
+      "serverless_endpoint": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-v5-llama-cfgA-acef853f-adapter",
       "completed_at": "2026-03-05T18:32:18.202235"
     }
   ],
@@ -89,6 +90,10 @@
     "mixtral-8x7b_configA": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgA-8e4653cf",
     "mixtral-8x7b_configB": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgB-f211fed7",
     "mixtral-8x7b_configC": "seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-v5-mixtral-cfgC-937e9a1f",
-    "llama-4-maverick-17b_configA": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-v5-llama-cfgA-acef853f"
+    "llama-4-maverick-17b_configA": "seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-v5-llama-cfgA-acef853f-adapter"
+  },
+  "deployment_notes": {
+    "llama-4-maverick-17b": "Serverless LoRA inference available. Use the -adapter suffix endpoint.",
+    "mixtral-8x7b": "Requires dedicated endpoint ($0.13/min). Deploy from dashboard, run inference, then stop."
   }
 }

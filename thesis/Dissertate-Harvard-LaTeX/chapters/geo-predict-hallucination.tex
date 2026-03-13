@@ -1,0 +1,87 @@
+%!TEX root = ../dissertation.tex
+\begin{savequote}[75mm]
+Nulla facilisi. In vel sem. Morbi id urna in diam dignissim feugiat. Proin molestie tortor eu velit. Aliquam erat volutpat. Nullam ultrices, diam tempus vulputate egestas, eros pede varius leo.
+\qauthor{Quoteauthor Lastname}
+\end{savequote}
+
+\chapter{Can Geometry Predict Hallucinations?}
+\label{ch:geo-predict-hallucination}
+
+% CHAPTER OPENING PARAGRAPH — write after body sections are complete.
+% Purpose: (1) State the research question: can geometric properties of prompt embeddings
+%   predict hallucination, before generation, across models?
+% (2) Motivate why this matters: a pre-generation risk signal computed from the question
+%   text alone would be model-agnostic and deployable without running inference.
+%   Theoretically interesting: suggests hallucination risk is partly a property of the
+%   question's position in embedding space, not just model-internal processing.
+% (3) Chapter roadmap: Section 5.1 establishes baselines and validates labels.
+%   Section 5.2 tests whether geometric features differ between hallucinated and correct
+%   prompts (between-category). Section 5.3 decomposes category vs geometric signal.
+%   Section 5.4 presents the core within-category finding. Section 5.5 synthesizes
+%   which features matter. Section 5.6 discusses implications and limitations.
+% Tone: frame as an open question, not a conclusion. "We investigate whether..."
+% NO SPOILERS: do not state AUC values, p-values, or which features win.
+
+\section{Baseline Hallucination Rates}
+\label{sec:baseline-rates}
+
+Chapter~\ref{ch:setup} described the experimental infrastructure: a 2,879-prompt benchmark spanning seven categories of knowledge failure, a 10-model cross-model benchmark suite, a three-judge consensus evaluation pipeline, and a geometric feature extraction approach based on external embeddings. We now turn to results. This section establishes the baseline: how often do frontier language models hallucinate on our benchmark, how consistent are these failures across models, and can we trust the labels that all subsequent analysis depends on?
+
+\subsection{Cross-Model Benchmark}
+\label{sec:cross-model}
+
+We evaluated all 10 models on the 449-prompt initial benchmark using the consensus judging pipeline described in Section~\ref{sec:judging}. Table~\ref{tab:10-model-rates} reports the results.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Model} & \textbf{Family} & \textbf{Hallucinations ($n$)} & \textbf{Rate (\%)} \\
+\midrule
+Claude Haiku 4.5 & Anthropic & 6 & 1.34 \\
+Claude Opus 4.5 & Anthropic & 9 & 2.00 \\
+Claude Sonnet 4.5 & Anthropic & 11 & 2.45 \\
+Qwen 3 Next 80B & Alibaba & 11 & 2.45 \\
+GPT-5.1 & OpenAI & 25 & 5.57 \\
+Llama 4 Maverick 17B & Meta & 26 & 5.79 \\
+GPT-4.1 & OpenAI & 32 & 7.13 \\
+Mixtral 8x7B & Mistral & 53 & 11.80 \\
+GPT-4.1-mini & OpenAI & 56 & 12.47 \\
+GPT-4o-mini & OpenAI & 80 & 17.82 \\
+\bottomrule
+\end{tabular}
+\caption{Hallucination rates across 10 frontier models on the 449-prompt initial benchmark. Rates range from 1.34\% to 17.82\%---a 13$\times$ spread. All responses were evaluated by the three-judge consensus panel (Section~\ref{sec:judging}).}
+\label{tab:10-model-rates}
+\end{table}
+
+Hallucination rates vary by a factor of 13 times, from 1.34\% (Claude Haiku 4.5) to 17.82\% (GPT-4o-mini). The ranking does not follow a simple parameter-count ordering: Claude Haiku, the smallest model in the Anthropic family, outperforms Claude Opus and all GPT variants, suggesting that training methodology and data curation contribute more to hallucination resistance than raw model scale. Grouping by provider, Anthropic models exhibit the lowest hallucination rates (1.3--2.5\%), OpenAI models span the full range (5.6--17.8\%), and the two open-weight models---Mixtral 8x7B and Llama 4 Maverick---fall in the middle-to-high range (5.8\% and 11.8\%, respectively). These two open-weight models serve as the intervention targets for the prompting and fine-tuning experiments in Chapters~\ref{ch:prefixes} and~\ref{ch:finetuning}, spanning the difficulty spectrum from moderate to high baseline hallucination rates.
+
+To assess whether certain prompts are universally difficult or whether hallucination patterns are model-specific, we computed pairwise Kendall's $\tau$ rank correlations---a nonparametric measure of ordinal association between two ranked lists, where $\tau = 1$ indicates perfect agreement and $\tau = 0$ indicates no association---between the 10 models' per-prompt error indicators, yielding 45 model pairs. The mean correlation is $\tau = 0.319$ (median 0.303, range 0.068--0.617), indicating moderate cross-model consistency. Some prompts are hard for many models, but substantial model-specific variance remains. Same-family pairs show stronger correlations: GPT-4.1-mini and GPT-4o-mini ($\tau = 0.617$), GPT-4.1 and GPT-4.1-mini ($\tau = 0.524$), and---perhaps surprisingly---Claude Sonnet 4.5 and GPT-5.1 ($\tau = 0.590$), suggesting shared training-data effects that cross provider boundaries. Cross-family correlations are weaker, with several near zero: Qwen 3 Next and Claude Sonnet ($\tau = 0.068$), Qwen 3 Next and GPT-4.1 ($\tau = 0.068$). This moderate consistency is a prerequisite for the geometric analysis that follows: if hallucination were entirely model-specific, a model-agnostic geometric predictor computed from prompt text alone would have nothing to learn. The fact that prompts carry a shared difficulty signal, even if partial, motivates the search for geometric correlates. The full $10 \times 10$ correlation matrix is reported in Appendix~\ref{app:kendall-matrix}.
+% TODO: Create appendix section \label{app:kendall-matrix} with the full Kendall's tau
+% heatmap or table. Source: results/v3/multi_model/stats/kendall_tau_matrix.csv
+
+\subsection{Expanded Benchmark Baselines}
+\label{sec:expanded-baselines}
+
+The initial benchmark establishes cross-model patterns but is limited to 449 prompts---insufficient for the fine-tuning experiments in Chapter~\ref{ch:finetuning} and for within-category statistical analysis across all seven categories. We therefore evaluate the two intervention target models on the expanded benchmark of 2,430 prompts (Section~\ref{sec:scaling}), which serves as the primary dataset for the geometric analyses in this chapter.
+
+Mixtral 8x7B achieves 82.5\% correctness with a 14.8\% hallucination rate; Llama 4 Maverick achieves 87.9\% correctness with a 9.7\% hallucination rate. Both hallucination rates are higher than on the initial benchmark (Mixtral: 11.8\% $\rightarrow$ 14.8\%; Llama: 5.8\% $\rightarrow$ 9.7\%). This is not a failure to replicate. The expanded benchmark deliberately includes larger borderline sub-categories (200 plausible fakes, 200 obscure reals, and 130 edge factuals, compared to 31, 30, and 20 in the initial benchmark) and draws from deeper, more diverse entity pools---by design, it probes harder regions of the knowledge space. Hallucination rates vary sharply across categories, from below 2\% on ambiguous prompts to 38.5\% on borderline plausible fakes (Mixtral) and 28.5\% (Llama). This category-level difficulty gradient---spanning nearly a 50$\times$ range---will become central to the analysis in Sections~\ref{sec:between-category}--\ref{sec:within-category}, where we test whether geometric features predict hallucination beyond what category membership alone explains.
+
+\subsection{Judging Pipeline Validation}
+\label{sec:judge-validation}
+
+Before analyzing what predicts hallucination, we verify the labels themselves. Section~\ref{sec:sensitivity} pre-registered three robustness checks on the consensus judging pipeline; we now report their results on the expanded benchmark baselines (4,860 total judgments: 2,430 prompts $\times$ 2 models).
+
+\paragraph{Unanimous-only aggregation.} Of the 4,860 entries, 88.3\% receive unanimous agreement from all three judges. Restricting to unanimous-only labels shifts the combined hallucination rate from 12.2\% to 9.5\%---contested labels skew toward hallucination, consistent with the expectation that borderline cases are harder to judge. No qualitative conclusions change under this stricter aggregation rule.
+
+\paragraph{Judge removal.} Removing any single judge and recomputing consensus from the remaining two changes only 3.0--3.5\% of labels. Removing Llama 4 Maverick (the most lenient judge) increases the combined hallucination rate to 14.1\%; removing GPT-5.1 decreases it to 10.3\%. The direction is expected---different judges have different strictness thresholds---but the magnitude is small. No single judge drives the results.
+
+\paragraph{Self-evaluation bias.} Llama 4 Maverick serves as both a judge and an intervention target, creating a potential self-preference conflict \citep{wataoka2024selfpreference}. To quantify this, we compare the accuracy gap that Llama assigns to its own responses versus Mixtral's responses, and compare this to the same gap under full consensus. The excess leniency---how much more favorably Llama rates itself beyond what the consensus differential predicts---is $-2.3$ percentage points. The negative value means Llama is slightly \emph{stricter} on its own outputs than the consensus would suggest. Self-preference bias is negligible.
+
+\paragraph{Three-way splits.} Across all datasets, genuine three-way splits (all three judges assigning different labels) occur in 1.24\% of entries. The default tiebreaker assigns the label of the first judge in the panel ordering (GPT-5.1), which tends conservative: a confidence-based tiebreaker would reclassify approximately 0.5 percentage points of hallucination labels as correct (192 of 519 genuine splits). We retain the default tiebreaker for consistency and note that this introduces a small conservative bias.
+
+\paragraph{Human validation.} On a stratified sample of $n = 50$ prompt--response pairs from the initial benchmark, human labels agree with consensus labels 90\% of the time (45 of 50). Of the 5 disagreements, 3 involve the consensus labeling a response as hallucinated where the human annotator judged it correct---again consistent with a conservative bias that overcounts hallucination. This validation was conducted by a single annotator (the thesis author), which limits its strength; expanding to multiple annotators with inter-rater reliability is noted as future work.
+
+Based on these checks, we use majority-vote consensus labels throughout the remainder of this thesis.
+

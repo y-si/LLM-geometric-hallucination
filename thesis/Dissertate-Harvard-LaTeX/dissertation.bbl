@@ -1,0 +1,80 @@
+\begin{thebibliography}{}
+
+\bibitem[Hu et~al., 2022]{hu2022lora}
+Hu, E.~J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., \&
+  Chen, W. (2022).
+\newblock {LoRA}: Low-rank adaptation of large language models.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Ji et~al., 2023]{ji2023survey}
+Ji, Z., Lee, N., Frieske, R., et~al. (2023).
+\newblock Survey of hallucination in natural language generation.
+\newblock {\em ACM Computing Surveys}.
+\newblock arXiv:2202.03629.
+
+\bibitem[Kadavath et~al., 2022]{kadavath2022language}
+Kadavath, S., Conerly, T., Askell, A., Henighan, T., Drain, D., Perez, E.,
+  Schiefer, N., Hatfield-Dodds, Z., DasSarma, N., Tran-Johnson, E., et~al.
+  (2022).
+\newblock Language models (mostly) know what they know.
+\newblock {\em arXiv preprint arXiv:2207.05221}.
+
+\bibitem[Li et~al., 2023]{li2023halueval}
+Li, J., Cheng, X., Zhao, W.~X., Nie, J.-Y., \& Wen, J.-R. (2023).
+\newblock {HaluEval}: A large-scale hallucination evaluation benchmark for
+  large language models.
+\newblock In {\em Proceedings of EMNLP}.
+
+\bibitem[Lin et~al., 2022]{lin2022truthfulqa}
+Lin, S., Hilton, J., \& Evans, O. (2022).
+\newblock Truthfulqa: Measuring how models mimic human falsehoods.
+\newblock In {\em Proceedings of ACL}.
+
+\bibitem[Liu et~al., 2023]{liu2023geval}
+Liu, Y., Iter, D., Xu, Y., Wang, S., Xu, R., \& Zhu, C. (2023).
+\newblock {G}-eval: {NLG} evaluation using {GPT}-4 with better human alignment.
+\newblock In {\em Proceedings of the 2023 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}  (pp.\ 2511--2522).
+
+\bibitem[Maynez et~al., 2020]{maynez2020faithfulness}
+Maynez, J., Narayan, S., Bohnet, B., \& McDonald, R. (2020).
+\newblock On faithfulness and factuality in abstractive summarization.
+\newblock In {\em Proceedings of ACL}.
+
+\bibitem[Sun et~al., 2024]{sun2024entity}
+Sun, K., Xu, Y., Zha, H., Liu, Y., \& Dong, X.~L. (2024).
+\newblock Head-to-tail: How knowledgeable are large language models ({LLM})?
+  {A.K.A.} will {LLMs} replace knowledge graphs?
+\newblock In {\em Proceedings of NAACL}.
+
+\bibitem[Wataoka et~al., 2024]{wataoka2024selfpreference}
+Wataoka, K., Takahashi, T., \& Ri, R. (2024).
+\newblock Self-preference bias in {LLM}-as-a-judge.
+\newblock {\em arXiv preprint arXiv:2410.21819}.
+
+\bibitem[Wei et~al., 2024]{wei2024simpleqa}
+Wei, J., Tay, Y., Bommasani, R., Raffel, C., Zoph, B., Borgeaud, S., Yogatama,
+  D., Bosma, M., Zhou, D., Metzler, D., Chi, E.~H., Hashimoto, T., Vinyals, O.,
+  Liang, P., Dean, J., \& Fedus, W. (2024).
+\newblock {SimpleQA}: Measuring short-form factuality in large language models.
+\newblock {\em arXiv preprint arXiv:2410.07338}.
+
+\bibitem[Yin et~al., 2023]{yin2023large}
+Yin, Z., Sun, Q., Guo, Q., Wu, J., Qiu, X., \& Huang, X. (2023).
+\newblock Do large language models know what they don't know?
+\newblock In {\em Findings of ACL}.
+
+\bibitem[Zheng et~al., 2023]{zheng2023judging}
+Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., Lin, Z.,
+  Li, Z., Li, D., Xing, E.~P., et~al. (2023).
+\newblock Judging {LLM}-as-a-judge with {MT}-bench and chatbot arena.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Zhou et~al., 2023]{zhou2023lima}
+Zhou, C., Liu, P., Xu, P., Iyer, S., Sun, J., Mao, Y., Ma, X., Efrat, A., Yu,
+  P., Yu, L., Zhang, S., Ghosh, G., Lewis, M., Zettlemoyer, L., \& Levy, O.
+  (2023).
+\newblock {LIMA}: Less is more for alignment.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\end{thebibliography}

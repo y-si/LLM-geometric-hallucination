@@ -1,0 +1,187 @@
+{
+  "experiment": "Phase 10: Cross-Category Generalization Ablation",
+  "seed": 2026,
+  "conditions": {
+    "entity_dep": {
+      "mixtral-8x7b": {
+        "total": 978,
+        "converted": 978,
+        "skipped": 0,
+        "token_estimate": 143285,
+        "per_category": {
+          "borderline_obscure_real": 199,
+          "borderline_plausible_fake": 192,
+          "nonexistent": 587
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 980,
+        "converted": 980,
+        "skipped": 0,
+        "token_estimate": 139647,
+        "per_category": {
+          "borderline_obscure_real": 200,
+          "borderline_plausible_fake": 187,
+          "nonexistent": 593
+        }
+      }
+    },
+    "entity_indep": {
+      "mixtral-8x7b": {
+        "total": 1424,
+        "converted": 1424,
+        "skipped": 0,
+        "token_estimate": 274565,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "factual": 495,
+          "impossible": 199
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 1426,
+        "converted": 1426,
+        "skipped": 0,
+        "token_estimate": 518666,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "factual": 499,
+          "impossible": 197
+        }
+      }
+    },
+    "leave_out_nonex": {
+      "mixtral-8x7b": {
+        "total": 1815,
+        "converted": 1815,
+        "skipped": 0,
+        "token_estimate": 339658,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 199,
+          "borderline_plausible_fake": 192,
+          "factual": 495,
+          "impossible": 199
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 1813,
+        "converted": 1813,
+        "skipped": 0,
+        "token_estimate": 578455,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 200,
+          "borderline_plausible_fake": 187,
+          "factual": 499,
+          "impossible": 197
+        }
+      }
+    },
+    "leave_out_fact": {
+      "mixtral-8x7b": {
+        "total": 1907,
+        "converted": 1907,
+        "skipped": 0,
+        "token_estimate": 357713,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 199,
+          "borderline_plausible_fake": 192,
+          "impossible": 199,
+          "nonexistent": 587
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 1907,
+        "converted": 1907,
+        "skipped": 0,
+        "token_estimate": 588426,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 200,
+          "borderline_plausible_fake": 187,
+          "impossible": 197,
+          "nonexistent": 593
+        }
+      }
+    },
+    "R_entity_dep": {
+      "mixtral-8x7b": {
+        "total": 978,
+        "converted": 978,
+        "skipped": 0,
+        "token_estimate": 169205,
+        "per_category": {
+          "ambiguous": 244,
+          "borderline_edge_factual": 53,
+          "borderline_obscure_real": 81,
+          "borderline_plausible_fake": 78,
+          "factual": 202,
+          "impossible": 81,
+          "nonexistent": 239
+        }
+      },
+      "llama-4-maverick-17b": {
+        "total": 980,
+        "converted": 980,
+        "skipped": 0,
+        "token_estimate": 269103,
+        "per_category": {
+          "ambiguous": 244,
+          "borderline_edge_factual": 53,
+          "borderline_obscure_real": 81,
+          "borderline_plausible_fake": 76,
+          "factual": 203,
+          "impossible": 80,
+          "nonexistent": 243
+        }
+      }
+    },
+    "Full": {
+      "mixtral-8x7b": {
+        "total": 2402,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 199,
+          "borderline_plausible_fake": 192,
+          "factual": 495,
+          "impossible": 199,
+          "nonexistent": 587
+        },
+        "note": "Existing T-all from Phase 9, not regenerated"
+      },
+      "llama-4-maverick-17b": {
+        "total": 2406,
+        "per_category": {
+          "ambiguous": 600,
+          "borderline_edge_factual": 130,
+          "borderline_obscure_real": 200,
+          "borderline_plausible_fake": 187,
+          "factual": 499,
+          "impossible": 197,
+          "nonexistent": 593
+        },
+        "note": "Existing T-all from Phase 9, not regenerated"
+      }
+    }
+  },
+  "entity_dep_categories": [
+    "borderline_obscure_real",
+    "borderline_plausible_fake",
+    "nonexistent"
+  ],
+  "entity_indep_categories": [
+    "ambiguous",
+    "borderline_edge_factual",
+    "factual",
+    "impossible"
+  ]
+}

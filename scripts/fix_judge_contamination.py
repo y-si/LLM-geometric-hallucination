@@ -1,0 +1,432 @@
+"""Fix judge contamination: recompute consensus labels from real (non-failed) judges.
+
+When a judge API call failed, it silently defaulted to label=3, confidence=0.0.
+This fake vote participated in the majority vote, contaminating consensus labels.
+
+This script:
+1. Scans V5 JSONL files (non-CoT) for entries with failed judges
+2. Recomputes consensus using only real judges
+3. In --apply mode: backs up originals, writes corrected files
+
+DOES NOT touch:
+- V3 data (clean)
+- TruthfulQA data (clean)
+- Cross-category ablation data (clean)
+- CoT verification data (needs actual re-judging, not fixable from stored data)
+- V4 data (initial benchmark, separate analysis)
+
+Usage:
+    python3 scripts/fix_judge_contamination.py              # Dry run (default)
+    python3 scripts/fix_judge_contamination.py --apply       # Apply corrections
+    python3 scripts/fix_judge_contamination.py --verbose     # Show every change
+"""
+
+import json
+import shutil
+import argparse
+import sys
+from pathlib import Path
+from collections import Counter
+from datetime import datetime
+
+
+# === CONFIGURATION ===
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# Files to process (non-CoT V5 data)
+FILES_TO_PROCESS = []
+
+# V5 baselines
+for model in ["mixtral-8x7b", "llama-4-maverick-17b"]:
+    FILES_TO_PROCESS.append(
+        PROJECT_ROOT / "results" / "v5_baselines" / model / "no_prefix" / "judged_answers.jsonl"
+    )
+
+# V5 prefixes (non-CoT only)
+for model in ["mixtral-8x7b", "llama-4-maverick-17b"]:
+    for prefix in ["entity_aware", "structured_caution", "epistemic_humility", "fact_grounded"]:
+        FILES_TO_PROCESS.append(
+            PROJECT_ROOT / "results" / "v5_prefixes" / model / prefix / "judged_answers.jsonl"
+        )
+
+# V5 finetuned (main configs)
+for model in ["mixtral-8x7b", "llama-4-maverick-17b"]:
+    for config in ["configA", "configB", "configC"]:
+        p = PROJECT_ROOT / "results" / "v5_finetuned" / model / config / "judged_answers.jsonl"
+        if p.exists():
+            FILES_TO_PROCESS.append(p)
+
+# V5 finetuned (ablation)
+for ablation in ["T5_mixtral", "T10_mixtral", "R397_mixtral", "T5_llama", "T10_llama", "R402_llama"]:
+    p = PROJECT_ROOT / "results" / "v5_finetuned" / "ablation" / ablation / "judged_answers.jsonl"
+    if p.exists():
+        FILES_TO_PROCESS.append(p)
+
+# Files to NEVER touch
+NEVER_TOUCH = {
+    "v3",
+    "truthfulqa",
+    "cross_cat_ablation",
+    "cot_verification",
+    "v4_prefix_experiment",
+}
+
+LABEL_NAMES = {0: "Correct", 1: "Partial", 2: "Hallucinated", 3: "Refused"}
+
+
+# === DETECTION ===
+
+def is_failed_judge(judgment: dict) -> bool:
+    """Detect a failed judge: confidence=0.0 AND error in justification."""
+    if judgment.get("confidence") != 0.0:
+        return False
+    justification = str(judgment.get("justification", ""))
+    return "Error" in justification or "error" in justification
+
+
+# === CONSENSUS RECOMPUTATION ===
+
+def recompute_consensus(real_judgments: list) -> dict:
+    """Recompute consensus from real (non-failed) judges only.
+
+    Returns dict with: label, confidence, agreement_rate, method
+    """
+    if len(real_judgments) == 0:
+        return {"label": None, "confidence": 0.0, "agreement_rate": 0.0, "method": "no_real_judges"}
+
+    if len(real_judgments) == 1:
+        # Only 1 real judge — not enough for consensus
+        return {
+            "label": None,
+            "confidence": 0.0,
+            "agreement_rate": 0.0,
+            "method": "single_judge_insufficient",
+        }
+
+    labels = [j["label"] for j in real_judgments]
+    confidences = [j["confidence"] for j in real_judgments]
+
+    if len(real_judgments) == 2:
+        if labels[0] == labels[1]:
+            # Both real judges agree — clear consensus
+            return {
+                "label": labels[0],
+                "confidence": 1.0 * sum(confidences) / len(confidences),
+                "agreement_rate": 1.0,
+                "method": "two_judges_agree",
+            }
+        else:
+            # Two real judges disagree — use higher confidence as tiebreaker
+            if confidences[0] > confidences[1]:
+                winner = 0
+            elif confidences[1] > confidences[0]:
+                winner = 1
+            else:
+                # Equal confidence — use first judge (deterministic fallback)
+                winner = 0
+            return {
+                "label": labels[winner],
+                "confidence": 0.5 * sum(confidences) / len(confidences),
+                "agreement_rate": 0.5,
+                "method": f"two_judges_disagree_confidence_tiebreak_judge{winner}",
+            }
+
+    if len(real_judgments) == 3:
+        # All 3 judges are real — use standard majority vote
+        counts = Counter(labels)
+        majority_label, majority_count = counts.most_common(1)[0]
+        agreement_rate = majority_count / 3
+        avg_conf = sum(confidences) / 3
+        return {
+            "label": majority_label,
+            "confidence": agreement_rate * avg_conf,
+            "agreement_rate": agreement_rate,
+            "method": "three_judges_majority",
+        }
+
+    raise ValueError(f"Unexpected number of real judgments: {len(real_judgments)}")
+
+
+# === MAIN PROCESSING ===
+
+def process_file(filepath: Path, apply: bool, verbose: bool) -> dict:
+    """Process a single JSONL file. Returns stats dict."""
+    stats = {
+        "file": str(filepath.relative_to(PROJECT_ROOT)),
+        "total": 0,
+        "no_individual_judgments": 0,
+        "clean": 0,
+        "one_failure_agree": 0,
+        "one_failure_disagree": 0,
+        "two_plus_failures": 0,
+        "labels_changed": 0,
+        "labels_unchanged": 0,
+        "changes": [],  # List of (id, old_label, new_label)
+    }
+
+    # Safety: verify this file is not in the never-touch list
+    filepath_str = str(filepath)
+    for forbidden in NEVER_TOUCH:
+        if forbidden in filepath_str:
+            print(f"  SKIPPED (in never-touch list: {forbidden})")
+            return stats
+
+    if not filepath.exists():
+        print(f"  SKIPPED (file not found)")
+        return stats
+
+    # Read all entries
+    entries = []
+    with open(filepath) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                entries.append(json.loads(line))
+
+    stats["total"] = len(entries)
+    corrected_entries = []
+
+    for entry in entries:
+        individual = entry.get("individual_judgments")
+
+        if not individual or len(individual) != 3:
+            stats["no_individual_judgments"] += 1
+            corrected_entries.append(entry)
+            continue
+
+        # Identify failed judges
+        failed_indices = [i for i, j in enumerate(individual) if is_failed_judge(j)]
+        real_judgments = [j for i, j in enumerate(individual) if i not in failed_indices]
+
+        if len(failed_indices) == 0:
+            # No failures — entry is clean
+            stats["clean"] += 1
+            corrected_entries.append(entry)
+            continue
+
+        if len(failed_indices) >= 2:
+            # 2+ failures — cannot fix from stored data, flag it
+            stats["two_plus_failures"] += 1
+            # Don't change the entry, but add a flag
+            entry_copy = dict(entry)
+            entry_copy["_contamination_flag"] = {
+                "status": "unfixable_needs_rejudging",
+                "failed_judge_count": len(failed_indices),
+                "failed_judge_indices": failed_indices,
+                "timestamp": datetime.now().isoformat(),
+            }
+            corrected_entries.append(entry_copy)
+            continue
+
+        # Exactly 1 failure — recompute from 2 real judges
+        assert len(failed_indices) == 1
+        assert len(real_judgments) == 2
+
+        result = recompute_consensus(real_judgments)
+        old_label = entry.get("judge_label")
+        new_label = result["label"]
+
+        if new_label is None:
+            # Shouldn't happen with 2 real judges, but be safe
+            stats["two_plus_failures"] += 1
+            corrected_entries.append(entry)
+            continue
+
+        if old_label == new_label:
+            if real_judgments[0]["label"] == real_judgments[1]["label"]:
+                stats["one_failure_agree"] += 1
+            else:
+                stats["one_failure_disagree"] += 1
+            stats["labels_unchanged"] += 1
+            # Still add correction metadata even if label didn't change
+            entry_copy = dict(entry)
+            entry_copy["_correction"] = {
+                "applied": True,
+                "reason": "judge_failure_recomputed",
+                "failed_judge_index": failed_indices[0],
+                "old_label": old_label,
+                "new_label": new_label,
+                "label_changed": False,
+                "method": result["method"],
+                "old_confidence": entry.get("judge_confidence"),
+                "new_confidence": result["confidence"],
+                "timestamp": datetime.now().isoformat(),
+            }
+            # Update confidence even if label didn't change (remove fake judge's influence)
+            entry_copy["judge_confidence"] = result["confidence"]
+            entry_copy["agreement_rate"] = result["agreement_rate"]
+            # Recalculate individual_confidence_avg from real judges only
+            entry_copy["individual_confidence_avg"] = sum(
+                j["confidence"] for j in real_judgments
+            ) / len(real_judgments)
+            corrected_entries.append(entry_copy)
+        else:
+            if real_judgments[0]["label"] == real_judgments[1]["label"]:
+                stats["one_failure_agree"] += 1
+            else:
+                stats["one_failure_disagree"] += 1
+            stats["labels_changed"] += 1
+            stats["changes"].append((
+                entry.get("id", "unknown"),
+                old_label,
+                new_label,
+                entry.get("category", "unknown"),
+            ))
+
+            if verbose:
+                print(f"    CHANGE: {entry.get('id')} [{entry.get('category')}] "
+                      f"{old_label}({LABEL_NAMES.get(old_label, '?')}) -> "
+                      f"{new_label}({LABEL_NAMES.get(new_label, '?')}) "
+                      f"[{result['method']}]")
+
+            entry_copy = dict(entry)
+            entry_copy["_correction"] = {
+                "applied": True,
+                "reason": "judge_failure_recomputed",
+                "failed_judge_index": failed_indices[0],
+                "old_label": old_label,
+                "new_label": new_label,
+                "label_changed": True,
+                "method": result["method"],
+                "old_confidence": entry.get("judge_confidence"),
+                "new_confidence": result["confidence"],
+                "timestamp": datetime.now().isoformat(),
+            }
+            entry_copy["judge_label"] = new_label
+            entry_copy["judge_confidence"] = result["confidence"]
+            entry_copy["agreement_rate"] = result["agreement_rate"]
+            entry_copy["individual_confidence_avg"] = sum(
+                j["confidence"] for j in real_judgments
+            ) / len(real_judgments)
+            corrected_entries.append(entry_copy)
+
+    # Verify we didn't lose or gain any entries
+    assert len(corrected_entries) == len(entries), (
+        f"Entry count mismatch: {len(corrected_entries)} vs {len(entries)}"
+    )
+
+    # Write if applying
+    if apply and (stats["labels_changed"] > 0 or stats["one_failure_agree"] > 0 or stats["one_failure_disagree"] > 0):
+        # Back up original
+        backup_path = filepath.with_suffix(".jsonl.backup_pre_contamination_fix")
+        if not backup_path.exists():
+            shutil.copy2(filepath, backup_path)
+            print(f"    Backed up to: {backup_path.name}")
+        else:
+            print(f"    Backup already exists: {backup_path.name}")
+
+        # Write corrected file
+        with open(filepath, "w") as f:
+            for entry in corrected_entries:
+                f.write(json.dumps(entry) + "\n")
+        print(f"    Written: {len(corrected_entries)} entries")
+
+    return stats
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Fix judge contamination in V5 JSONL files")
+    parser.add_argument("--apply", action="store_true",
+                        help="Actually write corrected files (default: dry run)")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Show every label change")
+    args = parser.parse_args()
+
+    mode = "APPLY" if args.apply else "DRY RUN"
+    print(f"=== Judge Contamination Fix ({mode}) ===")
+    print(f"Timestamp: {datetime.now().isoformat()}")
+    print()
+
+    # Verify files exist
+    existing_files = [f for f in FILES_TO_PROCESS if f.exists()]
+    missing_files = [f for f in FILES_TO_PROCESS if not f.exists()]
+
+    print(f"Files to process: {len(existing_files)}")
+    if missing_files:
+        print(f"Files not found (skipping): {len(missing_files)}")
+        for f in missing_files:
+            print(f"  - {f.relative_to(PROJECT_ROOT)}")
+    print()
+
+    # Process each file
+    all_stats = []
+    total_changed = 0
+    total_entries = 0
+    total_unfixable = 0
+
+    # Track label transition counts
+    transition_counts = Counter()
+
+    for filepath in existing_files:
+        rel_path = filepath.relative_to(PROJECT_ROOT)
+        print(f"Processing: {rel_path}")
+
+        stats = process_file(filepath, apply=args.apply, verbose=args.verbose)
+        all_stats.append(stats)
+
+        total_entries += stats["total"]
+        total_changed += stats["labels_changed"]
+        total_unfixable += stats["two_plus_failures"]
+
+        for (entry_id, old_label, new_label, category) in stats["changes"]:
+            transition_counts[(old_label, new_label)] += 1
+
+        # Print file summary
+        affected = stats["one_failure_agree"] + stats["one_failure_disagree"]
+        print(f"  Total: {stats['total']}, Clean: {stats['clean']}, "
+              f"Affected: {affected}, Changed: {stats['labels_changed']}, "
+              f"Unfixable: {stats['two_plus_failures']}")
+        print()
+
+    # === GRAND SUMMARY ===
+    print("=" * 60)
+    print("GRAND SUMMARY")
+    print("=" * 60)
+    print(f"Total entries scanned:    {total_entries}")
+    print(f"Labels changed:           {total_changed}")
+    print(f"Labels unchanged:         {total_entries - total_changed - total_unfixable}")
+    print(f"Unfixable (2+ failures):  {total_unfixable}")
+    print(f"Change rate:              {total_changed / max(total_entries, 1) * 100:.2f}%")
+    print()
+
+    if transition_counts:
+        print("Label transitions:")
+        for (old, new), count in sorted(transition_counts.items(), key=lambda x: -x[1]):
+            print(f"  {LABEL_NAMES.get(old, old)} -> {LABEL_NAMES.get(new, new)}: {count}")
+        print()
+
+    if not args.apply:
+        print("This was a DRY RUN. No files were modified.")
+        print("To apply corrections, run: python3 scripts/fix_judge_contamination.py --apply")
+    else:
+        print("Corrections APPLIED. Original files backed up with .backup_pre_contamination_fix suffix.")
+
+    # Write summary JSON for audit trail
+    summary = {
+        "timestamp": datetime.now().isoformat(),
+        "mode": mode,
+        "total_entries": total_entries,
+        "labels_changed": total_changed,
+        "unfixable": total_unfixable,
+        "transitions": {f"{LABEL_NAMES.get(old, old)}->{LABEL_NAMES.get(new, new)}": count
+                        for (old, new), count in transition_counts.items()},
+        "files_processed": [s["file"] for s in all_stats],
+        "per_file": [{
+            "file": s["file"],
+            "total": s["total"],
+            "clean": s["clean"],
+            "labels_changed": s["labels_changed"],
+            "unfixable": s["two_plus_failures"],
+        } for s in all_stats],
+    }
+
+    summary_path = PROJECT_ROOT / "results" / "contamination_fix_summary.json"
+    if args.apply:
+        with open(summary_path, "w") as f:
+            json.dump(summary, f, indent=2)
+        print(f"\nAudit summary written to: {summary_path.relative_to(PROJECT_ROOT)}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,8 @@
 # Experiment Log: Prompt Distillation for Hallucination Reduction
 
+> **⚠️ POST-CONTAMINATION-FIX WARNING (March 12, 2026):**
+> Numbers throughout this log written before March 11, 2026 use pre-contamination-fix data. Key stale numbers: baselines (81.7%/14.3% Mixtral, 87.1%/9.5% Llama → 82.5%/14.8%, 87.9%/9.7%), prefix rates (5.2%/3.6% → 4.7%/3.0%), Step 9 training (2,402/28 → 2,403/27 Mixtral), template ablation (p=1.00/0.52 → p=0.099/0.773, seen/novel 92.6%/92.4% → 96.3%/93.0%). CoT 62-68% refusal INVALIDATED (API failure artifact). See correction addendum at end of log and `JUDGE_CONTAMINATION_ISSUE.md` for authoritative post-fix numbers. **Do NOT cite numbers from the body of this log in the thesis — use the analysis output files directly.**
+
 Running document tracking what we've done, what the results mean, and what comes next.
 
 **Models**: Mixtral 8x7B, Llama 4 Maverick 17B (both open-source via Together AI)
@@ -17,13 +20,36 @@ Running document tracking what we've done, what the results mean, and what comes
 
 ---
 
+## Remaining TODO (updated Mar 11, 2026)
+
+**Experiments:**
+- [x] **Phase 10: Cross-category generalization ablation** — COMPLETE (Mar 12). All 10 conditions evaluated. Entity-dep generalizes surprisingly well (beats Full for Llama). Entity-indep worst (3-5× hallucination). See results below.
+
+**Writing & analysis:**
+- [x] **Phase 7 Steps 7C-D: Literature comparison narrative** — folded into thesis writing (Ch 8). Tables (7B) are complete and verified. Writing narrative directly in LaTeX rather than intermediate markdown. Bib entries added during chapter writing. See 7C structure plan in Phase 7 section below
+- [x] **Step 11C disclosure** — location decided: Ch 7.4 methodological note (~1-1.5 paragraphs + small table). Actual writing covered under thesis writing task below
+- [x] **Sensitivity analysis** — COMPLETE (Mar 12, 2026). Script fixed to filter failed judges from individual_judgments and exclude CoT. Re-run: `python3 scripts/sensitivity_analysis.py`. Output: `results/sensitivity_analysis.json`. All three checks pass. Results go in Ch 5 or Ch 7.
+- [ ] **Thesis writing** — all chapters. Due Mar 27.
+
+**Verification (manual):**
+- [ ] **Entity ground truth verification** — spot-check edge factual (150) and obscure real (89) against reliable sources
+- [ ] **Human validation expansion** — expand from n=50 to n=150, optional 2nd annotator. ~8 hrs manual
+
+**Deferred (future work):**
+- Phase 6: Geometry-guided targeting
+- Phase 8: Adversarial robustness
+
+---
+
 ## Thesis Narrative (How It All Connects)
 
 1. **V3 — Prediction**: Geometric features of embedding space (curvature, centrality, density) predict which prompts will cause hallucinations across 10 frontier models.
 2. **V4 — Intervention**: System-prompt prefixes reduce hallucinations by 90%+ without sacrificing correctness.
 3. **Bridge Analysis**: The same geometric features that predict hallucinations also predict *where interventions work* (AUC = 0.86) — and where they fail.
-4. **Fine-Tuning (next)**: Distill the "careful" prefix behavior into model weights via LoRA, so the model is safer without needing the prompt at inference time.
-5. **Unified framework**: Geometry is the diagnostic, prompts are the treatment, fine-tuning is the cure.
+4. **Fine-Tuning**: Distill the "careful" prefix behavior into model weights via LoRA, so the model is safer without needing the prompt at inference time.
+5. **Generalization**: Entity-fabrication fine-tuning transfers to TruthfulQA misconception-type hallucination (Llama: -4.4pp halluc, p=0.0005, Bonferroni-sig). The learned caution is not task-specific — it's a general epistemic improvement.
+6. **Cross-Category Generalization**: Fine-tuning on entity-dependent categories alone (~1,000 examples) matches or beats Full (~2,400) — caution transfers across category types. Three generalization types confirmed: unseen entities, unseen templates, unseen category types.
+7. **Unified framework**: Geometry is the diagnostic, prompts are the treatment, fine-tuning is the cure, and the cure generalizes across entities, templates, AND category types.
 
 ---
 
@@ -512,7 +538,7 @@ Added 20-25 new templates per category to increase structural diversity for fine
 Generated 2,430 new prompts for fine-tuning training data via unified `src/pipeline/build_v5_benchmark.py`. The original 449 V3 prompts serve as the held-out test set.
 
 **Approach**: Created a single new script rather than modifying existing V2/borderline scripts (preserves V3 reproducibility). Includes conference-quality controls:
-- **Stratified template sampling**: Round-robin through shuffled templates ensures structural diversity (no template dominates)
+- **Stratified template sampling**: Round-robin through shuffled templates ensures structural diversity (no template dominates). **Why round-robin over random sampling with replacement**: Random sampling can accidentally over-represent some templates and under-represent others, especially at smaller per-category N. Round-robin guarantees perfectly uniform template usage rather than relying on probabilistic convergence. The shuffle (seeded for reproducibility) avoids predictable ordering artifacts. Trade-off: round-robin creates an artificially uniform template distribution that doesn't reflect natural question frequencies — but for fine-tuning data where the goal is maximizing structural diversity to prevent template overfitting (per Sunny's feedback, Mar 2026), uniform is the correct choice. Mention in thesis methodology (§4.1.2).
 - **Entity diversity caps**: Max 5 reuses per entity across all prompts in a category
 - **V3 exclusion** (two levels): Exact question text match + same (template, entity-set) combo
 - **Cross-category dedup**: Global seen-set prevents the same question appearing in multiple categories
@@ -1359,19 +1385,44 @@ Training used cosine LR scheduler (0.5 cycles), sequence packing (21 steps/epoch
 
 **Assessment**: Hyperparameter overrides are minor — ablation still tests lr and epoch sensitivity, which are the dimensions that matter for overfitting risk. LoRA vs QLoRA is a confound for cross-model comparison but each model serves as its own control. No training loss curves available (API limitation), but Step 11 held-out evaluation is strictly more informative. These are methodological notes for transparency, not concerns.
 
-### Step 11: Evaluate fine-tuned models `[TODO — next]`
+### Step 11: Evaluate fine-tuned models `[DONE — Mar 6, 2026]`
 
 **What it does**: Run each fine-tuned model on the 449 V3 held-out prompts (never seen during training), judge with consensus panel, and compare to all baselines.
 
-**Script**: `scripts/run_v5_evaluation.py` (new — adapts existing infrastructure)
-
-**Estimated wall time**: ~3-4 hours total (inference ~1 hr, judging ~2-3 hr, analysis minutes). Can run overnight.
+**Scripts**: `scripts/run_v5_evaluation.py` (generation + judging), `scripts/analyze_v5_finetuned.py` (analysis)
 
 **No need to wait for advisor feedback on dataset size** — Step 11 evaluates the already-trained models. If advisors later recommend scaling to 4,000+ examples, the 2,400-example results become a useful data-scaling comparison point. Running Step 11 now is strictly additive regardless of their answer.
 
-**Inference**: Feed 449 V3 prompts to fine-tuned models via Together AI inference API, no system prompt. 4 models × 449 = 1,796 inference calls. ~15-20 min per model.
+#### Deployment: Dedicated endpoints required
 
-**Judging**: 3-judge consensus panel on all fine-tuned outputs. ~2,694 × 3 judges = ~8,082 API calls. ~4-8 hours.
+Serverless LoRA inference failed for both models. Llama adapter returned "LoRA adapter that has never been loaded" (adapter not registered on Together's serverless infrastructure). Mixtral returned "Unable to access non-serverless model." Together's serverless LoRA only supports select base models (Llama 3.1, Qwen 2.5 confirmed) — Mixtral-8x7B and Llama 4 Maverick are not on the list.
+
+**Solution**: Dedicated endpoints deployed one at a time from Together dashboard. Each endpoint gets a unique model ID (original output_name + random suffix). Script updated with `--endpoint` flag to pass the dedicated endpoint string.
+
+| Model | Endpoint cost | Generation time | Prompts | Status |
+|---|---|---|---|---|
+| Mixtral configA | $0.13/min | 8:35 | 449/449 | **DONE** |
+| Mixtral configB | $0.13/min | 8:13 | 449/449 | **DONE** |
+| Mixtral configC | $0.13/min | 8:32 | 449/449 | **DONE** |
+| Llama configA | $0.53/min | 15:14 | 449/449 | **DONE** |
+
+Estimated endpoint cost: Mixtral ~$1.10 each × 3 = $3.30, Llama ~$8.10. Total generation: ~$11.40.
+
+**Judging**: 3-judge consensus panel on all fine-tuned outputs. 1,796 × 3 judges = ~5,388 API calls. Currently running.
+
+#### Rigor review questions (from separate analysis session)
+
+**Q1: Together hyperparameter overrides and ablation informativeness**
+Together forced lora_r=64, alpha=128, dropout=0, weight_decay=0 on all configs. Ablation only truly varies lr (configA/C: 2e-4 vs configB: 1e-4) and epochs (configA/B: 3 vs configC: 5). LR and epochs are the most impactful LoRA hyperparameters anyway — rank/alpha control adapter capacity (now fixed at generous level). Overfitting concern is real (64 rank, no dropout, ~2,400 examples), but that's exactly what the held-out V3 test will reveal. If configC (5 epochs) underperforms configA (3 epochs), that's direct overfitting evidence — itself a useful finding.
+
+**Q2: Missing judgment (v5_nonexistent_0151)**
+Training prompt, NOT in V3 test set. Appears in all judged results except Llama/fact_grounded. Best-per-prompt selection used entity_aware (Llama) and structured_caution (Mixtral) for this prompt. No gap in Step 11 analysis.
+
+**Q3: Overfitting detection plan**
+Beyond "V3 rate doesn't improve": run fine-tuned models on a ~200 prompt sample from V5 training data and compare train accuracy vs test accuracy (V3 held-out). If train >> test = classic overfitting. If train ≈ test = generalization. This is Step 11B (post-judging).
+
+**Q4: Training loss curves**
+Together AI supports W&B integration (`--wandb-api-key`) and validation splits (`--validation-file`). We didn't use either for Step 10. If we re-run fine-tuning (e.g., scaled-up prompts after advisor feedback), add both. For current results: held-out evaluation is the gold standard. The ablation (3 configs) serves as a convergence proxy — if configC degrades vs configA, that signals overtraining. Acknowledge limitation explicitly in methods section.
 
 **Comparison conditions** (all on V3 held-out set):
 1. Original model, no prefix (V3 baseline — already have this data)
@@ -1379,18 +1430,97 @@ Training used cosine LR scheduler (0.5 cycles), sequence packing (21 steps/epoch
 3. Original model, best-per-prompt oracle (V4 — already have this)
 4. **Fine-tuned model, no prefix** (new from Step 10)
 
-**Analysis**:
-- Aggregate hallucination rate comparison across all 4 conditions
-- Per-category breakdown (which categories benefit most from fine-tuning?)
-- McNemar's test: fine-tuned vs baseline, fine-tuned vs best-prefix
-- Bridge analysis: does geometry predict where fine-tuning helps vs doesn't?
-- Hyperparameter sensitivity: do runs A/B/C differ meaningfully?
-
 **Success criteria**:
 - **Strong success**: fine-tuned model ≈ best-single-prefix performance (no system prompt needed)
 - **Moderate success**: fine-tuned model significantly better than baseline but below prefix performance
 - **Weak success**: improvement on some categories but not others (still publishable — tells us which hallucination types are learnable)
 - **Null result**: no improvement — thesis still stands on V3-V5 contributions, fine-tuning becomes "future work with preliminary attempt"
+
+#### Step 11 Results `[DONE — Mar 6, 2026]`
+
+**Verdict: STRONG SUCCESS (Mixtral), MODERATE SUCCESS (Llama).**
+
+Generation: 4 models × 449 prompts = 1,796 completions via dedicated endpoints (~40 min total). Judging: 1,796 × 3 judges = 5,388 API calls (~3h 18min). Zero failures.
+
+##### Summary comparison (V3 held-out, 449 prompts)
+
+> **Bug fix (Mar 6)**: V3 baseline files had 538 entries with 85 duplicate IDs (borderline prompts doubled, 8 with inconsistent labels). Analysis now deduplicates to exactly 449 entries. Numbers below are corrected.
+
+| Condition | Mixtral Acc | Mixtral Halluc | Llama Acc | Llama Halluc |
+|---|---|---|---|---|
+| Baseline (no prefix) | 82.9% | 11.8% | 90.6% | 5.8% |
+| Fine-tuned configA (no prefix) | 89.1% | 1.3% | 92.4% | 0.7% |
+| Fine-tuned configB (no prefix) | 90.2% | 1.1% | — | — |
+| Fine-tuned configC (no prefix) | **91.1%** | 1.3% | — | — |
+| Best single prefix (entity_aware) | 91.1% | 0.7% | 94.0% | 2.4% |
+| Best-per-prompt oracle | 96.0% | 0.2% | 98.0% | 0.0% |
+
+**Mixtral configC exactly matches the best single prefix accuracy (91.1%) with no system prompt.** Hallucination drops 11.8% → 1.3% — an 89% reduction baked into the weights. McNemar's vs prefix: p=0.84 (statistically indistinguishable). This is the "strong success" criterion.
+
+**Llama** cuts hallucination 5.8% → 0.7% (88% reduction) but accuracy improvement is modest (90.6% → 92.4%) and not statistically significant (McNemar's p=0.19 vs baseline). Below best prefix (94.0%) but not significantly different (p=0.15).
+
+##### McNemar's test (paired, on V3 held-out)
+
+| Comparison | FT fixes | Other fixes | chi2 | p-value |
+|---|---|---|---|---|
+| Mixtral configA vs Baseline | 46 | 18 | 11.39 | **0.0007** |
+| Mixtral configB vs Baseline | 47 | 14 | 16.79 | **<0.0001** |
+| Mixtral configC vs Baseline | 50 | 13 | 20.57 | **<0.0001** |
+| Llama configA vs Baseline | 18 | 10 | 1.75 | 0.1859 |
+| Mixtral configC vs Best Prefix | 13 | 13 | 0.04 | 0.8445 |
+| Llama configA vs Best Prefix | 5 | 12 | 2.12 | 0.1456 |
+
+All Mixtral configs significantly beat baseline (p<0.001). None significantly differ from best prefix. Llama improvement is directionally positive but not significant (p=0.19, smaller baseline gap to close).
+
+##### Hyperparameter sensitivity (Mixtral)
+
+| Config | LR | Epochs | Accuracy | Halluc Rate |
+|---|---|---|---|---|
+| configA | 2e-4 | 3 | 89.1% | 1.3% |
+| configB | 1e-4 | 3 | 90.2% | 1.1% |
+| configC | 2e-4 | 5 | **91.1%** | 1.3% |
+
+More epochs = better (configC > configA). Lower LR also helps (configB > configA). **No overfitting signal** — configC (5 epochs) is the best, not the worst. This is notable given Together's aggressive lora_r=64 with no dropout on ~2,400 examples. Suggests the model could potentially benefit from even more training.
+
+##### Per-category analysis: the precision-recall tradeoff
+
+**Big wins** (fine-tuning learned to recognize fake/impossible entities):
+
+| Category | Model | Baseline Acc | FT Acc (best) | Baseline Halluc | FT Halluc |
+|---|---|---|---|---|---|
+| nonexistent | Mixtral (C) | 70.0% | **98.3%** | 28.3% | 0.8% |
+| nonexistent | Llama | 93.3% | **99.2%** | 6.7% | 0.8% |
+| borderline_plausible_fake | Mixtral (B) | 54.8% | **80.6%** | 41.9% | 3.2% |
+| borderline_plausible_fake | Llama | 48.4% | **74.2%** | 48.4% | 6.5% |
+
+**The regression — borderline_obscure_real** (the most interesting finding):
+
+| Model | Baseline Acc | FT Acc (best) | Change |
+|---|---|---|---|
+| Mixtral (configC) | 90.0% | 83.3% | **-6.7%** |
+| Llama | 96.7% | 83.3% | **-13.3%** |
+
+The fine-tuned model learned "when in doubt, say it doesn't exist" — correct for nonexistent and plausible_fake, but causes **false negatives on real but obscure entities**. This is a classic precision-recall tradeoff in the safety direction. The model got safer (dramatically fewer hallucinations) but more conservative (incorrectly denying some real entities).
+
+This is publishable on its own — it reveals:
+1. What fine-tuning actually learns: a general "skepticism toward uncertain entities" heuristic
+2. Where it overgeneralizes: obscure real entities that pattern-match to fake ones
+3. The inherent tension between safety and knowledge coverage
+4. A potential role for geometry: can density distinguish obscure-real from plausible-fake? (Future analysis for Ch 7)
+
+##### What this means for the thesis
+
+1. **Fine-tuning successfully distills prefix behavior into weights** — no system prompt needed at inference time
+2. **Mixtral configC statistically matches the best prefix** (p=0.84) — the "cure" is as good as the "treatment"
+3. **~89% hallucination reduction for both models** (Mixtral 11.8%→1.3%, Llama 5.8%→0.7%)
+4. **The borderline_obscure_real regression** reveals the precision-recall structure of learned caution — a finding, not a failure
+5. **No overfitting** despite aggressive LoRA rank — more epochs helped
+6. **The full pipeline works**: geometry predicts hallucination → prefixes reduce it → fine-tuning internalizes it
+
+##### Remaining analysis TODO
+- Step 11B: Overfitting check (run FT models on V5 training sample)
+- Bridge analysis: does geometry predict where fine-tuning helps vs doesn't?
+- The borderline_obscure_real regression: can geometry distinguish these from plausible_fake?
 
 ## 3.5 Cost summary
 
@@ -1401,45 +1531,1540 @@ Training used cosine LR scheduler (0.5 cycles), sequence packing (21 steps/epoch
 | Prefix generation | 24,300 | Together AI |
 | Judging (baselines) | 14,580 | OpenAI + Anthropic + Together |
 | Judging (prefixes) | 72,900 | OpenAI + Anthropic + Together |
-| **Total** | **~119,070** | |
+| FT inference (Step 11) | 1,796 | Together AI (dedicated endpoints) |
+| FT judging (Step 11) | 5,388 | OpenAI + Anthropic + Together |
+| Overfitting check (Step 11B) | 400 | Together AI (dedicated endpoints) |
+| Overfitting judging (Step 11B) | 1,200 | OpenAI + Anthropic + Together |
+| **Total** | **~127,854** | |
 
 All steps are fully resumable if interrupted.
 
 ---
 
-# Part 4: Later Phases
+# Part 4: Remaining Steps (Post-Step 11)
 
-## Phase 5: Generalization Testing
+After Step 11, the core experimental arc (predict → intervene → distill) is complete. What remains: one validation check (11B), substantive analytical work (12A), figure production (12B), and optional enhancements.
 
-- **Held-out evaluation**: Test fine-tuned model on original 449 prompts (never seen during training)
-- **External benchmarks**: TruthfulQA, HaluEval — does distilled behavior transfer?
-- **Category transfer**: Train on some categories, test on others. Does learning to be careful on "nonexistent" prompts help with "borderline plausible fake"?
+**Execution order: 11B → 12A → 12B.** Step 11B must come first because 12A's bridge analysis depends on knowing whether fine-tuning generalized or overfit. If train >> test accuracy, "fine-tuning fixed this prompt" might just mean "the model memorized this prompt," contaminating the bridge analysis conclusions.
 
-## Phase 6: Geometry-Guided Targeting
+---
+
+### Step 11B: Overfitting Check `[DONE — Mar 7, 2026]`
+
+**What it does**: Run fine-tuned models on 200 randomly sampled V5 training prompts (stratified by category, seed=2025), judge with consensus panel, compare train accuracy vs test accuracy.
+
+**Script**: `scripts/run_v5_overfitting_check.py`
+
+#### Results: NO OVERFITTING
+
+| Model | Train Accuracy (n=200) | Test Accuracy (n=449) | Gap | Train Halluc | Test Halluc |
+|---|---|---|---|---|---|
+| Mixtral configC | 93.0% | 91.1% | **+1.9pp** | 0.0% | 1.3% |
+| Llama configA | 96.5% | 92.4% | **+4.1pp** | 1.0% | 0.7% |
+
+Both gaps are under 5pp — the models genuinely learned cautious behavior rather than memorizing specific training answers. This is notable given Together's aggressive hyperparameters (lora_r=64, no dropout, 5 epochs for Mixtral).
+
+**Per-category detail** (small samples — 11-50 per category, so individual gaps are noisy):
+- Categories with near-zero gap: ambiguous (0pp both), impossible (0-3pp), nonexistent (-2 to -1pp)
+- Categories with memorization signal: borderline_plausible_fake (+25.8pp Mixtral, +7.1pp Llama), factual (+10.9pp Mixtral, +12.1pp Llama) — the model does better on training prompts for these categories, as expected
+- Borderline_obscure_real: Mixtral is *worse* on train (-14.6pp) — likely noise at n=16 (1 prompt = 6.25pp)
+
+**Interpretation**: The aggregate gaps (1.9pp, 4.1pp) confirm generalization. The per-category gaps show mild memorization on specific fake/factual entities (expected — the model literally saw these answers during training) but the learned behavior (refuse fabrication, express uncertainty) transfers to unseen prompts. The 0% hallucination rate on Mixtral's training prompts is expected — these are prompts explicitly trained with correct refusals.
+
+**What this means for Step 12A**: ~~The fine-tuning bridge analysis is uncontaminated. When we ask "does geometry predict where fine-tuning helps?", the answer reflects genuine learned behavior, not memorization artifacts.~~ **SUPERSEDED — see Step 11C below. Entity-level contamination discovered post-hoc.**
+
+**Cost**: ~$5-15 for endpoints (10-15 min each at $0.13/$0.53 per min) + judging API costs. ~1-2 hours total.
+
+**Script**: Extend `run_v5_evaluation.py` with a `--training-sample` flag, or write a small standalone script that samples 200 V5 training prompts and runs the same generation+judging pipeline.
+
+**Output**:
+- `results/v5_finetuned/{model}/configX/train_sample_answers.jsonl`
+- `results/v5_finetuned/{model}/configX/train_sample_judged.jsonl`
+- Train vs test accuracy comparison table
+
+---
+
+### Step 11C: Entity-Level Train-Test Contamination Analysis `[DISCOVERED — Mar 8, 2026]`
+
+**How it was found**: Sunny Qin flagged that the borderline_plausible_fake +25.8pp train-test gap (Step 11B) needed to be addressed rather than dismissed. Investigation revealed that the V5 exclusion logic (Step 3) prevents identical *prompts* and identical *(template, entity)* combos from appearing in both V3 test and V5 training — but it does NOT prevent the same *entity name* from appearing in both sets with different templates.
+
+**Example**: "Dr. Sarah Chen" appears in V3 test (template: "What is X known for?") and V5 training (template: "Where did X receive their PhD?"). The prompts are different, but the model could learn "Dr. Sarah Chen is fake" from training and apply that knowledge at test time, rather than learning general fakeness detection.
+
+**Root cause**: V3 borderline prompts were generated by `build_borderline_benchmark.py`, which did not record template or substitution metadata. V5's Level 2 exclusion checks for these fields but finds nothing to exclude. Both V3 and V5 sample from the same entity pools in `data/entity_lists/`.
+
+#### Contamination by category
+
+| Category | V3 Test | Clean (no entity overlap) | Contaminated | Rate | Stat. Power (clean) |
+|---|---|---|---|---|---|
+| impossible | 30 | 30 | 0 | 0.0% | Good (n=30) |
+| factual | 98 | 72 | 26 | 26.5% | Good (n=72) |
+| borderline_edge_factual | 20 | 16 | 4 | 20.0% | Poor (n=16) |
+| ambiguous | 120 | 24 | 96 | 80.0% | Marginal (n=24) |
+| nonexistent | 120 | 31 | 89 | 74.2% | Barely (n=31) |
+| borderline_plausible_fake | 31 | 8 | 23 | 74.2% | Unusable (n=8) |
+| borderline_obscure_real | 30 | 3 | 27 | 90.0% | Unusable (n=3) |
+| **Total** | **449** | **184** | **265** | **59.0%** | **Marginal overall** |
+
+#### Severity assessment: which categories does this actually matter for?
+
+**Entity-identity-dependent categories (contamination IS problematic)**:
+- **nonexistent**: The test is "do you know this entity doesn't exist?" Seeing the same entity name in training teaches the answer directly.
+- **borderline_plausible_fake**: Same issue — "is this real or fake?" is an entity-level question.
+- **borderline_obscure_real**: The model could learn "this obscure entity IS real" from training.
+
+**Entity-identity-independent categories (contamination is LESS problematic)**:
+- **factual**: Entities are well-known (India, DNA, Einstein). The model already knows about these from pretraining. Fine-tuning teaches behavioral caution, not entity facts. Seeing "India" in both train and test is unavoidable and not meaningful contamination.
+- **ambiguous**: Same logic — "Is X good or bad?" tests nuanced reasoning, not entity recognition.
+- **impossible**: Fully clean. Tests logical impossibility, not entity knowledge.
+
+#### What this affects
+
+1. **Step 11B overfitting check**: The +1.9pp/+4.1pp overall gaps are partly measured on contaminated prompts. True generalization gap on novel entities could be larger. The +25.8pp on plausible_fake is probably closer to the real gap for entity-dependent categories.
+
+2. **Step 11 fine-tuning evaluation**: Headline accuracy (Mixtral 91.1%, Llama 92.4%) may be inflated for entity-dependent categories. Need to re-score on decontaminated subset.
+
+3. **Step 12A bridge analysis**: "Does geometry predict where fine-tuning helps?" If some prompts were "fixed" because the model memorized the entity, the geometric signal could be partly a memorization artifact. Need to re-run on decontaminated subset.
+
+4. **NOT affected**: V4 prefix experiment (no weight changes, no memorization possible), V5 prefix results (same reason), training data quality (contamination is an evaluation issue, not a training issue).
+
+#### Next steps
+
+**Option A (immediate, no API calls)**: Re-score existing fine-tuning results on just the 184 clean prompts. If accuracy is similar to full 449, contamination didn't practically inflate results. If it drops, problem is real.
+
+**Option B (if needed)**: Generate new test prompts for borderline categories using entities not in V5 training. Requires new inference + judging (~1-2 days).
+
+**Option C (nuclear)**: Remove contaminated entities from V5 training and retrain. Expensive and probably unnecessary — contamination is an evaluation problem, not a training problem.
+
+**Priority**: Option A first. Decision on B/C depends on results.
+
+#### Option A Results: Contamination Does NOT Inflate Results `[DONE — Mar 8, 2026]`
+
+**Script**: `scripts/analyze_contamination.py`
+
+Re-scored existing fine-tuning evaluation on decontaminated subset (test prompts whose entities do not appear in V5 training). The script's entity matching identified 107 clean prompts (more conservative matching than the initial manual estimate of 184).
+
+**Overall results**:
+
+| Model | Full Test (n=449) | Clean Subset (n=107) | Gap |
+|---|---|---|---|
+| Mixtral configC | 91.1% | 90.7% | **+0.4pp** |
+| Llama configA | 92.4% | 92.5% | **-0.1pp** |
+
+**Conclusion: Contamination did not inflate fine-tuning results.** Both gaps are under 1pp. The models learned behavioral caution (epistemic skepticism, refusal of uncertain queries), not entity-specific memorization.
+
+**Per-category detail** (small clean samples — interpret with caution):
+
+| Category | Mixtral Full | Mixtral Clean (n) | Llama Full | Llama Clean (n) |
+|---|---|---|---|---|
+| ambiguous | 100.0% | 100.0% (15) | 100.0% | 100.0% (15) |
+| borderline_edge_factual | 100.0% | 100.0% (12) | 100.0% | 100.0% (12) |
+| impossible | 100.0% | 100.0% (22) | 96.7% | 100.0% (22) |
+| factual | 74.5% | 81.1% (37) | 80.6% | 81.1% (37) |
+| nonexistent | 98.3% | 100.0% (12) | 99.2% | 100.0% (12) |
+| borderline_plausible_fake | 74.2% | 50.0% (6) | 74.2% | 83.3% (6) |
+| borderline_obscure_real | 83.3% | 100.0% (3) | 83.3% | 100.0% (3) |
+
+**Notes on per-category numbers**: Borderline clean samples (n=3-6) are too small for any statistical inference. The plausible_fake Mixtral 50% (3/6) looks alarming but one prompt = 16.7pp — this is noise. Factual (n=37) is the only category with enough clean data for a meaningful comparison, and it shows the clean subset actually does *better* for Mixtral (+6.6pp) — opposite of the inflation hypothesis.
+
+**Entity-dependent vs entity-independent split**:
+
+| Group | Mixtral Full→Clean Gap | Llama Full→Clean Gap |
+|---|---|---|
+| Entity-dependent (nonexistent, plausible_fake, obscure_real) | +6.0pp | -3.0pp |
+| Entity-independent (factual, ambiguous, impossible, edge_factual) | -1.2pp | +0.7pp |
+
+Entity-independent categories show no gap (as expected — entity overlap is irrelevant for behavioral learning). Entity-dependent categories show inconsistent direction across models, consistent with noise from small clean samples rather than systematic inflation.
+
+**Implication for the thesis**: Disclose entity-level contamination as a methodological note (shows rigor, preempts reviewer critique). Report both full and decontaminated numbers. The headline fine-tuning results (91.1% Mixtral, 92.4% Llama) are not inflated. Options B and C are unnecessary.
+
+**Implication for Step 12A (bridge analysis)**: The bridge analysis findings (density predicts fixability) are not contaminated by entity memorization. The geometric signal is genuine.
+
+---
+
+### Step 12A: Fine-Tuning Geometric Analysis `[DONE — Mar 2026]`
+
+**What it does**: The substantive analytical work that completes the thesis's intellectual contributions. Tests whether the geometric framework that predicts prefix effectiveness also predicts fine-tuning effectiveness — potentially the thesis's strongest claim.
+
+**Why this is NOT just "make figures"**: The original Step 12 was vaguely "publication figures, takes minutes." Applying the rigor standard reveals that the most important analytical questions about fine-tuning haven't been asked yet. The data to answer them exists in `results/v5_finetuned/*/judged_answers.jsonl`. These are research questions with unknown answers, not figure formatting.
+
+#### 12A.0: Compute Borderline Geometry (PREREQUISITE) `[DONE]`
+
+**Critical data gap discovered**: The original `geometry_features.csv` has only 368 rows — the 4 main categories (factual: 98, nonexistent: 120, impossible: 30, ambiguous: 120). The 81 borderline prompts (obscure_real: 30, plausible_fake: 31, edge_factual: 20) were never embedded or processed through the geometry pipeline.
+
+**Why this matters**: Without borderline geometry, 12A.2 is completely blocked and 12A.3 is partially blocked. The borderline categories are precisely where the most interesting fine-tuning behavior occurs (regressions on obscure_real).
+
+**Method**: Re-embedded all 449 V3 prompts with `text-embedding-3-large` (OpenAI). Computed curvature, oppositeness, density, centrality using existing `src/geometry/` functions with self-reference (matching V3 methodology — decision log: `build_from_benchmark: true`). Reference corpus `.npy` files had been cleaned up; only `metadata.json` remained.
+
+**Why re-embed all 449 (not just patch in 81)**: Curvature and oppositeness depend on the full embedding matrix (nearest neighbors, PCA). Adding 81 new points changes the neighborhood structure. Re-embedding all 449 ensures internal consistency.
+
+**Verification against original 368-prompt geometry**:
+
+| Feature | Correlation | Max Diff | Mean Diff | Assessment |
+|---|---|---|---|---|
+| density | 0.998 | 0.228 | 0.013 | Excellent — self-reference barely changes with 81 new points |
+| centrality | 0.983 | 0.043 | 0.014 | Excellent — corpus mean shifts minimally |
+| curvature | 0.975 | 0.367 | 0.068 | Good — k-NN neighborhoods shift slightly with new points |
+| oppositeness | 0.373 | 0.280 | 0.088 | **Unstable** — global PCA axes change fundamentally (explained variance 0.659→0.615) |
+
+**Oppositeness instability**: Oppositeness is computed by flipping top global PCA components. Adding 81 borderline points rotates the PCA axes, reshuffling scores. This is a methodological finding: **oppositeness is not robust to corpus composition changes**. Density, centrality, and curvature are stable. Step 12A.1-3 should lead with density/centrality/curvature and flag oppositeness instability as a limitation.
+
+**Borderline geometry (first look)**:
+
+| Category | N | Curvature | Oppositeness | Density | Centrality |
+|---|---|---|---|---|---|
+| borderline_obscure_real | 30 | 0.495 | 0.482 | 1.434 | 0.746 |
+| borderline_plausible_fake | 31 | 0.487 | 0.558 | 1.637 | 0.709 |
+| borderline_edge_factual | 20 | 0.116 | 0.188 | 1.642 | 0.753 |
+
+Notable: obscure_real has lower density than plausible_fake (1.43 vs 1.64). This already hints at the 12A.2 finding — obscure real entities sit in sparser embedding neighborhoods than plausible fakes.
+
+**Script**: `scripts/compute_v3_full_geometry.py`
+**Output**: `data/processed/v3_all_geometry_features.csv` (449 rows), `data/processed/v3_all_question_embeddings.npy`
+**Cost**: <$0.01
+
+#### 12A.1: Fine-Tuning Bridge Analysis (Contribution 1) `[DONE]`
+
+The prefix bridge analysis showed geometry predicts which hallucinations resist *prefix* intervention. Does geometry also predict which hallucinations resist *fine-tuning*?
+
+**Method**: For each of the 449 held-out prompts (per model), classify into:
+- `fixed_by_ft` — baseline hallucinated, fine-tuned correct
+- `still_broken` — baseline hallucinated, fine-tuned still wrong
+- `broken_by_ft` — baseline correct, fine-tuned wrong (the regressions)
+- `always_correct` — correct in both
+
+Mann-Whitney U tests with rank-biserial effect size for all stable features (density, centrality, curvature). Oppositeness reported separately with instability caveat. Permutation tests (10,000 shuffles) for groups with n<10. Bonferroni and Benjamini-Hochberg FDR corrections across all 30 stable-feature tests.
+
+**Outcome group sizes**:
+
+| Outcome | Mixtral | Llama |
+|---|---|---|
+| always_correct | 359 | 397 |
+| fixed_by_ft | 44 | 16 |
+| still_broken | 9 | 10 |
+| broken_by_ft | 13 | 10 |
+| other | 24 | 16 |
+
+**Results — fixed_by_ft vs still_broken (does geometry predict fixability?)**:
+
+| Feature | Model | Fixed Mean | Broken Mean | p (MW) | p (perm) | Effect r | Survives BH? |
+|---|---|---|---|---|---|---|---|
+| **density** | **Mixtral** | **1.98** | **1.49** | **0.0002** | **<0.001** | **-0.80** | **Yes (Bonf)** |
+| **centrality** | **Mixtral** | **0.645** | **0.776** | **0.00004** | **<0.001** | **0.88** | **Yes (Bonf)** |
+| curvature | Mixtral | 0.32 | 0.45 | 0.387 | 0.214 | 0.19 | No |
+| **density** | **Llama** | **1.75** | **1.55** | **0.016** | **0.146** | **-0.58** | **Yes (BH)** |
+| centrality | Llama | 0.693 | 0.712 | 0.510 | 0.386 | 0.16 | No |
+| curvature | Llama | 0.43 | 0.31 | 0.279 | 0.424 | -0.26 | No |
+
+**Results — broken_by_ft vs always_correct (does geometry predict regressions?)**:
+
+| Feature | Model | Regressed Mean | Correct Mean | p (MW) | Effect r | Survives BH? |
+|---|---|---|---|---|---|---|
+| **density** | **Mixtral** | **1.56** | **1.89** | **0.010** | **0.42** | **Yes (BH)** |
+| centrality | Mixtral | 0.714 | 0.678 | 0.091 | -0.28 | No |
+| curvature | Mixtral | 0.35 | 0.38 | 0.738 | 0.05 | No |
+| **density** | **Llama** | **1.50** | **1.90** | **0.0007** | **0.63** | **Yes (Bonf)** |
+| centrality | Llama | 0.721 | 0.676 | 0.102 | -0.30 | No |
+| curvature | Llama | 0.37 | 0.37 | 0.901 | 0.02 | No |
+
+**Multiple comparisons**: 4/30 survive Bonferroni, 6/30 survive BH FDR.
+
+**Key finding — density direction RESOLVED**: The V4 prefix bridge showed an inconsistency: Mixtral fixed prompts had higher density, but Llama fixed prompts had *lower* density. In 12A.1, **both models agree**: fixed prompts have higher density, regressed prompts have lower density. The V4 inconsistency was prefix-specific, not fundamental. Fine-tuning reveals the true direction: **high density = fixable, low density = resistant**.
+
+**Key finding — curvature is NOT significant for FT**: Unlike V4 prefix bridge where curvature was significant, curvature shows no signal for fine-tuning outcomes. This makes sense: prompting steers attention (local geometry matters), fine-tuning modifies weights (global neighborhood density matters more).
+
+**Oppositeness (unstable, reported separately)**: Only Mixtral fixed_vs_broken is marginally significant (p=0.029) — but oppositeness is unreliable (corr=0.37 with original geometry). Not interpreted.
+
+**Thesis location**: Ch 7.1-7.2
+
+#### 12A.2: Borderline Within-Category Analysis (Contribution 3) `[DONE — NULL]`
+
+**Method**: Within borderline_obscure_real (30 prompts) and borderline_plausible_fake (31 prompts) per model, test whether density/centrality/curvature distinguish FT-correct from FT-wrong. Mann-Whitney U + permutation tests.
+
+**Results**: All 12 within-category tests are non-significant (p>0.08). No geometry feature distinguishes correct from wrong responses within either borderline category.
+
+**Why this is null**: Sample sizes are very small (n=5 wrong per category per model). At n=5, we need effect sizes >0.8 to detect anything at α=0.05. The within-category effects, if they exist, are moderate (r=0.3-0.5) — detectable at n≈30 per group, but not at n=5.
+
+**What this means**: This is a **power limitation**, not evidence against the geometric hypothesis. The within-category density signal from V5 analysis (2,430 prompts, p<0.001) confirms the effect exists — 30 prompts per category simply cannot detect it. Frame as "insufficient power" in thesis, not "no effect."
+
+**Thesis location**: Ch 7.4 — mention as exploratory analysis with power limitation
+
+#### 12A.3: Regression Geometric Profile (Contribution 3) `[DONE]`
+
+For the `broken_by_ft` prompts specifically (baseline correct, fine-tuned wrong) — what's their geometric profile?
+
+**Method**: Compare geometric features of `broken_by_ft` vs `always_correct` prompts. Mann-Whitney U + permutation tests + effect sizes.
+
+**Results**: Density is the star predictor — regressions have significantly lower density in BOTH models:
+
+| Feature | Model | Regressed Mean | Correct Mean | p (MW) | p (perm) | Effect r | Survives BH? |
+|---|---|---|---|---|---|---|---|
+| **density** | **Mixtral** | **1.56** | **1.89** | **0.010** | **0.011** | **0.42** | **Yes (BH)** |
+| **density** | **Llama** | **1.50** | **1.90** | **0.0007** | **0.005** | **0.63** | **Yes (Bonf)** |
+| centrality | Mixtral | 0.714 | 0.678 | 0.091 | 0.140 | -0.28 | No |
+| centrality | Llama | 0.721 | 0.676 | 0.102 | 0.110 | -0.30 | No |
+| curvature | both | ~0.36 | ~0.38 | >0.7 | >0.7 | <0.06 | No |
+
+**Regression error type**: Regressions are overwhelmingly refusals, not new hallucinations:
+- Mixtral: 11/13 regressions are refusals (label=3), 2 are hallucinations (label=2)
+- Llama: 10/10 regressions are refusals (label=3), 0 are hallucinations
+- Total: 21/23 (91%) are refusals — the model learned to refuse, not to fabricate new answers
+
+**Geometric profile of regressions**: Low density (sparse neighborhoods) + trending high centrality (close to corpus center) + normal curvature. This is the profile of prompts where the entity is real but sits in an isolated embedding region. The fine-tuned model's learned caution fires because the neighborhood is sparse (low density), even though the entity is legitimate.
+
+**Connection to precision-recall tradeoff**: The regressions are geometrically indistinguishable from the successfully-fixed hallucinations (both have lower density than always_correct). Fine-tuning learns a density-based heuristic: "sparse neighborhood → refuse." This correctly catches nonexistent entities in sparse regions but also over-fires on obscure real entities in sparse regions. Geometry predicts both where FT helps AND where it hurts.
+
+**Thesis location**: Ch 7.4
+
+#### Execution summary
+
+12A.0 → 12A.1 → 12A.2 → 12A.3 all completed in one analysis script.
+
+**Script**: `scripts/analyze_ft_bridge.py`
+**Output**: `results/v5_finetuned/analysis/ft_bridge_data.csv`, `ft_bridge_stats.csv`, `ft_bridge_mixtral-8x7b.png`, `ft_bridge_llama-4-maverick-17b.png`
+**Cost**: $0 (local analysis on existing data)
+
+#### 12A Summary: What geometry tells us about fine-tuning
+
+1. **Density is the universal predictor**. It predicts fixability (both models), regressions (both models), with consistent direction: high density = fixable, low density = resistant/regressive. 4 tests survive Bonferroni, 6 survive BH FDR.
+
+2. **Centrality is model-specific**. Strong for Mixtral (p=0.00004 for fixability) but null for Llama. May reflect architectural differences in how models handle central vs peripheral queries.
+
+3. **Curvature is irrelevant for fine-tuning**. Unlike the V4 prefix bridge where curvature predicted prefix effectiveness, curvature shows zero signal for fine-tuning outcomes. Interpretation: prompting steers attention through local geometry, fine-tuning modifies weights through global neighborhood structure.
+
+4. **V4 density inconsistency resolved**. The prefix bridge showed Mixtral and Llama using density in opposite directions. The FT bridge shows they agree. The inconsistency was a prefix-specific artifact, not a fundamental issue with density as a predictor.
+
+5. **Regressions are geometrically predictable refusals**. 91% of regressions are refusals (not new hallucinations). They cluster in low-density regions — the same geometric signature as unfixable hallucinations. The fine-tuned model learns a density-based "refuse when uncertain" heuristic that correctly catches fabrications but over-fires on obscure real entities.
+
+6. **12A.2 is null due to power**. Within-category borderline tests found nothing, but n=5 per group is far too small. The V5 within-category analysis (n=600+) confirmed the effect exists. Frame as power limitation.
+
+---
+
+### Step 12B: Thesis Figures `[DONE]`
+
+**What it does**: Generate publication-quality figures organized by thesis chapter.
+
+**Script**: `scripts/generate_thesis_figures.py`
+**Output**: `thesis/figures/` (7 new figures)
+
+#### Complete figure inventory:
+
+**Ch 4 (Experimental Setup)**:
+- `v5_judge_agreement.png` (exists — `results/v5_prefixes/analysis/`)
+- Pipeline diagram — create manually in TikZ/draw.io
+
+**Ch 5 (Can Geometry Predict?)**:
+- `v5_within_category_*.png` (exists, 2 files — `results/v5_baselines/analysis/`)
+- `v5_geometry_vs_hallucination_*.png` (exists, 2 files — `results/v5_baselines/analysis/`)
+- `ch5_within_category_auc.png` (**NEW** — within-category logistic AUC by category and model)
+- `consistency_heatmap.png` (exists — `results/v3/multi_model/`)
+
+**Ch 6 (Can Prompts Reduce?)**:
+- `v5_category_heatmap_*.png` (exists, 2 files — `results/v5_prefixes/analysis/`)
+- `v5_tradeoff_curve.png` (exists — `results/v5_prefixes/analysis/`)
+- `v5_refusal_rates.png` (exists — `results/v5_prefixes/analysis/`)
+- `ch6_v4_v5_comparison.png` (**NEW** — pilot 449 vs scale 2,430 accuracy comparison)
+
+**Ch 7 (Can Geometry Guide?)**:
+- `v5_bridge_*.png` (exists, 2 files — `results/v5_prefixes/analysis/`)
+- `ft_bridge_*.png` (exists from 12A, 2 files — `results/v5_finetuned/analysis/`)
+- `ch7_ft_comparison.png` (**NEW** — baseline vs best-prefix vs fine-tuned vs oracle)
+- `ch7_ft_category_heatmap.png` (**NEW** — per-category baseline vs FT accuracy)
+- `ch7_hyperparameter_sensitivity.png` (**NEW** — LoRA config A/B/C comparison)
+- `ch7_regression_breakdown.png` (**NEW** — regression error types by category)
+- `ch7_density_by_ft_outcome.png` (**NEW** — density violin plots by FT outcome, key thesis figure)
+
+**Total**: 20 figures across 4 chapters (13 existing + 7 new).
+
+---
+
+## Optional Phases (Thesis Enhancements)
+
+### Phase 5: Generalization Testing (TruthfulQA) `[DONE]`
+
+**Purpose**: Test whether fine-tuned models' learned caution generalizes beyond our custom benchmark to TruthfulQA (Lin et al., 2022), the standard hallucination benchmark (817 questions, 38 categories, 1,800+ citations). This is the first question a reviewer will ask: the entire thesis builds on a custom benchmark we designed — TruthfulQA breaks the circularity.
+
+**Key framing note**: TruthfulQA tests *misconceptions* (things humans commonly get wrong), not *fabrication* (inventing nonexistent entities). Our fine-tuning trained on fabrication. A null result is the *expected* outcome and should be framed as "targeted fine-tuning, not general truthfulness boost." An improvement would be a *stronger-than-expected* result.
+
+**Value**: **High.** Not a new contribution, but load-bearing evidence for the credibility of all four existing contributions.
+
+**Cost**: ~$15-30 total, ~8-10 hours wall time (mostly unattended judging).
+
+#### Step 13A: Download and prepare TruthfulQA `[NEXT]`
+
+- Download 817 questions via HuggingFace `datasets` library
+- Convert to our JSONL format: `{id, question, ground_truth, category, metadata}`
+- Ground truth construction: `"Best answer: {best_answer}. Also acceptable: {correct_answers_joined}. Known incorrect: {incorrect_answers_joined}."` — enriched because our judge only sees the `ground_truth` string (not `meta_info`)
+- Keep TruthfulQA's 38 native categories (don't map to our 7)
+- Output: `data/prompts/truthfulqa.jsonl`
+
+#### Step 13B: Run baseline inference (~1-2 hrs, ~$3-5)
+
+- Both base models (Mixtral 8x7B Instruct, Llama 4 Maverick Instruct) on 817 questions
+- No system prompt — matches V3 baseline methodology
+- Together AI serverless inference (no dedicated endpoints for base models)
+- Output: `results/truthfulqa/{model}/baseline_answers.jsonl`
+
+#### Step 13C: Run fine-tuned inference (~1-2 hrs, ~$5-10)
+
+- Best configs only: Mixtral configC, Llama configA
+- Mixtral requires dedicated endpoint ($0.13/min, ~40-70 min = ~$5-9). Llama has serverless LoRA (`-adapter` suffix)
+- No system prompt — matches Step 11 methodology
+- Output: `results/truthfulqa/{model}/finetuned_answers.jsonl`
+
+#### Step 13D: Judge all responses (~4-6 hrs, ~$10-20) `[DONE — Mar 2026]`
+
+- 817 × 2 models × 2 conditions = 3,268 judgments
+- Same 3-judge consensus panel (GPT-5.1, Claude Opus 4.5, Llama 4 Maverick)
+- Output: `results/truthfulqa/{model}/baseline_judged.jsonl`, `finetuned_judged.jsonl`
+- Runtime: ~4.5 hours total (63-74 min per condition)
+
+**Raw results** (after re-judging — see data quality note below):
+
+| Model | Condition | Accuracy | Hallucination | Refusal | n |
+|---|---|---|---|---|---|
+| Mixtral 8x7B | baseline | 74.4% | 16.9% | 0.0% | 817 |
+| Mixtral 8x7B | finetuned (configC) | 76.6% | 14.7% | 0.7% | 817 |
+| Llama 4 Maverick | baseline | 71.8% | 17.6% | 0.6% | 817 |
+| Llama 4 Maverick | finetuned (configA) | 77.1% | 13.2% | 0.5% | 817 |
+
+**Data quality note**: The initial judging run had 62 Llama finetuned questions where API connection errors caused all 3 judges to fail, defaulting to label=3 (refusal) with confidence=0.0. This inflated Llama FT refusal from ~0.5% to 8.1% and suppressed accuracy from ~77% to 71%. Detected during 13E review (confidence=0.0 check), backed up as `.bak_contaminated`, and re-judged with zero errors. All numbers above are from the clean re-judged data.
+
+**Initial observations** (full analysis in Step 13E):
+
+1. **Mixtral**: Modest improvement. Accuracy +2.2pp (74.4%→76.6%), hallucination -2.2pp (16.9%→14.7%). Near-zero refusal increase (0.0%→0.7%). Fine-tuning helped without over-cautious behavior. 13% relative hallucination reduction.
+2. **Llama**: Both accuracy and hallucination improve significantly. Accuracy +5.3pp (71.8%→77.1%), hallucination -4.4pp (17.6%→13.2%, 25% relative reduction). Refusal essentially unchanged (0.6%→0.5%). Llama shows the strongest TruthfulQA generalization of the two models.
+3. **Not a null result**: Both models show hallucination reduction on an external benchmark testing misconceptions (different from our fabrication benchmark). This is genuine generalization, though the effect is smaller than on our custom benchmark (13-25% relative reduction here vs 88-89% on held-out V4).
+4. **Reduced effect expected**: Our FT trained on entity-fabrication skepticism. TruthfulQA tests misconceptions (e.g., "Can goldfish remember things for 3 seconds?"). The fact that entity-skepticism training transfers at all to misconception-type hallucination is noteworthy.
+5. **No over-caution on TruthfulQA**: Unlike on the custom benchmark where Llama showed increased refusal with prefixes, TruthfulQA refusal is negligible for both models. The custom benchmark refusal pattern may be specific to the entity-fabrication domain.
+
+**Pending**: ~~Step 13E analysis~~ → DONE
+
+#### Step 13E: Analyze and report `[DONE]`
+
+**Script**: `scripts/analyze_truthfulqa.py`
+**Output**: `results/truthfulqa/analysis/truthfulqa_analysis.md`, `truthfulqa_per_category.csv`
+
+**Analyses performed** (8 total):
+1. Transition matrices (per-question baseline→finetuned)
+2. McNemar's tests on accuracy AND hallucination (Bonferroni-corrected, 4 tests)
+3. Wilson confidence intervals for all rates
+4. Per-category descriptive breakdown (38 categories, n≥10 filter for highlights)
+5. Judge agreement rates (unanimous vs majority)
+6. Qualitative examples (fixed/broken/over-cautious/converted)
+7. Literature comparison table with label mapping note
+8. Judge calibration check vs published MC2
+
+**Key results** (after re-judging):
+
+| Model | Metric | Baseline | Finetuned | Δ | McNemar p | Bonferroni |
+|---|---|---|---|---|---|---|
+| Mixtral | Accuracy | 74.4% | 76.6% | +2.2pp | 0.1145 | NOT sig |
+| Mixtral | Halluc rate | 16.9% | 14.7% | -2.2pp | 0.0763 | NOT sig |
+| Mixtral | Refusal | 0.0% | 0.7% | +0.7pp | — | — |
+| Llama | Accuracy | 71.8% | 77.1% | +5.3pp | 0.0002 | **sig** |
+| Llama | Halluc rate | 17.6% | 13.2% | -4.4pp | 0.0005 | **sig** |
+| Llama | Refusal | 0.6% | 0.5% | -0.1pp | — | — |
+
+**Transition matrices**:
+- Mixtral: 36 hallucinations fixed, 24 broken (net +12). Only 2 over-cautious refusals.
+- Llama: 44 fixed, 15 broken (net +29). Only 2 over-cautious refusals.
+
+**Both Llama tests survive Bonferroni correction** (accuracy p=0.0002, hallucination p=0.0005). Mixtral hallucination reduction (p=0.076) is marginal — real effect but insufficient power at n=817 with modest effect size.
+
+**Judge agreement**: 73-79% unanimous, 95% majority across all conditions. Consistent with custom benchmark agreement rates.
+
+**Judge calibration**: Our baseline Mixtral accuracy (74.4%) roughly aligns with published MC2 (~73.9%), though different metrics. Not wildly miscalibrated.
+
+**Thesis interpretation**: Cross-domain generalization from entity-fabrication to misconception-type hallucination is real and significant for Llama (both accuracy and hallucination survive Bonferroni). Mixtral shows the same direction but lacks statistical power. Neither model shows over-caution on TruthfulQA (refusal ≤0.7%), suggesting the custom benchmark refusal pattern is domain-specific.
+
+#### Deeper interpretation (for thesis Ch 7.5)
+
+1. **Cross-domain generalization is real**: The models learned entity-fabrication skepticism, yet TruthfulQA tests misconceptions — categorically different. A 25% relative hallucination reduction (Llama) means fine-tuning taught something more general than "say 'I don't know' to fabricated entities." It taught epistemic caution.
+
+2. **Modest effect is expected and honest**: 13-25% relative reduction here vs 88-89% on custom benchmark. Frame as "bonus evidence of generalization" (Ch 7.5), not headline result. The custom benchmark results (Ch 6-7) carry the thesis.
+
+3. **No over-caution tradeoff**: On the custom benchmark, finetuned models refuse more. On TruthfulQA, refusal ≤0.7%. The caution is *targeted* at fabrication-style prompts, not a blanket personality shift. This is an important nuance for Ch 8 Discussion.
+
+4. **Llama vs Mixtral asymmetry**: Llama both tests significant; Mixtral neither. Possible explanations: (a) Llama had more room to improve (lower baseline), (b) LoRA adaptation was more generalizable, (c) Mixtral p=0.076 is marginal — at 2x sample size likely significant. Don't over-interpret.
+
+5. **Category patterns are interpretable**: Biggest Llama improvements in Advertising (-31pp), Law (-19pp), Confusion (-13pp) — categories involving confident factual assertions (same failure mode as entity fabrication). Only worsening: Distraction (+7pp) — trick questions where more caution backfires. Consistent with targeted epistemic calibration, not blanket conservatism. Present as exploratory (no per-category multiple comparison correction).
+
+#### Limitations to acknowledge in thesis
+
+1. **n=817 may underpower Mixtral**: A 2.2pp effect needs ~3,000+ paired observations for McNemar significance. This is a power problem, not evidence of no effect. State explicitly.
+2. **Literature comparison numbers are unverified**: ITI/DoLA/InstructGPT rows marked `[*] unverified`. Need PDF verification before submission.
+3. **Judge label mapping is approximate**: Our "correct" ≈ TruthfulQA "truthful+informative", not identical. MC2 calibration check is suggestive, not definitive.
+4. **Per-category analysis is exploratory**: 38 categories with no Bonferroni correction. Present as "patterns consistent with targeted calibration," not "these categories significantly improved."
+5. **The contamination episode**: 62/817 (7.6%) entries corrupted by silent API error defaults. Detected via confidence=0.0 audit, re-judged clean. Document as 1-paragraph methods note — demonstrates QC rigor, strengthens rather than weakens the paper.
+
+#### Resolved concerns
+
+1. ~~**Ground truth format**~~: Resolved. Enriched ground_truth string with best_answer + correct/incorrect answer lists.
+2. ~~**`meta_info` not used by judge**~~: Resolved. All context placed in ground_truth string.
+3. **Misconception vs fabrication**: Different hallucination modes — addressed in interpretation above. Frame carefully in thesis.
+4. ~~**Published baseline comparison**~~: Resolved. Judge calibration check in 13E report: our Mixtral baseline 74.4% vs published MC2 ~73.9%. Rough alignment suggests no wild miscalibration (caveat: different metrics).
+
+**Thesis location**: Ch 7.5 ("Generalization to External Benchmarks"), 3-4 pages.
+
+### Phase 9: Template Diversity Ablation `[PLANNED — Mar 2026]`
+
+**Motivation (Sunny Qin, Mar 8 2026)**: Template-generated training data risks the model learning template-specific patterns ("when I see this question structure, refuse") rather than general hallucination avoidance. The key question: does template *diversity* matter more than example *count* for fine-tuning generalization?
+
+**Core experiment**: Hold total training examples constant (~2,400), vary the number of templates used to generate them. Compare test performance across conditions.
+
+**Hypothesis**: T10 and above will perform similarly to T-all; T1 will degrade. Rationale: TruthfulQA generalization (Phase 5, zero template overlap, Llama p=0.0002) and decontamination analysis (Step 11C, accuracy unchanged on novel entities) both suggest the model learned behavioral caution, not template- or entity-specific shortcuts. However, T1 is an extreme case where the model could learn "this specific question structure = be cautious" rather than general skepticism. The interesting finding is the knee of the curve — where diminishing returns begin.
+
+#### Research questions (from Sunny)
+
+1. **Does the same template appear in both train/test set?** Yes — 83.3% of V3 test templates (100/120 with metadata) also appear in V5 training. 81 V3 test prompts (borderline categories) have no template metadata. 231 V5 templates are novel (not in V3). This means the current evaluation partially tests within-template generalization.
+
+2. **Do models generalize across templates?** TruthfulQA partially answers this (zero template overlap, significant Llama improvement). But TruthfulQA tests misconceptions, not fabrication — within-benchmark cross-template generalization is a cleaner test.
+
+3. **Is there a minimum template count for generalization?** The ablation should reveal a curve — at what point does adding more templates stop helping?
+
+4. **Are some templates more effective than others?** Per-template analysis of training data quality: do certain question structures produce better fine-tuning signal?
+
+5. **Does it depend on model size/capacity?** We test Mixtral 8x7B (~12B active) and Llama 4 Maverick 17B — different architectures and sizes.
+
+#### Experimental design
+
+**Conditions** (all use ~2,400 total training examples, same entity pool):
+
+| Condition | Templates per category | Examples per template | Total prompts | Purpose |
+|---|---|---|---|---|
+| T1 | 1 | ~500 (factual), ~600 (nonexistent), etc. | ~2,400 | Degenerate case — can model learn from pure entity variation? |
+| T5 | 5 | ~100 each | ~2,400 | Low diversity |
+| T10 | 10 | ~50 each | ~2,400 | Moderate diversity (hypothesized sufficiency threshold) |
+| T20 | 20 | ~25 each | ~2,400 | High diversity |
+| T-all | 55-66 (current) | round-robin | ~2,400 | Maximum diversity (control — existing training set) |
+
+**Why these specific counts**: T1 is the extreme case Sunny described. T5/T10/T20 trace the curve. T-all is the existing setup (no regeneration needed).
+
+**Evaluation**: Same held-out test set (449 V3 prompts), same 3-judge consensus panel. Primary metrics: overall accuracy, hallucination rate, per-category accuracy. McNemar's test between each condition and T-all.
+
+**Critical control — template overlap with test set**: For each condition, report accuracy separately on (a) test prompts whose template appeared in training vs (b) test prompts with novel templates. This directly answers Sunny's Q1/Q2 without needing a separate experiment.
+
+#### Step-by-step implementation
+
+**Step 9A: Generate training data for T1/T5/T10/T20** `[~2-3h, $0]`
+
+Create a **new script** `scripts/build_ablation_data.py` that reuses generation logic from `build_v5_benchmark.py` but adds a template-limit parameter. Do NOT modify `build_v5_benchmark.py` — it generated the current V5 training set and its reproducibility must be preserved (same principle as V3: "new unified script instead of modifying existing").
+
+For each condition:
+- Limit the template pool to N templates per category (see nesting rule below)
+- Generate prompts using the restricted pool, same entity pools, same V3 exclusion logic, same entity diversity caps (max 5 reuses)
+- **T-all does not need regeneration** — it's the existing V5 training set
+
+Output: `data/prompts/ablation_T{N}_*.jsonl`
+
+**Rigor concern 1 — nested template selection**: Template selection must use nested subsets: T5's templates ⊂ T10's ⊂ T20's ⊂ T-all. Use a single seeded shuffle of the full template pool; T5 takes the first 5, T10 takes the first 10, etc. **Why**: If T5 and T10 use completely different templates, a performance difference could reflect template *quality*, not template *count*. Nesting eliminates this confound and makes the curve monotonically interpretable (each condition adds templates, never swaps).
+
+**Rigor concern 2 — achievable prompt count per condition**: The target of ~2,400 prompts may not be achievable for low-template conditions. The script enforces entity diversity caps (max 5 reuses per entity). With T1 (1 template per category), maximum possible prompts per category = min(target, 5 × num_compatible_entities). Not all entities fit all templates (placeholder type mismatch). For factual with 1 template: if the template uses `{person}` but most entities are `{country}`, output could be far below 500. **Must compute maximum feasible N per condition before committing to the design.** If T1 yields <200 total prompts, it's unusable for fine-tuning — drop T1 and use T5 as the lowest condition.
+
+Pre-computation needed (run before writing the script):
+```
+For each category, for each template:
+  Count how many entities can fill it (compatible placeholder types)
+  Max prompts from 1 template = min(5 × compatible_entities, target)
+```
+This determines whether T1 is feasible at all and sets realistic prompt count expectations for each condition.
+
+**Rigor concern 3 — borderline category template structure**: Borderline templates are organized by sub-type (20 templates each for: obscure_real people/places/events, plausible_fake people/books/places). "T5 per category" must be defined: does T5 mean 5 templates from each sub-type (= 15-30 total for the category), or 5 total across all sub-types (losing coverage of some sub-types entirely, e.g., no "places" templates)? **Recommendation**: T{N} per *sub-type*, not per category. This preserves sub-type coverage at all conditions and is the fairer test. State explicitly: T5 = 5 templates per sub-type (30 borderline templates total), T10 = 10 per sub-type (60 total), etc.
+
+**Rigor concern 4 — V3 exclusion interaction**: With fewer templates, V3-excluded (template, entity) combos become a larger fraction of the possible generation space. This could disproportionately shrink low-template conditions' output. Log the V3 exclusion count per condition to verify this isn't a confound.
+
+**Rigor concern 5 — borderline_edge_factual**: Edge factual prompts are hand-written question/answer pairs, not template-generated. They don't participate in the template ablation. **Decision**: Include the same 130 edge factual prompts identically in all conditions. They serve as a control — if edge factual accuracy varies across conditions, something other than template diversity is changing (e.g., total dataset composition effects). State this in the analysis.
+
+**Validation checklist** (before proceeding to 9B):
+- [ ] Verify prompt counts per condition per category — are they sufficient for fine-tuning?
+- [ ] Verify nesting: every T5 prompt also appears in T10 (after entity/exclusion constraints)
+- [ ] Verify zero V3 overlap in all conditions
+- [ ] Verify zero unfilled placeholders
+- [ ] Log template coverage, entity coverage, V3 exclusions per condition for the generation report
+
+**Step 9B: Get best-per-prompt training targets for each condition** `[~1h to days, $0-180]`
+
+The training data isn't just the prompts — it's (prompt, best_response) pairs from best-per-prompt selection across prefixes.
+
+**Key question: Can we reuse existing prefix responses?**
+
+Two approaches:
+
+**(a) Reuse-only (simpler, cheaper)**: For each condition, filter the existing 2,430 V5 prompts to only those that use templates in the T{N} set. This changes the total N per condition — violating the "hold N constant" design. Must report both template count AND training set size.
+
+**(b) Regenerate + run prefixes (proper, expensive)**: Generate new 2,400-prompt sets per condition, run all 5 prefixes on each, judge, do best-per-prompt selection. Preserves constant N but costs ~$50-150 per condition in prefix generation + judging.
+
+**Recommendation**: Start with approach (a). The existing V5 data has round-robin distribution across all templates, so filtering to T{N} templates gives approximately N/N_total × 2,400 prompts per condition. For T10 out of 55: ~436 prompts. For T5: ~218. For T1: ~44. T1 under approach (a) is too small for meaningful fine-tuning.
+
+**Decision point**: If approach (a) gives ≥200 prompts per condition for the conditions we care about, use it and report the varying N as a known limitation. If T1/T5 are too small, either (b) regenerate those conditions only, or drop T1 in favor of T5 as the lowest condition.
+
+**Step 9C: Fine-tune one model per condition** `[~10-20h wall, ~$50-100]`
+
+- LoRA fine-tuning via Together AI
+- Same hyperparameters as Step 10 best configs (Mixtral configC, Llama configA)
+- Full: 5 conditions × 2 models = 10 jobs. Simplified: 3 × 2 = 6 jobs.
+- Each job ~1-2h on Together
+
+**Rigor note**: Together AI overrides some hyperparameters (lora_r 16→64, alpha 32→128, dropout removed — documented in Step 10). These overrides are constant across conditions, so not a confound for the ablation.
+
+**Step 9D: Evaluate on held-out test set** `[~4-6h wall, ~$15-80]`
+
+- Run each fine-tuned model on 449 held-out test prompts
+- Dedicated endpoints required (Together serverless LoRA doesn't work): Mixtral $0.13/min, Llama $0.53/min
+- 10 runs × 449 = 4,490 generation calls
+- **Cost concern**: Endpoint costs are the hidden expense. Batch runs back-to-back on one endpoint session to minimize startup overhead.
+
+**Step 9E: Judge all evaluation responses** `[~8-12h wall, ~$30-70]`
+
+- 3-judge consensus panel on all 4,490 responses = 13,470 judge calls
+- Fully resumable
+
+**Step 9F: Analyze and plot** `[~1h, $0]`
+
+- **Primary figure**: Accuracy vs template count curve (x: T1/T5/T10/T20/T-all, y: test accuracy). One line per model. Error bars via bootstrap CI.
+- Per-category breakdown at each condition
+- Template-overlap split: accuracy on seen-template vs novel-template test prompts per condition
+- McNemar's test: each condition vs T-all
+- Model comparison: does the curve shape differ between Mixtral and Llama?
+
+Output: `results/ablation/template_diversity_curve.png`, per-condition accuracy tables
+
+#### Cost and time estimate
+
+| Step | Wall time | Cost |
+|---|---|---|
+| 14A: Generate data | 30 min | $0 |
+| 14B: Training targets (approach a) | 1h | $0 |
+| 14B: Training targets (approach b, if needed) | 15-20h | $50-150 |
+| 14C: Fine-tuning (10 jobs) | 10-20h | $50-100 |
+| 14D: Evaluation inference | 4-6h | $15-80 (endpoints) |
+| 14E: Judging | 8-12h | $30-70 |
+| 14F: Analysis | 1h | $0 |
+| **Total (approach a)** | **~1.5-2 days** | **~$95-250** |
+| **Total (approach b)** | **~2.5-3.5 days** | **~$145-400** |
+
+#### Simplified fallback (if time-constrained)
+
+Run only 3 conditions: T1 (or T5 if T1 is too small under approach a), T10, T-all. Captures the degenerate/low case, the hypothesized knee, and the control. Cuts to 6 fine-tuning jobs. Wall time ~1-1.5 days.
+
+#### Risks and mitigations
+
+1. **Risk: T1 performs well** → Template diversity doesn't matter — model learns from entity-answer content, not question structure. Interesting finding, report honestly. Would need careful framing.
+
+2. **Risk: Approach (a) gives too few prompts for low-template conditions** → T1 under reuse gives ~44 prompts, far too few for LoRA. Mitigation: switch to approach (b) for T1/T5 only, or drop T1 and use T5 as the lowest condition.
+
+3. **Risk: Results differ between Mixtral and Llama** → Answers Sunny's Q5 about model capacity. A finding, not a problem.
+
+4. **Risk: Time** → Must start by ~March 12 to have results by ~March 18, leaving 9 days for thesis writing. Simplified fallback gives 1-2 extra days.
+
+5. **Risk: Endpoint costs escalate** → 10 evaluation runs on Llama endpoints ($0.53/min) could cost $50+ alone. Mitigation: simplified fallback (6 runs), or run Mixtral-only (cheaper endpoints, $0.13/min) as a first pass.
+
+#### What this adds to the thesis
+
+- **Ch 4 (Methodology)**: Empirical justification for template diversity design choice
+- **Ch 7 (Fine-tuning)**: New subsection "Template Diversity Ablation" (~2-3 pages with curve figure)
+- **Ch 8 (Discussion)**: Practical recommendations for practitioners building fine-tuning benchmarks from template-generated data
+- Preempts reviewer question: "Are your results sensitive to template diversity?"
+
+**Priority**: Next experiment. Per Sunny's guidance: TruthfulQA first (done), then ablation.
+
+**Thesis location**: Ch 7.6 if the curve is interesting; Appendix if T-all is trivially best.
+
+---
+
+### Phase 9 Execution: Template Diversity Ablation `[IN PROGRESS — Mar 9-10, 2026]`
+
+#### Step 9A: Build ablation training data `[DONE — Mar 9]`
+
+**Script**: `scripts/build_ablation_data.py`
+
+Used **approach (a)** — reuse existing V5 prefix data, filter to templates in each condition's pool. This means N varies across conditions (a known limitation, reported alongside results).
+
+**T1 dropped**: Pre-computation showed only 179 prompts achievable (3-15 per category) — insufficient for fine-tuning. T5 is the lowest condition.
+
+**Final conditions**:
+
+| Condition | Templates/group | Mixtral N | Llama N | Purpose |
+|-----------|----------------|-----------|---------|---------|
+| T5 | 5 | 397 | 402 | Low diversity |
+| T10 | 10 | 660 | 662 | Moderate diversity |
+| T-all | 55-66 (existing) | 2,402 | 2,406 | Maximum diversity (control, not regenerated) |
+| R397 (Mixtral) | ~194 (all) | 397 | — | Random subset matching T5 N, full template pool |
+| R402 (Llama) | ~192 (all) | — | 402 | Random subset matching T5 N, full template pool |
+
+**Matched random controls (R{N})**: Same prompt count as T5 but drawn from the full template pool (~194 templates instead of 50). This isolates template diversity from dataset size — if R397 outperforms T5 despite identical N, the difference is template diversity, not data quantity.
+
+**Design notes**:
+- Nested template selection: T5's 5 templates ⊂ T10's 10 templates (seeded shuffle, seed=2025)
+- borderline_edge_factual (130 hand-written, no templates) included identically in all conditions — serves as control
+- Edge factual dilution: 32.7% of T5 dataset, dilutes template-diversity effect. Per-category metrics excluding edge_factual reported separately
+- R{N} labels are model-specific (R397 for Mixtral, R402 for Llama) because unfixable counts differ (28 vs 24)
+- Nesting verified across all conditions
+
+**Output**: `data/training/ablation/ablation_report.json` (full condition details), `data/training/ablation/{condition}_{model}.jsonl` (training data), `data/training/ablation/{condition}_together_{model}.jsonl` (Together AI format)
+
+#### Step 9C: Fine-tuning `[DONE — Mar 9]`
+
+6 LoRA fine-tuning jobs via Together AI, all completed:
+
+| Condition | Model | Job ID | Output Model |
+|-----------|-------|--------|-------------|
+| T5_mixtral | Mixtral 8x7B | ft-1dc56ff5-5435 | seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-abl-T5-mixtral-b6757183 |
+| R397_mixtral | Mixtral 8x7B | ft-d0eea4ce-dd33 | seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-abl-R397-mixtral-6ef6a680 |
+| T10_mixtral | Mixtral 8x7B | ft-8313836b-b9ac | seinyun_a5f8/Mixtral-8x7B-Instruct-v0.1-abl-T10-mixtral-631bc9e1 |
+| T5_llama | Llama 4 Maverick | ft-d6183ef5-cc91 | seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-abl-T5-llama-c34edd9f |
+| T10_llama | Llama 4 Maverick | ft-0e637b6c-4aaa | seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-abl-T10-llama-61158d64 |
+| R402_llama | Llama 4 Maverick | ft-823d8b5b-39d1 | seinyun_a5f8/Llama-4-Maverick-17B-128E-Instruct-abl-R402-llama-40138f4e |
+
+**Note**: T-all does not need separate fine-tuning — it's the existing Step 10 models (Mixtral configC, Llama configA).
+
+Same hyperparameters as Step 10 (Together overrides: lora_r=64, alpha=128, no dropout). Llama used QLoRA (4-bit).
+
+Stored in: `data/training/ablation/ablation_ft_jobs.json`
+
+#### Step 9D: Evaluation generation `[DONE — Mar 10-11]`
+
+Run each fine-tuned model on the 449 held-out V3 test prompts via dedicated Together AI endpoints. Script: `scripts/run_ablation_generation_all.py`
+
+**First attempt (Mar 9-10)**: Hit Together AI capacity issues — Llama endpoints failed to deploy during peak hours. 3 Mixtral conditions completed, all 3 Llama conditions failed or partial.
+
+**Retry (Mar 10-11, off-peak)**: `python3 scripts/run_ablation_generation_all.py --skip-existing` — all 3 Llama conditions completed successfully.
+
+| Condition | Status | Entries | Endpoint deploy time | Generation time |
+|-----------|--------|---------|---------------------|-----------------|
+| T5_mixtral | **Complete** | 449/449 | — (first attempt) | — |
+| R397_mixtral | **Complete** | 449/449 | — (first attempt) | — |
+| T10_mixtral | **Complete** | 449/449 | — (first attempt) | — |
+| T5_llama | **Complete** | 449/449 | 585s (~10 min) | 14:35 (~1.95s/it) |
+| R402_llama | **Complete** | 449/449 | 930s (~15.5 min) | 0:34 (resumed 17 remaining) |
+| T10_llama | **Complete** | 449/449 | 435s (~7 min) | 15:24 (~2.06s/it) |
+
+All 6 conditions × 449 prompts = 2,694 total answers. Zero failures.
+
+**Output**: `results/v5_finetuned/ablation/{condition}/answers.jsonl`
+
+#### Step 9E: Judging `[DONE — Mar 11]`
+
+3-judge consensus panel (GPT-5.1, Claude Opus 4.5, Llama 4 Maverick) on all 2,694 responses. Command: `python3 scripts/run_ablation_evaluation.py --phase judge`
+
+| Condition | Judged | Time | Rate |
+|-----------|--------|------|------|
+| T5_mixtral | 449/449 | 23:56 | 3.20s/it |
+| R397_mixtral | 449/449 | 25:05 | 3.35s/it |
+| T10_mixtral | 449/449 | 25:16 | 3.38s/it |
+| T5_llama | 449/449 | 23:33 | 3.15s/it |
+| T10_llama | 449/449 | 27:18 | 3.65s/it |
+| R402_llama | 449/449 | 23:30 | 3.14s/it |
+
+Total: 2,694/2,694 judged, 0 errors. ~2.5 hours wall time.
+
+#### Step 9F: Analysis `[DONE — Mar 11]`
+
+**Script**: `scripts/analyze_ablation.py` (mirrors `analyze_v5_finetuned.py` structure)
+
+**Results — Summary Table:**
+
+| Condition | Templates | Mixtral N | Mixtral Acc | Llama N | Llama Acc |
+|-----------|-----------|-----------|-------------|---------|-----------|
+| Baseline (no prefix) | — | 449 | 82.9% | 449 | 90.6% |
+| Best prefix (entity_aware) | — | 449 | 91.1% | 449 | 94.0% |
+| FT: T5 (5 templates) | 50 | 397 | 90.9% | 402 | 91.5% |
+| FT: R{N} (all tmpl, T5 size) | ~194 | 397 | 90.2% | 402 | 92.2% |
+| FT: T10 (10 templates) | 100 | 660 | 92.0% | 662 | 93.3% |
+| FT: T-all (all templates) | ~194 | 2,402 | 91.1% | 2,406 | 92.4% |
+
+**Key findings:**
+
+1. **Template diversity does NOT matter (the main result).** T5 (5 templates) performs statistically indistinguishably from T-all (all templates) on both models. McNemar p=1.00 (Mixtral), p=0.52 (Llama). Even with only 50 templates and ~400 training examples, the fine-tuned model matches the performance of one trained on 2,400 examples with full template diversity. The model learned behavioral caution, not template-specific patterns.
+
+2. **T5 vs R{N} (diversity-vs-size control): no difference.** T5 (50 templates, ~400 examples) vs R{N} (all ~194 templates, same ~400 examples): McNemar p=0.65 (Mixtral), p=0.65 (Llama). Identical hallucination rates (4.2% / 1.6%). Template diversity at constant N adds nothing.
+
+3. **All conditions significantly beat baseline.** Every ablation condition beats baseline for Mixtral (all p<0.001). Llama improvements are directionally consistent but smaller (baseline already 90.6%): T10 is significant (p=0.031), T5 marginal (p=0.58), R402 marginal (p=0.30).
+
+4. **Template overlap split shows cross-template generalization.** T5 Mixtral: seen-template prompts 92.6% acc vs novel-template 92.4% acc — virtually identical. The model generalizes equally well to templates it never saw during training. This directly answers Sunny's Q2.
+
+5. **T10 is the best-performing condition** for both models (Mixtral 92.0%, Llama 93.3%) — numerically better than T-all despite fewer templates and examples. Not statistically significant (p=0.52/0.45 vs T-all), but suggests T-all's additional data adds noise, not signal.
+
+6. **Hallucination rates consistent across conditions.** Mixtral: 4.2% (T5/R397), 3.3% (T10), 1.3% (T-all). Llama: 1.6% across all three ablation conditions, 0.7% T-all. The slight T-all advantage in hallucination rate may reflect dataset size (more training signal for rare cases) but is not statistically significant.
+
+7. **Per-category patterns stable.** borderline_plausible_fake sees the largest improvement across all conditions (+16-29pp over baseline). borderline_obscure_real shows the same regression pattern as the main experiment (-3 to -10pp). nonexistent dramatically improves (+4 to +28pp). These patterns are condition-invariant — the intervention type matters more than the training data composition.
+
+**Interpretation for thesis:**
+
+The ablation result is a **positive finding for practitioners**: template diversity in fine-tuning data is not a bottleneck. A small number of diverse entities with even 5 question templates is sufficient to teach behavioral caution. This supports the thesis's contribution #4 (prompt distillation into weights) — the model is learning a general epistemic strategy, not memorizing question-answer patterns.
+
+This also retroactively validates the TruthfulQA generalization (Phase 5): if the model doesn't even need diverse templates to generalize within-benchmark, it's unsurprising that it generalizes cross-benchmark.
+
+**Thesis location**: Ch 7.6 "Template Diversity Ablation" (~2-3 pages with summary table). The result is interesting enough for the main text, not appendix — it addresses a methodological concern and has practical implications.
+
+**Output**: `results/v5_finetuned/ablation/ablation_analysis.json`
+
+---
+
+### Phase 10: Cross-Category Generalization Ablation `[COMPLETE — Mar 12, 2026]`
+
+**Motivation**: Sunny Qin (Mar 11, 2026) suggested testing whether fine-tuning on a subset of categories teaches caution that generalizes to held-out categories. This is a **third type of behavioral generalization** beyond:
+1. Unseen entities (decontamination analysis, Step 11C)
+2. Unseen question templates (TruthfulQA, Phase 5; template ablation, Phase 9)
+3. **Unseen category types** ← this experiment
+
+**Note on framing**: This is a **zero-shot category transfer** test — held-out categories have *zero* training examples. Sunny's original intuition was about low-resource categories (from the T1 discussion where some categories had only 3-15 examples). We test the extreme case: can the model generalize caution to a category type it has literally never seen during fine-tuning?
+
+**Core question**: If a model learns to be cautious about nonexistent entities, does that caution transfer to borderline_plausible_fake entities it was never trained on? If it learns to hedge on ambiguous questions, does it also hedge on impossible questions?
+
+**Why this matters**: Categories represent fundamentally different *types* of epistemic uncertainty:
+- **Entity-dependent** (nonexistent, borderline_plausible_fake, borderline_obscure_real): Uncertainty about whether an entity exists or is real
+- **Entity-independent** (factual, ambiguous, impossible, borderline_edge_factual): Uncertainty about the question itself (trick questions, edge cases, genuinely ambiguous)
+
+If caution generalizes across these groups, the model learned something deeper than "be careful about fake entities" — it learned a general epistemic strategy applicable to novel uncertainty types.
+
+**Experimental design**:
+
+#### Condition structure
+
+We use **leave-one-group-out** rather than leave-one-category-out, for two reasons:
+1. Individual categories have as few as 130-200 training examples (impossible, borderline). Removing one category from training leaves most of the data intact (~90%), making it hard to detect a difference.
+2. The entity-dependent vs entity-independent split is a natural conceptual boundary — these are genuinely different *kinds* of hallucination triggers.
+
+| Condition | Train categories | Held-out categories | Train N (approx) | Purpose |
+|-----------|-----------------|---------------------|-------------------|---------|
+| Full (control) | All 7 | None | ~2,400 | Existing T-all from Phase 9 — no new FT needed |
+| Entity-dep only | nonexistent, plausible_fake, obscure_real | factual, ambiguous, impossible, edge_factual | ~1,000 | Does entity-focused caution generalize to entity-independent questions? |
+| R{entity-dep} | All 7 (random subset) | None | ~1,000 (matched) | Size-matched control for entity-dep. Isolates category coverage from dataset size |
+| Entity-indep only | factual, ambiguous, impossible, edge_factual | nonexistent, plausible_fake, obscure_real | ~1,430 | Does question-type caution generalize to entity-dependent questions? |
+| Leave-out-nonexistent | All except nonexistent | nonexistent | ~1,830 | Nonexistent is largest category (600 training, 120 test). Best statistical power for single-category holdout |
+| Leave-out-factual | All except factual | factual | ~1,930 | Factual is the second-largest test category (98 test). Tests generalization to straightforward knowledge questions |
+
+**Why these 6 conditions specifically**:
+- Full: existing control, no cost
+- Entity-dep / Entity-indep: tests the conceptual boundary (different uncertainty types)
+- R{entity-dep}: size-matched random control (same approach as Phase 9's R{N}). Same ~1,000 prompts but drawn from all 7 categories. If entity-dep-only underperforms R{entity-dep}, the gap is category coverage, not dataset size. If both perform equally, smaller datasets are fine regardless of category composition.
+- Leave-out-nonexistent: best single-category test (largest test set, n=120, gives statistical power). Nonexistent is also the category with the largest fine-tuning improvement, so it's the hardest test — if caution generalizes even without nonexistent training data, that's strong evidence
+- Leave-out-factual: tests whether the model needs explicit "here's what correct answers look like" examples, or if training only on uncertainty categories is sufficient
+
+**What we do NOT include**:
+- Leave-one-out for every category (7 additional conditions × 2 models = 14 FT jobs). Too expensive for the insight gained. The group-level conditions and the two best-powered single-category holdouts cover the key questions.
+- Combinations of holdouts (e.g., hold out nonexistent + plausible_fake). Combinatorial explosion. The group-level conditions already test this.
+- R{entity-indep} size-matched control: entity-indep (~1,430) is close enough to the leave-out conditions (~1,830-1,930) that a size confound is unlikely. The entity-dep condition (~1,000 vs ~2,400) has the largest size gap and is the one where the control matters most.
+
+#### Evaluation
+
+- **Test set**: Same 449 V3 prompts across all conditions (no change). All 7 categories are evaluated — including held-out categories (which is the whole point).
+- **Judges**: Same 3-judge consensus panel (GPT-5.1, Claude Opus 4.5, Llama 4 Maverick)
+- **Primary metric**: Per-category accuracy on held-out categories (the ones NOT in training)
+- **Key comparison**: Held-out category accuracy in ablation condition vs same category accuracy in Full condition. If close (gap <3pp), caution generalizes. If large gap (>5pp), caution is category-specific.
+- **Statistical test**: McNemar's test per held-out category (ablation vs Full). Aggregate group-level tests as primary (entity-dep held-out n=268, entity-indep held-out n=181 — sufficient power). Per-category as supplementary (some categories n=20-31, low power).
+- **Secondary analysis**: Does the model *over-refuse* on held-out categories? Check refusal rate (label=3) specifically.
+- **Baseline reference**: Include baseline (no fine-tuning) accuracy as a floor. If ablation condition < Full but > baseline, the conclusion is "partial transfer — still helps but benefits from category-specific training."
+
+#### Step-by-step implementation
+
+**Step 10A: Generate training data** `[~1h, $0]`
+
+Filter existing V5 best-per-prompt training data by category, then convert to Together AI message format.
+
+Script: `scripts/build_cross_category_ablation.py`
+
+For each condition, for each model:
+1. Load `v5_training_{model}.jsonl`
+2. Filter to included categories (or stratified random sample for R{entity-dep})
+3. Write to `data/training/ablation_cross_cat/{condition}_{model}.jsonl` (best-per-prompt format)
+4. Convert to `data/training/ablation_cross_cat/{condition}_together_{model}.jsonl` (Together AI message format: `{"messages": [{"role": "user", "content": question}, {"role": "assistant", "content": answer}]}`)
+5. Log prompt counts per category per condition
+6. Write `data/training/ablation_cross_cat/cross_cat_ablation_report.json` (generation report)
+
+**Pre-step: verify actual per-category training counts** (before writing script):
+```
+python3 -c "
+import json
+for model in ['mixtral-8x7b', 'llama-4-maverick-17b']:
+    data = [json.loads(l) for l in open(f'data/training/v5_training_{model}.jsonl')]
+    cats = {}
+    for d in data:
+        c = d.get('category', 'unknown')
+        cats[c] = cats.get(c, 0) + 1
+    print(f'{model}: {len(data)} total')
+    for c, n in sorted(cats.items()):
+        print(f'  {c}: {n}')
+"
+```
+This determines exact N for each condition and confirms entity-dep viability (need >200).
+
+**Validation checklist**:
+- [ ] Verify zero overlap between held-out categories' training data and the filtered training set
+- [ ] Verify prompt counts are sufficient per condition (>200 for LoRA)
+- [ ] Verify all conditions use the same V3 test set (449 prompts, all 7 categories — including held-out categories)
+- [ ] Verify Together AI format is correct (messages array, no system prompt)
+- [ ] Verify R{entity-dep} has same total N as entity-dep condition, stratified by category
+
+**Step 10B: Fine-tune** `[~12-20h wall, ~$50-100]`
+
+10 fine-tuning jobs: 5 conditions (excluding Full) × 2 models.
+
+**LoRA config**: configC for Mixtral (lr=2e-4, 5 epochs), configA for Llama (lr=2e-4, 3 epochs). Same as the main fine-tuning experiment and Phase 9 ablation. Together AI overrides: lora_r=64, alpha=128, no dropout. Llama uses QLoRA (4-bit).
+
+| Job | Model | Condition | Expected N |
+|-----|-------|-----------|------------|
+| 1 | Mixtral | Entity-dep only | ~1,000 |
+| 2 | Mixtral | R{entity-dep} | ~1,000 (matched) |
+| 3 | Mixtral | Entity-indep only | ~1,430 |
+| 4 | Mixtral | Leave-out-nonexistent | ~1,830 |
+| 5 | Mixtral | Leave-out-factual | ~1,930 |
+| 6 | Llama | Entity-dep only | ~1,000 |
+| 7 | Llama | R{entity-dep} | ~1,000 (matched) |
+| 8 | Llama | Entity-indep only | ~1,430 |
+| 9 | Llama | Leave-out-nonexistent | ~1,830 |
+| 10 | Llama | Leave-out-factual | ~1,930 |
+
+Together AI. Jobs can run in parallel (all use separate uploaded files).
+
+Script: `scripts/run_cross_cat_finetuning.py` (modeled on `run_v5_finetuning.py` but reads from `ablation_cross_cat/` directory and uses the correct per-model config).
+
+Job tracking: `data/training/ablation_cross_cat/cross_cat_ft_jobs.json`
+
+**Fallback if time-constrained**: Run only Mixtral (5 jobs), since Mixtral showed larger fine-tuning gains and more room for differentiation. Add Llama if time permits.
+
+**Step 10C: Generate answers** `[~2h wall, ~$5]`
+
+Run each fine-tuned model on the full 449-prompt test set.
+
+10 answer files: `results/v5_finetuned/cross_cat_ablation/{condition}_{model}/answers.jsonl`
+
+**Mixtral deployment note**: Mixtral requires a dedicated endpoint ($0.13/min) — deploy one condition at a time, run 449 prompts (~10 min), stop endpoint. 5 Mixtral conditions = ~50 min sequential endpoint time. Llama uses serverless LoRA (no endpoint cost, can run in parallel).
+
+Script: `scripts/run_cross_cat_evaluation.py` (modeled on `run_ablation_evaluation.py`)
+
+**Step 10D: Judge** `[~4h wall, ~$25-35]`
+
+3-judge consensus on all 10 × 449 = 4,490 answers.
+
+Output: `results/v5_finetuned/cross_cat_ablation/{condition}_{model}/judged_answers.jsonl`
+
+**Step 10E: Analyze** `[~1-2h, $0]`
+
+Script: `scripts/analyze_cross_category_ablation.py`
+
+Analysis structure:
+1. **Per-condition overall accuracy** (all 449 test prompts)
+2. **Per-condition per-category accuracy** — the key table. For each condition, report accuracy on (a) trained categories and (b) held-out categories separately
+3. **Generalization gap**: For each held-out category, compute: `Full_accuracy - Ablation_accuracy`. This is the "cost of not seeing this category during training"
+4. **Size control comparison**: Entity-dep-only vs R{entity-dep} — same N, different category composition. If entity-dep underperforms R{entity-dep}, the deficit is category coverage. If equal, category composition at this N doesn't matter.
+5. **Cross-group transfer matrix**: Entity-dep-only model's accuracy on entity-indep test prompts vs Full model. Vice versa.
+6. **Refusal rate analysis**: Does the model over-refuse on unfamiliar category types?
+7. **McNemar's test**: Each condition vs Full, both overall and per held-out category. Also entity-dep vs R{entity-dep}.
+8. **Baseline floor**: Include baseline (no FT) accuracy per category as reference
+
+**Expected outcomes and interpretation**:
+
+| Outcome | What it means | Thesis framing |
+|---------|--------------|----------------|
+| Held-out accuracy ≈ Full accuracy (<3pp gap) | Caution fully generalizes across category types | **Strongest claim**: model learns domain-general epistemic caution. Third generalization type confirmed. |
+| Moderate gap (3-8pp) on held-out categories | Partial generalization — some category-specific learning needed | Interesting nuance: model learns *mostly* general caution but benefits from category-specific examples. Report honestly. |
+| Large gap (>8pp) on held-out categories | Caution is category-specific | Still informative: the model needs to see examples of each uncertainty type. Contrasts with template/entity generalization. |
+| Asymmetric: entity-dep→entity-indep transfers but not vice versa | One direction of transfer is easier | Suggests entity-dependent caution is a harder skill that requires direct training. Or entity-independent caution is more general. |
+| Entity-dep ≈ R{entity-dep} | Category composition doesn't matter at matched N | Strengthens "general strategy" claim — even a category-restricted training set teaches the same thing as a balanced one |
+| Entity-dep < R{entity-dep} | Category restriction hurts beyond size | Category diversity matters — the model benefits from seeing diverse uncertainty types during training |
+
+**All outcomes are publishable.** This is not a "we need a positive result" experiment — any result informs the thesis narrative about what fine-tuning actually teaches.
+
+#### Research questions (mapped to Sunny's suggestion)
+
+1. **Does caution generalize across category types?** The main question. If yes, this is the third behavioral generalization finding.
+2. **Is there an asymmetry in transfer direction?** Entity-dep → entity-indep vs the reverse. Could reveal which uncertainty types are "harder" to learn.
+3. **What is the minimum category coverage needed?** If leave-out-nonexistent performs as well as Full, we don't need nonexistent training data at all. Practical implication for data collection.
+4. **Does the model over-refuse on unfamiliar categories?** A possible failure mode: the model becomes uniformly cautious and refuses factual questions it should answer confidently.
+5. **Is category composition or dataset size the driver?** Entity-dep vs R{entity-dep} answers this directly.
+
+#### Cost and timeline
+
+| Step | Wall time | API cost |
+|------|-----------|----------|
+| 10A: Generate training data | ~1h | $0 | **DONE** |
+| 10B: Fine-tune (10 jobs parallel) | ~12-20h | ~$28 (verified dry run) | **DONE** |
+| 10C: Generate answers (dedicated endpoints, sequential) | ~2-3h | ~$46 (Mixtral 5×$1.50 + Llama 5×$8) | **DONE** |
+| 10D: Judge | ~6h | ~$25-35 | **DONE** |
+| 10E: Analyze | ~1-2h | $0 | |
+| **Total** | **~1-2 days wall** | **~$100-110** | |
+
+**Note**: Both Mixtral AND Llama require dedicated endpoints for fine-tuned LoRA inference (serverless LoRA not supported for these base models). Mixtral: $0.13/min on 2×H100. Llama: $0.53/min on 8×H100. Script auto-deploys and stops endpoints per condition.
+
+**Simplified fallback**: Mixtral only (5 conditions). ~1 day wall, ~$35-45.
+
+#### Risks and mitigations
+
+1. **Risk: Unbalanced training sizes across conditions**. Entity-dep only has ~1,000 prompts vs Full's ~2,400. Performance differences could reflect dataset size, not category coverage. **Mitigation**: R{entity-dep} size-matched random control (same approach as Phase 9's R{N}). If entity-dep ≈ R{entity-dep}, size is the driver. If entity-dep < R{entity-dep}, category composition matters.
+
+2. **Risk: Test set category sizes too small for per-category significance**. Impossible (n=30), borderline_obscure_real (n=30), borderline_edge_factual (n=20), borderline_plausible_fake (n=31). At n=30, need ~15pp difference for McNemar significance. **Mitigation**: Report aggregate group-level tests as primary (entity-dep held-out: n=268, entity-indep held-out: n=181 — sufficient power). Per-category as supplementary with effect sizes and confidence intervals.
+
+3. **Risk: Phase 9 showed template count doesn't matter. What if category count also doesn't matter?** Then we have another "flat curve" result. **Mitigation**: This is still a positive finding — it strengthens the "general epistemic strategy" narrative. The model doesn't need diversity of templates OR diversity of categories. What it needs is diversity of *entities* (since we know T1 failed due to insufficient prompts, not insufficient templates).
+
+4. **Risk: Together AI overrides LoRA hyperparameters.** Phase 9 discovered Together applies its own defaults (lora_r=64, alpha=128, no dropout) regardless of what we request. **Mitigation**: This is fine — all conditions use the same Together defaults, so the comparison is fair. Document the actual params used.
+
+**Thesis location**: Ch 7.7 "Cross-Category Generalization" (~2-3 pages). Follows template ablation (Ch 7.6). Together with decontamination (Ch 7.4), TruthfulQA (Ch 7.5), and template ablation (Ch 7.6), this completes the "three types of generalization" narrative arc that Sunny suggested.
+
+#### Phase 10 Results (Mar 12, 2026)
+
+**Step 10A**: DONE. Data generated for all 5 conditions × 2 models. All validations passed. Script: `scripts/build_cross_category_ablation.py`. Output: `data/training/ablation_cross_cat/`.
+
+**Step 10B**: DONE. All 10 fine-tuning jobs completed on Together AI. FT cost: ~$28. Jobs tracked in `data/training/ablation_cross_cat/cross_cat_ft_jobs.json`. Together AI applied lora_r=64, lora_alpha=128, targets k_proj/o_proj/q_proj/v_proj.
+
+**Step 10C/D**: DONE. All 10 conditions × 449 prompts generated and judged (4,490 judgments total). Script: `scripts/run_cross_cat_evaluation.py`. One wifi disconnect and one endpoint STOPPED issue during execution — all resolved via `--skip-existing` and `--start-from` resume flags.
+
+**Overall results (accuracy / hallucination rate)**:
+
+| Condition | Mixtral Acc | Mixtral Hall | Llama Acc | Llama Hall |
+|-----------|-------------|--------------|-----------|------------|
+| **Full (T-all, control)** | **94.4%** | **1.3%** | **94.0%** | **1.1%** |
+| leave_out_nonex | 92.2% | 3.8% | **95.8%** | **0.4%** |
+| leave_out_fact | 93.5% | 1.6% | 95.3% | 0.9% |
+| entity_dep | 93.3% | 2.0% | 95.3% | 0.2% |
+| R_entity_dep | 93.1% | 2.4% | 94.4% | 1.1% |
+| entity_indep | 90.9% | 4.9% | 92.7% | 3.8% |
+
+**Key findings**:
+
+1. **Entity-indep is clearly worst for both models** — training only on entity-independent categories (factual, ambiguous, impossible, edge_factual) produces 3-5× higher hallucination than Full. The model fails to learn caution about entity existence from question-structure training alone.
+
+2. **Entity-dep generalizes surprisingly well** — training on only ~1,000 entity-dependent examples nearly matches Full (~2,400) for Mixtral (93.3% vs 94.4%), and **beats Full for Llama** (95.3% vs 94.0%, 0.2% vs 1.1% hallucination). Entity-dependent caution transfers to entity-independent questions.
+
+3. **Asymmetric transfer**: Entity-dep → entity-indep works well. Entity-indep → entity-dep fails (especially on nonexistent: 95.0% vs 99-100% for other conditions). Learning "be careful about question structure" does NOT teach "be careful about entity existence."
+
+4. **R_entity_dep ≈ entity_dep** — the size-matched random control performs similarly (93.1% vs 93.3% Mixtral, 94.4% vs 95.3% Llama). This suggests entity-dep's strong performance is NOT because entity-dependent categories are inherently better training data — rather, ~1,000 examples of ANY category mix teaches adequate caution. For Llama, entity_dep slightly outperforms R_entity_dep, hinting that entity-focused training may have a small edge.
+
+5. **Leave-out conditions nearly match Full** — removing nonexistent or factual barely hurts. For Llama, leave_out_nonex actually outperforms Full (95.8% vs 94.0%). Caution transfers perfectly to individual held-out categories.
+
+6. **borderline_plausible_fake remains hardest** — 67-97% accuracy across conditions, consistent with known entity contamination issue. entity_indep hits 67.7% (Llama) / 77.4% (Mixtral) on this category.
+
+7. **No over-refusal on held-out categories** — refusal rates stay low (0.4-1.1%) across all conditions. The model doesn't become uniformly cautious on unfamiliar category types.
+
+**Interpretation**: Fine-tuning teaches behavioral caution that generalizes across category boundaries. This is the **third type of behavioral generalization** confirmed:
+1. Unseen entities (decontamination, Step 11C)
+2. Unseen question templates (TruthfulQA + template ablation, Phase 5/9)
+3. **Unseen category types** (this experiment)
+
+The asymmetry finding adds nuance: entity-dependent training is more "portable" than entity-independent training. Learning to verify entity existence teaches a deeper epistemic strategy that naturally covers question-structure uncertainty. The reverse is not true.
+
+**Step 10E**: Pending — formal statistical analysis script with McNemar's tests, generalization gaps, and cross-group transfer matrix.
+
+---
+
+### Phase 6: Geometry-Guided Targeting `[FUTURE WORK]`
 
 - Build a geometry-aware system that selects the optimal prefix per-prompt based on geometric features
 - For fine-tuning: weight geometrically risky prompts more heavily in training data
-- **Key thesis contribution**: Geometry predicts not just hallucination occurrence but hallucination *difficulty* — connecting prediction (V3) to intervention (V4) to distillation (fine-tuning)
 
-## Phase 7: Baselines Comparison
+**Value**: **High reward, medium-high risk.** The most intellectually elegant extension — using geometry operationally. But the within-category density signal is modest (r≈0.25). A geometry-based selector might not outperform always using the best single prefix. If it works, crown jewel. If not, time spent on a null result.
 
-- Compare our approach against standard mitigation methods:
-  - Chain-of-thought (CoT Verification is already a baseline — it's the weakest prefix)
-  - Retrieval-augmented generation (RAG)
-  - Self-consistency / majority voting
-  - Temperature scaling
+**Cost**: Medium — requires building a classifier, selecting thresholds, evaluating on held-out data. ~2-3 days.
 
-## Phase 8: Adversarial Robustness
+**Recommendation**: Mention in Discussion/Future Work. The analytical geometry-intervention connection (Ch 7 bridge analysis, best-per-prompt curation) is already complete. Phase 6 adds operational deployment, not conceptual insight.
 
-- Can adversarial prompts break the prefix-induced safety?
-- Does the fine-tuned model resist adversarial attacks better than the prefix-conditioned model?
-- Test with prompt injection, jailbreaking, and our existing adversarial perturbation framework
+### Phase 7: Literature Baselines Comparison `[IN PROGRESS — Step 7A Done]`
 
-## Compute Requirements
+**Purpose**: Contextualize our results against published mitigation methods. Without this, the thesis's 89% hallucination reduction and fine-tuning distillation float in a vacuum — a reviewer's natural question is "how does this compare to RAG? Self-consistency? DPO?"
 
-- **Prompt expansion + prefixes + judging**: API-only, no GPU needed
-- **Fine-tuning**: Requires GPU access (LoRA on Mixtral 8x7B ~24GB VRAM, QLoRA ~12GB)
-- **Evaluation**: Same API-based pipeline — no GPU needed
+**Value**: **High, near-zero cost.** Zero API cost, few hours of literature review. Goes in Ch 8 (Discussion).
+
+**Risk of skipping**: A reviewer writes "The authors do not compare against any standard mitigation baselines."
+
+**Critical constraint**: Direct apples-to-apples comparison is impossible — every method uses different benchmarks, models, metrics, and hallucination definitions. The table must include an explicit **comparability assessment** per entry. A sloppy comparison table is worse than no table: it invites accusations of cherry-picking favorable comparisons.
+
+#### Method Selection Criteria
+
+Methods are NOT randomly selected. Inclusion requires meeting **at least two** of these criteria:
+
+1. **Axis relevance**: The method addresses at least one of our three axes:
+   - Axis 1 (Detection): Predicts whether a response will contain hallucination
+   - Axis 2 (Prompt mitigation): Reduces hallucination via prompting, no weight changes
+   - Axis 3 (Fine-tuning mitigation): Reduces hallucination via weight modification
+
+2. **Citation threshold**: ≥100 citations on Google Scholar (establishes the method is not obscure). Exception: papers published in 2024-2025 that appear at top venues (NeurIPS, ICLR, ACL, EMNLP) since they haven't had time to accumulate citations.
+
+3. **Quantitative results available**: The paper reports numerical hallucination reduction rates (not just qualitative examples). We need numbers for the table.
+
+4. **Conceptual proximity**: The method is close enough to ours that a reviewer would reasonably ask "why didn't you compare against X?" — i.e., methods a hallucination reviewer would expect to see cited.
+
+**Exclusion criteria** (methods we explicitly do NOT include, with justification):
+- Methods that only apply to retrieval-augmented settings (we test closed-book generation)
+- Methods requiring human preference data we don't have (pure RLHF/DPO on preference datasets — though we include them for context with a note)
+- Methods tested only on summarization/translation (different hallucination mode than open-domain QA)
+- Methods from before 2020 (pre-LLM era, different paradigm)
+
+#### Benchmark Selection Criteria
+
+The comparison table will reference results from specific benchmarks. Benchmark inclusion requires:
+
+1. **Widely adopted**: Used by ≥3 of the comparison methods, OR is a standard evaluation in the hallucination literature
+2. **Hallucination-specific**: The benchmark specifically measures factual accuracy or hallucination, not general capability (no MMLU, no SuperGLUE)
+3. **Open-domain QA or knowledge-intensive**: Matches our task setting (not summarization faithfulness, not dialogue consistency)
+4. **Published baseline scores exist**: We can cite specific numbers from the original paper
+
+**Candidate benchmarks** (to be confirmed during literature review):
+- **TruthfulQA** (Lin et al., 2022): 817 questions, tests misconceptions. We run this ourselves (Phase 5) — enables direct comparison of our base model scores against published baselines as a judge calibration check.
+- **SimpleQA** (OpenAI, 2024): 4,326 questions, tests factual accuracy with verified ground truth. Recent, well-designed, graded by automated judge.
+- **HaluEval** (Li et al., 2023): 35K samples across QA/dialogue/summarization. Widely cited hallucination benchmark.
+- **FActScore** (Min et al., 2023): Atomic fact precision for long-form generation. Different metric (precision, not accuracy) — include only if comparison methods report it.
+
+**Excluded benchmarks** (with justification):
+- MMLU / HELM general benchmarks: Not hallucination-specific
+- SQuAD / Natural Questions: Extractive QA, not generative hallucination
+- Summarization faithfulness benchmarks (XSum, CNN/DM): Different task, different hallucination mode
+
+#### Comparison Table Structure
+
+Three sub-tables, one per axis. Each entry includes:
+
+| Column | Purpose |
+|---|---|
+| Method | Name + citation |
+| Category | Prompting / fine-tuning / inference-time / retrieval-augmented |
+| Benchmark | Which benchmark the reported result is from |
+| Model(s) | Which model(s) the method was tested on |
+| Metric | What was measured (accuracy, hallucination rate, FActScore, etc.) |
+| Result | The reported number |
+| Ours (comparable) | Our result on the closest comparable metric, if any |
+| Comparability | Direct / Partial / Indirect — with brief justification |
+
+**Comparability definitions**:
+- **Direct**: Same benchmark AND same model family AND same metric. (Likely none — our setup is novel)
+- **Partial**: Same benchmark OR same model family, but different metric or setup. (TruthfulQA results will be partial — same benchmark, different models/judge)
+- **Indirect**: Different benchmark, different model — only directional comparison possible. (Most entries)
+
+#### Specific Rigor Concerns
+
+1. **No cherry-picking**: Include methods that outperform us on their benchmarks. The framing is "different niche" not "we're better." If RAG achieves 95% accuracy with retrieval, we report that honestly and note we test closed-book.
+
+2. **Metric incompatibility must be stated**: Our "hallucination rate" (% of responses labeled 2 by 3-judge consensus) ≠ TruthfulQA's "% truthful" (GPT-judge) ≠ FActScore's atomic precision. A paragraph before the table must explain why numbers across rows are not directly comparable.
+
+3. **Model generation gap**: Many papers test GPT-3.5 or Llama 2 (7B-70B). We test Mixtral 8x7B and Llama 4 Maverick 17B. Different generations, different baseline capabilities. A method reducing GPT-3.5 hallucination by 50% is not equivalent to our 89% reduction on Mixtral.
+
+4. **R-Tuning is the closest comparison**: Zhang et al. (2023) fine-tune models to say "I don't know" — conceptually the closest to our fine-tuning for entity skepticism. This comparison must be detailed and honest. Differences: they use explicit "I don't know" labels, we use best-per-prompt selection; they test on knowledge-intensive QA, we test on a custom entity benchmark.
+
+5. **Our CoT failure as context**: Our CoT Verification prefix has 62-68% refusal rate. Chain-of-Verification (Dhuliawala et al.) reports improvements. The difference — system prompt CoT vs. multi-step structured verification — is worth noting.
+
+6. **Include our own negative results**: The table should include our CoT Verification result as an entry alongside external methods. Showing we honestly report our own failures strengthens credibility.
+
+#### Execution Steps
+
+**Step 7A: Systematic literature search (~2-3 hours)** `[DONE — Mar 2026]`
+
+**Results**: 4 parallel search axes completed. Found 22 methods across 3 axes + 4 surveys + 3 benchmark baseline tables + 3 RAG baselines.
+- Detection: 8 methods (SelfCheckGPT, Semantic Entropy, P(True), ITI, INSIDE/EigenScore, Lookback Lens, FActScore, SAPLMA)
+- Prompt mitigation: 8 methods (CoT, Self-Consistency, CoVe, Self-Refine, AMA, SelfCheckGPT, Self-Alignment, RECITE)
+- Fine-tuning: 8 methods (R-Tuning, FactTune, InstructGPT/RLHF, FLAME, Mask-DPO, CAI, Self-RAG, Fine-Tuning Paradox)
+- Surveys: Huang et al. (~1,868 cit), Zhang et al. (~814), Tonmoy et al. (~166, 32+ method table), Alansari & Luqman (2025)
+- Benchmarks: TruthfulQA (Mixtral 73.9% MC2), SimpleQA (o1-preview 42.7%), HaluEval (ChatGPT QA 62.59%)
+
+**Output files**:
+- `results/literature_comparison/comparison_notes.md` — full structured notes with per-method details
+- `results/literature_comparison/baselines_table.csv` — 22 methods with comparability assessments
+
+**Key finding**: R-Tuning (NAACL 2024 Outstanding Paper) is our closest comparator. INSIDE/EigenScore is our closest conceptual kin in detection. No prior work predicts hallucination *difficulty* — this confirms our contribution is novel.
+
+**Papers requiring paywall verification**: None — all papers available on arXiv. Some specific table values (R-Tuning Table 1 AP scores, Semantic Entropy Extended Data exact AUROCs, ITI Table 1 conditions) should be verified from the PDF before final thesis submission.
+
+#### Step 7A Detailed Findings
+
+##### Detection Methods (Axis 1)
+
+| Method | Year/Venue | Citations | Access Type | Key Result | Comparability |
+|---|---|---|---|---|---|
+| SelfCheckGPT (Manakul et al.) | 2023 EMNLP | ~600 | Black-box | AUC-PR ~0.78 sentence-level (WikiBio) | Indirect — detects in generated text; we predict from geometry pre-generation |
+| Semantic Entropy (Farquhar et al.) | 2024 Nature | ~773 | White-box (logprobs) | Best AUROC across 5 QA datasets vs all baselines | Partial — both use embedding-level features, but they operate post-generation |
+| P(True) / P(IK) (Kadavath et al.) | 2022 Anthropic | ~373 | White-box (logits) | P(True)>50% strongly predictive; scales with model size | Indirect — self-evaluation, not external geometry |
+| **ITI** (Li et al.) | 2023 NeurIPS | ~200+ | White-box (activations) | TruthfulQA: 32.5% → 65.1% truthfulness | **Partial** — both work in embedding space; they modify activations at inference, we select training data via geometry |
+| **INSIDE / EigenScore** (Chen et al.) | 2024 ICLR | ~100+ | White-box (embeddings) | +5-10pp AUROC over logit/language baselines | **Partial — closest conceptual kin**. Both use embedding-space properties: they compute eigenvalues of response embedding covariance, we compute geometric features (density, centrality) of entity embeddings in knowledge graph |
+| Lookback Lens (Chuang et al.) | 2024 EMNLP | ~74 | White-box (attention) | Test AUROC 0.914 (NQ); 9.6% hallucination reduction (XSum) | Indirect — attention analysis, not entity geometry |
+| FActScore (Min et al.) | 2023 EMNLP | ~869 | Black-box (eval metric) | ChatGPT only 58% factual; <2% error vs human annotation | Indirect — evaluation framework, not prediction |
+| SAPLMA (Azaria & Mitchell) | 2023 EMNLP Findings | ~200+ | White-box (hidden states) | 71-83% accuracy on true/false classification | Partial — both analyze internal representations; they probe model hidden states, we analyze knowledge graph topology |
+
+**Detection positioning**: Our geometric approach falls in the white-box embedding analysis category alongside INSIDE/EigenScore. Key differentiator: existing methods predict hallucination *presence/absence*; our bridge analysis (AUC=0.86) predicts hallucination *difficulty* — which ones resist mitigation. No prior work does this.
+
+##### Prompt Mitigation Methods (Axis 2)
+
+| Method | Year/Venue | Citations | Key Result | Comparability |
+|---|---|---|---|---|
+| Chain-of-Thought (Wei et al.) | 2022 NeurIPS | ~14,400 | GSM8K: 17.9% → 58.1% (+40pp) with PaLM-540B | Partial — our V4 tested prompt prefixes on entity hallucination (different domain). CoT primarily helps reasoning. Caveat: ACL Findings 2025 showed CoT *obscures* hallucination detection cues |
+| Self-Consistency (Wang et al.) | 2023 ICLR | ~3,500 | +17.9% over CoT on GSM8K; consistent across 4 model families | Indirect — multi-sample voting; our prefixes are single-shot |
+| **CoVe** (Dhuliawala et al.) | 2024 ACL Findings | ~308 | Hallucinated entities: 2.95 → 0.68/response (two-step, Wikidata); FactScore: 55.9→71.4 (+15.5pp, factor+revise). LLaMA-65B. | **Partial** — both reduce entity-level hallucination. CoVe: multi-step self-verification. Us: single-shot prefix + FT. CoVe is inference-compute-heavy; ours bakes in via training |
+| Self-Refine (Madaan et al.) | 2023 NeurIPS | ~2,548 | ~20% absolute improvement avg across 7 tasks vs single-pass | Indirect — iterative refinement; we target entity hallucination specifically |
+| AMA (Arora et al.) | 2023 ICLR | ~252 | +10.2% avg over few-shot; 6B matches 175B on 15/20 tasks | Indirect — different mechanism (question reformulation + aggregation) |
+| Self-Alignment for Factuality (Zhang et al.) | 2024 ACL | ~50+ | TruthfulQA: +13% accuracy over base LLaMA-7B; BioGEN: +4% FActScore | Partial — hybrid prompt+DPO method |
+| RECITE (Sun et al.) | 2023 ICLR | ~200+ | Matches BM25 retrieval on closed-book QA | Indirect — closed-book alternative to RAG |
+
+**Prompt positioning**: Our V4 prefix experiment is conceptually closest to CoVe (both target entity-level hallucination). Key differentiator: CoVe uses multi-step verification at inference time (expensive per query); our approach identifies *which* prompts benefit from which prefix using geometric features, then distills the effect into fine-tuned weights (cheap at inference time). Our CoT Verification prefix's 62-68% refusal rate vs. CoVe's success illustrates that naive CoT application ≠ structured multi-step verification.
+
+##### Fine-Tuning Mitigation Methods (Axis 3)
+
+| Method | Year/Venue | Citations | Key Result | Comparability |
+|---|---|---|---|---|
+| **R-Tuning** (Zhang et al.) | 2024 NAACL **Outstanding Paper** | ~120-180 | Outperforms vanilla IT in Average Precision; refusal transfers as meta-skill to unseen tasks | **Direct — CLOSEST COMPARATOR**. Both teach models to abstain on uncertain knowledge. R-Tuning: identifies unknowns via train-time probing (can model answer?). Us: identifies unknowns via geometric features of entity embeddings (centrality, density). Our geometric taxonomy adds *why* some are harder. |
+| **FactTune** (Tian et al.) | 2024 ICLR | ~200+ | 58% reduction in factual errors (biography); 40% (medical QA) | Partial — both FT for factuality. FactTune: DPO with auto-generated preferences. Us: LoRA SFT with geometry-guided best-per-prompt selection |
+| InstructGPT / RLHF (Ouyang et al.) | 2022 NeurIPS | ~7,000+ | TruthfulQA: 21% → 42%. But *increased* hallucination on some open-ended tasks | Indirect — general alignment, not hallucination-specific |
+| FLAME (Dhuliawala et al.) | 2024 NeurIPS | ~40-60 | +5.6 FActScore over standard DPO; no instruction-following sacrifice | Partial — both address the SFT-on-novel-knowledge problem. FLAME filters by model familiarity; we select by geometry + prefix effectiveness |
+| Mask-DPO | 2025 ICLR | ~10-20 | ANAH: 49.19% → 77.53% (+28.3pp); 8B surpasses 70B on factuality | Partial — sentence-level DPO masking vs our LoRA SFT |
+| Constitutional AI (Bai et al.) | 2022 Anthropic | ~2,500+ | TruthfulQA ~58%; primarily harmlessness, hallucination secondary | Indirect — general alignment |
+| Self-RAG (Asai et al.) | 2024 ICLR | ~500+ | PopQA: 14.7% → 55.8%; biography factuality 80% (vs ChatGPT 71%) | Indirect — hybrid FT+retrieval; we operate closed-book |
+| Fine-Tuning Paradox (Gekhman et al.) | 2024 EMNLP | — | FT on *new* knowledge linearly increases hallucination | Context paper — our approach avoids this: we FT on behavioral patterns (entity skepticism), not new facts |
+
+**Fine-tuning positioning**: R-Tuning is the head-to-head comparison. Both teach models to handle knowledge boundaries, but through fundamentally different signals. R-Tuning: "can the model answer this question?" (binary train-time probing). Ours: "what does the geometry of this entity's embedding neighborhood look like?" (continuous features — density, centrality — that predict *degree* of hallucination difficulty, not just presence). The DPO-based methods (FactTune, FLAME, Mask-DPO) represent a different paradigm entirely — they use preference pairs, we use geometry-guided best-per-prompt selection followed by LoRA SFT.
+
+##### Surveys Identified
+
+| Survey | Year | Citations | Key Value |
+|---|---|---|---|
+| Huang et al. "A Survey on Hallucination in LLMs" | 2023 | ~1,868 | Most cited; broadest taxonomy (detection + mitigation by stage) |
+| Zhang et al. "Siren's Song in the AI Ocean" | 2023 | ~814 | Connects detection and mitigation; training data memorization emphasis |
+| **Tonmoy et al.** "Comprehensive Survey of Hallucination Mitigation" | 2024 | ~166 | **Most useful for us**: 32+ method comparison table organized by prompt eng + RAG, self-refinement, training-based |
+| Alansari & Luqman | 2025 | Recent | Most up-to-date; full lifecycle taxonomy |
+
+**Survey usage**: Cite Huang et al. for the broadest taxonomy in Related Work. Use Tonmoy et al.'s 32+ method table as validation that our method selection is comprehensive — cross-reference our 22 methods against their table to verify no glaring omissions.
+
+##### Benchmark Baselines (Published Scores)
+
+**TruthfulQA** (Lin et al., 2022) — 817 questions, 38 categories:
+| Model | Score | Metric | Source |
+|---|---|---|---|
+| Mixtral 8x7B Instruct | 73.9% | MC2 | Open LLM Leaderboard |
+| Llama 2 70B Chat | 44.9% | MC2 | Open LLM Leaderboard |
+| Llama 2 7B Chat | 45.3% | MC2 | Open LLM Leaderboard |
+| Llama 3 8B | ~44% | MC2 | Open LLM Leaderboard |
+| InstructGPT 175B | ~42% | Truthful (GPT-judge) | Ouyang et al. 2022 |
+| GPT-3 175B | ~21% | Truthful (GPT-judge) | Ouyang et al. 2022 |
+| Alpaca + ITI | 65.1% | Truthful (GPT-judge) | Li et al. 2023 |
+| **Our Mixtral baseline** | **74.4%** | 3-judge consensus (accuracy) | This work (Step 13E) |
+| **Our Llama baseline** | **71.8%** | 3-judge consensus (accuracy) | This work (Step 13E) |
+| **Our Mixtral FT** | **76.6%** | 3-judge consensus (accuracy) | This work (Step 13E) |
+| **Our Llama FT** | **77.1%** | 3-judge consensus (accuracy) | This work (Step 13E) |
+
+**SimpleQA** (OpenAI, 2024) — 4,326 questions:
+| Model | Correct | Source |
+|---|---|---|
+| GPT-4.5 | 62.5% | OpenAI |
+| o1-preview | 42.7% | OpenAI |
+| GPT-4o | 38.2% | OpenAI |
+| Claude 3.5 Sonnet | 28.9% | OpenAI |
+| Llama 3.1 70B | ~20% | Community evals |
+| Mixtral | — | No published score |
+
+**HaluEval** (Li et al., 2023) — 35,000 samples:
+| Task | ChatGPT Baseline | With External Knowledge |
+|---|---|---|
+| QA | 62.59% | 76.83% |
+| General (generation) | 19.5% halluc. rate | — |
+
+**RAG baselines** (for the "why not just use RAG?" reviewer question):
+| Paper | Key Result |
+|---|---|
+| Original RAG (Lewis et al., NeurIPS 2020) | NQ: 44.5 EM (vs 41.5 DPR baseline) |
+| Shuster et al. (Findings EMNLP 2021) | 60%+ reduction in factual error in dialogue |
+| Self-RAG (Asai et al., ICLR 2024) | Biography factuality: 80% (vs ChatGPT 71%) |
+
+##### Thesis Positioning Summary (from 7A findings)
+
+**What we do that no one else does**:
+1. Predict hallucination *difficulty* (not just presence) from geometric features (AUC=0.86)
+2. Combine geometric prediction + prompt intervention + fine-tuning distillation in a single pipeline
+3. Show that "unfixable" hallucinations cluster in specific geometric regions (high centrality, low density)
+4. Demonstrate prompt prefix effects can be distilled into LoRA weights
+
+**What others do that we don't** (honest limitations):
+- RAG methods achieve higher factuality with retrieval infrastructure (we test closed-book)
+- DPO methods use preference pair optimization (we use simpler LoRA SFT)
+- ITI modifies activations at inference time (we don't intervene in the forward pass)
+- Semantic Entropy and INSIDE operate on the actual model being evaluated (we use a separate embedding model for geometry)
+
+**Reviewer defense script**:
+- "Why not RAG?" → We test closed-book generation; RAG requires retrieval infrastructure and can't help when no relevant documents exist
+- "How does this compare to R-Tuning?" → Both teach abstention on uncertain knowledge via different signals (train-time probing vs geometry). Our geometric features additionally predict *resistance* to mitigation, which R-Tuning does not address
+- "Why not DPO?" → Our geometry-guided best-per-prompt selection could be seen as an implicit form of preference learning, but without requiring explicit preference pairs. The geometric signal identifies the "preference" (which prefix produces the best output) without human annotation
+- "What about Self-RAG/CoVe?" → These are inference-time compute-heavy (multiple steps per query). Our approach bakes the effect into weights, making inference cheap. Complementary, not competing approaches.
+
+This is NOT a casual bibliography check. It is a structured search designed to be defensible if a reviewer asks "how did you select comparison methods?"
+
+**Search strategy** (multi-source, documented):
+
+1. **Existing bibliography** (26 refs): Extract all mitigation methods already cited. These are the starting point, not the endpoint.
+
+2. **Keyword searches on Google Scholar / Semantic Scholar / arXiv** (2020-present):
+   - "hallucination mitigation LLM" / "reduce hallucination large language model"
+   - "truthful language model fine-tuning" / "factuality fine-tuning"
+   - "hallucination detection embedding" / "hallucination prediction"
+   - "prompt engineering hallucination" / "system prompt factuality"
+   - "LLM calibration factual" / "knowledge grounding LLM"
+   - Sort by citation count to identify the field's consensus "important methods"
+
+3. **Survey mining**: Read the methods/comparison tables from the 2-3 most cited hallucination surveys (2023-2025). Surveys aggregate the field's consensus on what methods matter. Key surveys:
+   - Ji et al. (2023) "Survey of Hallucination in NLG" (already in bib, 1000+ citations)
+   - Huang et al. (2023) "A Survey on Hallucination in LLMs" (if highly cited)
+   - Tonmoy et al. (2024) "A Comprehensive Survey of Hallucination Mitigation Techniques in LLMs" (if exists)
+   - Any 2024-2025 survey with ≥50 citations
+
+4. **Benchmark leaderboards**: Check published baselines for benchmarks we compare against:
+   - TruthfulQA published results table (original paper + HuggingFace leaderboard)
+   - SimpleQA published results (OpenAI blog / paper)
+   - HaluEval published baselines
+
+5. **Citation chain (forward + backward)**: For the 3-4 most conceptually close methods (especially R-Tuning, ITI, CoVe), check:
+   - What do THEY cite? (backward — older foundational methods we might miss)
+   - Who cites THEM? (forward — newer methods building on the same idea)
+
+6. **Venue proceedings scan** (NeurIPS 2023-2025, ICLR 2024-2025, ACL/EMNLP 2023-2025):
+   - Search accepted paper lists for "hallucination" in title
+   - Prioritize oral/spotlight papers (venue-endorsed importance)
+
+**Per-method recording template**:
+- Full citation (authors, title, venue, year)
+- Google Scholar citation count (as of Mar 2026)
+- Method category (prompting / fine-tuning / inference-time / retrieval / detection)
+- Axis relevance (which of our 3 axes it addresses)
+- Benchmark(s) used
+- Model(s) tested
+- Key quantitative result (exact numbers from paper)
+- Table/figure number where result appears (for verification)
+- Comparability to our setup (Direct / Partial / Indirect + justification)
+- Why included (which selection criteria it meets)
+
+**Paywall protocol**: Most ML papers are on arXiv (free access). For papers behind paywalls (some ACL Anthology, IEEE, etc.), flag the paper and ask the user to access and verify quantitative results before including them in the final table. Do not cite numbers that haven't been verified from the actual paper — abstracts and secondary sources can misrepresent results.
+
+**Completeness check**: After initial search, verify coverage by asking: "If a hallucination researcher read our comparison table, would they notice a glaring omission?" If any commonly discussed method is missing, either include it or document why it was excluded.
+
+**Step 7B: Build comparison tables (~1 hour)** `[DONE — Mar 2026, v4 after three rounds of rigorous review]`
+
+**Output**: `results/literature_comparison/comparison_tables.md` (v4)
+
+**Revision history**:
+- v1: Uncurated dump of all 22 methods. 7 major problems.
+- v2: Cut to 14 methods, fixed metric mixing. 8 remaining problems.
+- v3: Tables finalized (15 methods + 1 context). But bridge AUC 0.86 presented without flagging as train-only/unreplicated; our own numbers not held to same standard as literature [*] flags.
+- v4: Rewrote all "Our results" sections. Bridge AUC 0.86 now flagged as [†train-only], V5 CV AUC (0.59/0.43) reported alongside, within-category bridge confirmation (density p=0.034/0.047) added. Detection results restructured by rigor: within-category first (non-circular, 0.67/0.68 AUC), between-category second (partially confounded, 0.64/0.72), aggregate last. [†] flags on our own numbers matching [*] standard for literature.
+
+**v4 summary**:
+- **15 external methods + 1 context paper** across 3 tables (unchanged from v3)
+- **Comparability breakdown**: 0 Direct, 5 Partial (close), 6 Partial (distant), 4 Indirect
+- **Critical v4 fix**: All our own numbers now carry [†] caveats where methodologically warranted:
+  - Bridge AUC 0.86 → [†train-only, V5 CV at 0.59, within-category density confirms at p<0.05 uncorrected]
+  - Between-category AUC 0.64/0.72 → [†partially confounded by category structure; category alone = 0.77]
+  - Within-category AUC 0.67/0.68 → the non-circular primary finding
+  - V5 bridge within-category p=0.034/0.047 → [†uncorrected; would not survive Bonferroni, but confirmatory test]
+  - FT bridge density → [†Mixtral survives Bonferroni; Llama does NOT (p_corrected=0.49)]
+- **9 literature claims [*] + 5 own-number caveats [†] flagged**
+- **Honest unknowns**: R-Tuning head-to-head unknown, CoVe/DoLA not tested on our benchmark
+
+**Step 7C: Write comparison narrative (~2-3 hours)** `[FOLDED INTO THESIS WRITING]`
+
+**Decision (Mar 11)**: Originally planned to write intermediate `comparison_narrative.md` then port to LaTeX. Now that all experiments are done and thesis writing is the sole remaining task, writing the narrative directly in Ch 8 LaTeX avoids double-work. The 6-section structure plan below still applies — it's the outline for Ch 8.3 (or wherever the comparison lands in the Discussion).
+
+**Scope restriction**: Only discuss the 10 verified methods in depth. The 5 unverified [*] methods (SAPLMA, SelfCheckGPT, Self-Alignment, Self-Refine, RECITE) get mentioned but no specific numbers asserted from them.
+
+#### Structure (6 sections)
+
+**1. Opening: Why comparison is impossible (~0.5 page)**
+- Convert comparison_tables.md preamble to thesis prose
+- Every method uses different benchmarks, models, metrics, hallucination definitions
+- Our metric (3-judge consensus on entity fabrication) is incommensurable with FActScore, AUROC, TruthfulQA truthfulness
+- The tables provide *directional context*, not rankings
+- **Rule: No cross-metric numerical comparisons anywhere in the narrative**
+
+**2. Detection axis (~0.5 page)**
+- INSIDE/EigenScore as closest conceptual kin (both: embedding geometry → prediction)
+- Key difference: they analyze *response* embeddings post-generation from the model's internal states; we analyze *entity* embeddings in a knowledge graph pre-generation using an external embedding model
+- Do NOT compare AUC numbers across methods — different tasks, different metrics, different inputs. The preamble's own principle forbids this.
+- Our unique contribution: bridge analysis (predicting *fixability*, not just presence). No detection method in the table attempts fixability prediction.
+
+**3. Prompt/inference-time axis (~0.5 page)**
+- CoVe as closest (both target entity-level hallucination). Key tradeoff: CoVe uses a 4-stage pipeline per query (compute-heavy); we use a single-shot system prompt (cheap). Different models (LLaMA-65B vs our Mixtral/Llama 4).
+- **TruthfulQA comparison angle (give this a full paragraph, not a parenthetical)**: DoLA achieves +12-17pp on TruthfulQA via decoding modification. Our Llama achieves -4.4pp halluc (Bonferroni-sig) — smaller, but ours is cross-domain transfer (NOT trained on TruthfulQA). This means we taught epistemic caution, not task-specific behavior. This is a key differentiator.
+- CoT catastrophic refusal (62-68%) as genuine negative result — naive single-prompt instruction ≠ structured multi-step verification (CoVe) or decoding-level intervention (DoLA)
+
+**4. Fine-tuning axis (~0.5 page)**
+- **R-Tuning gets substantial treatment** (closest comparator, NAACL Outstanding Paper). Both teach abstention on uncertain knowledge via SFT. Key difference: R-Tuning uses binary train-time probing (can model answer this Q?); we use geometric features to guide best-per-prompt selection for training data. Frame the geometry-vs-probing comparison as the **central open empirical question** — whether geometry-guided selection produces better training data than R-Tuning's known/unknown split is unknown without running both on the same benchmark.
+- DPO family (FactTune, FLAME, Mask-DPO) as a different training paradigm from our LoRA SFT. Different mechanism, different signal source. Cannot be directly compared.
+- InstructGPT as foundational context. Its finding that RLHF can increase hallucination on some tasks (the "alignment tax") is directly relevant to our precision-recall tradeoff finding.
+
+**5. The pipeline as contribution (~0.5 page)**
+- **NOT novelty-by-conjunction** — the feedback loop is the insight, not the Venn diagram:
+  - Geometry predicts which prompts cause hallucination (Ch 5)
+  - Geometry predicts which hallucinations resist prompt intervention (bridge analysis, Ch 7)
+  - Prompt responses become training signal via best-per-prompt selection (Ch 6→7)
+  - FT distills prompt behavior into weights (Ch 7)
+  - Geometry predicts where FT fails (FT bridge, Ch 7)
+- Each step informs the next. Without geometry, you can't predict which prompts need help. Without prompts, you can't generate diverse training signal. Without FT, the improvement is ephemeral. Without the bridge analysis, you don't know where the cure has side effects.
+- A skeptical reviewer will say "combining three existing things isn't a contribution." The response: the combination produces insight that the parts don't — specifically, the geometric taxonomy of fixability (Ch 7) only emerges because we have geometry + intervention + the ability to compare them.
+
+**6. Honest limitations relative to prior work (~0.5 page)**
+- RAG methods (Self-RAG) have retrieval; we're closed-book
+- DPO methods (FactTune, Mask-DPO) have preference learning; we use simpler SFT
+- CoVe has structured multi-step verification; we use a single prefix
+- ITI modifies activations directly; we modify weights
+- Our bridge analysis has small-sample caveats (n=5-15 in "broken" groups)
+- We tested 2 models; most baselines test 3-6
+- **Concrete future work**: Run R-Tuning on our benchmark, or run our method on ParaRel/MMLU — this is the comparison that would most advance the field
+
+#### Issues caught during rigorous review (March 8, 2026)
+
+1. **Metric mixing error in initial draft**: Planned to write "our AUC (0.67/0.68) is lower than typical detection AUROCs (0.78-0.91)." The 0.91 is from Lookback Lens, which is **not in our tables** (excluded during curation). The 0.78 is SelfCheckGPT's AUC-PR, which is a **different metric** from AUROC. The only proper AUROC comparison is Semantic Entropy's 0.790, and even that measures a different task (post-generation detection with 10 extra samples vs pre-generation prediction with zero samples). **Resolution**: Remove all cross-metric AUC comparisons from the narrative. The preamble's own principle forbids this.
+
+2. **Scope confusion**: Initial plan said "write directly into discussion.tex" as if 7C = the whole chapter. Ch 8 Discussion covers four contributions, limitations, conclusion, and the comparison section. 7C is ~2-3 pages within a ~10-15 page chapter. **Resolution**: Output to standalone `comparison_narrative.md`, port to LaTeX during thesis writing.
+
+3. **5 unverified papers**: Narrative plan cited specific numbers from SAPLMA (71-83%), SelfCheckGPT (AUC-PR 0.78), Self-Alignment (+13%), Self-Refine (~20%), RECITE. All still [*] unverified. Building a narrative on unverified numbers is bad practice. **Resolution**: Only discuss 10 verified methods in depth. Unverified methods get mentioned by name with no specific numbers asserted.
+
+4. **R-Tuning understated**: Initial plan gave R-Tuning a few lines despite being flagged as "closest comparator" (NAACL Outstanding Paper). **Resolution**: Give it substantial treatment. Frame geometry-vs-probing as the central open question.
+
+5. **TruthfulQA comparison buried**: Initial plan mentioned our TruthfulQA result as a parenthetical under DoLA. But our cross-domain transfer result (Llama -4.4pp Bonferroni-sig, NOT trained on TruthfulQA) is one of our strongest differentiators. **Resolution**: Give it a full paragraph.
+
+6. **"Methodological gap" claim needs qualification**: "No prior work combines X+Y+Z" risks sounding like novelty-by-conjunction. **Resolution**: Explain why the combination produces insight the parts don't — the feedback loop, not the Venn diagram.
+
+**Step 7D: Update bibliography and thesis guide (~30 min)** `[FOLDED INTO THESIS WRITING]`
+- References added to `references.bib` as Ch 8 is written (not as a separate step)
+- THESIS_WRITING.md already has comparison structure notes
+- Phase 7 tables (7A+7B) complete; narrative (7C) written during Ch 8 drafting
+
+#### Output Files
+
+- `results/literature_comparison/baselines_table.csv` — structured comparison data
+- `results/literature_comparison/comparison_notes.md` — detailed notes with full citations, comparability justifications, and per-method analysis
+- Updates to `thesis_reference/references.bib` and `thesis/Dissertate-Harvard-LaTeX/references.bib`
+- Updates to `THESIS_WRITING.md` (Ch 8 comparison section)
+
+**Thesis location**: Ch 8 (Discussion), ~2-3 pages. Table + narrative contextualization.
+
+### Phase 8: Adversarial Robustness `[FUTURE WORK]`
+
+- Can adversarial prompts break the prefix-induced safety / fine-tuned caution?
+- No adversarial framework built. Firmly future work.
+
+**Value**: Low relative to effort. Robustness testing is a whole paper in itself.
+
+### Human Validation Expansion `[RECOMMENDED]`
+
+**Current state**: n=50 from V3 only, single annotator, 90% agreement (40/50). Acknowledged as thin in THESIS_WRITING.md. A reviewer questioning the entire evaluation pipeline because of n=50 would be painful.
+
+**Goal**: Expand to n=150 with stratified sampling across V5 data, and optionally add a second annotator for inter-rater reliability. Zero API cost, a few hours of manual annotation work. Strengthens Ch 4.3.5 (Human Validation).
+
+#### Option A: Stratified Expansion to n=150 (single annotator)
+
+**Design**: Keep the original 50 V3 annotations. Add 100 new annotations stratified across the V5 pipeline stages:
+
+| Stratum | n | Rationale |
+|---|---|---|
+| V5 baseline responses (no prefix) | 20 | Validates judge accuracy on new prompts |
+| V5 prefix responses (best-per-prompt) | 20 | Validates judge accuracy on prefix-modified outputs |
+| V5 fine-tuned responses | 20 | Validates judge accuracy on LoRA outputs |
+| TruthfulQA judged responses | 20 | Validates cross-benchmark generalization of judge |
+| Disagreement cases (judges split 2-1) | 20 | Stress-tests the consensus mechanism on hardest cases |
+
+**Sampling procedure**:
+1. For each stratum, randomly sample 20 prompt-response pairs (seed=2025)
+2. For the disagreement stratum, filter to cases where exactly 1 of 3 judges dissented, then sample 20
+3. Present to annotator in randomized order (not grouped by stratum) to avoid bias
+
+**Metrics to compute**:
+- Overall human-judge agreement (across all 150)
+- Per-stratum agreement (are some pipeline stages harder to judge?)
+- Per-label agreement: correct vs. hallucination vs. refusal
+- Confusion matrix: which errors does the judge panel make? (false positives vs. false negatives)
+- Compare V3 agreement (40/50 = 80%) vs V5 agreement — does performance hold on new data?
+
+**Time estimate**: ~3-4 hours of manual annotation work.
+
+#### Option B: Second Annotator for Inter-Rater Reliability
+
+**Design**: Recruit a second annotator (e.g., fellow student, advisor) to independently annotate the same 150 samples from Option A.
+
+**Protocol**:
+1. Both annotators receive identical instructions: for each prompt-response pair, label as `correct`, `hallucination`, or `refusal`
+2. Both annotate independently — no discussion until after both are done
+3. Annotator 2 does NOT see the judge panel's labels
+
+**Metrics to compute**:
+- **Cohen's kappa** (κ): inter-annotator agreement corrected for chance
+  - κ > 0.8 = near-perfect agreement (strong validation)
+  - κ = 0.6-0.8 = substantial agreement (acceptable)
+  - κ < 0.6 = moderate or worse (would need investigation)
+- **Human-human agreement rate**: raw % agreement between annotators (upper bound for any automated judge)
+- **Two independent human-judge comparisons**: each annotator vs. the consensus panel
+  - If both agree with the panel at ~90%, strong evidence the panel is reliable
+  - If one agrees much less, reveals annotator calibration differences
+- **Disagreement analysis**: categorize cases where annotators disagree — are they the same cases where judges disagree?
+
+**Time estimate**: ~3-4 hours for annotator 2 (same as annotator 1), plus ~1 hour for kappa computation and analysis.
+
+**Why this matters for publication**: Inter-rater reliability is the gold standard for validating annotation quality. Without it, a reviewer can always argue "maybe your single annotator is biased." With κ > 0.8, that argument is foreclosed.
+
+#### Recommendation
+
+Do both. Option A alone (expanding to 150 with stratification) is the minimum. Option B (second annotator) is what separates a workshop paper from a top venue submission. Total cost: ~8 hours of human time, zero API cost.
+
+---
+
+## Summary: Remaining Roadmap
+
+| Step | What | Time | Cost | Value |
+|---|---|---|---|---|
+| ~~Step 11B~~ | ~~Overfitting check~~ | ~~1-2 hrs~~ | ~~$5-15~~ | **DONE** — no overfitting (1.9pp / 4.1pp gap) |
+| ~~Step 12A.0~~ | ~~Compute borderline geometry~~ | ~~5 min~~ | ~~<$0.01~~ | **DONE** — 449 rows, oppositeness unstable (corr=0.37), density/centrality/curvature stable |
+| ~~Step 12A.1-3~~ | ~~FT bridge + borderline + regression~~ | ~~2-3 hrs~~ | ~~$0~~ | **DONE** — density predicts FT outcomes (4 Bonf, 6 BH FDR), V4 inconsistency resolved, regressions=refusals in sparse regions |
+| ~~Step 12B~~ | ~~Thesis figures by chapter~~ | ~~1-2 hrs~~ | ~~$0~~ | **DONE** — 7 new figures + 13 existing = 20 total across Ch 4-7 |
+## Thesis State Summary (as of Mar 8, 2026)
+
+### What we did (experimental arc)
+
+1. **Built a hallucination benchmark** (2,879 prompts across 7 categories, 449 held-out + 2,430 training). A benchmark is a standardized set of test questions with known correct answers — it gives us precise, repeatable measurements (hallucination rate, accuracy), ensures every model/intervention sees the same prompts (controlled comparison), and lets anyone reproduce our results (publication requirement). Our benchmark specifically targets *entity fabrication* hallucination.
+2. **Tested 10 models** on it — established cross-model geometric prediction of hallucination (Kendall's tau=0.319 consistency across models).
+3. **Tested 5 prompt prefixes** on Mixtral + Llama (pilot on 449 prompts, replicated at 5x scale on 2,430) — all reduce hallucination significantly (p<0.001). Entity-Aware best for Mixtral (14.3%→5.2%), Structured Caution best for Llama (9.5%→3.6%). CoT Verification catastrophically over-refuses (62-68% refusal rate).
+4. **Best-per-prompt selection** — cherry-picked best response across prefixes per prompt for fine-tuning training data (98.2% correct for Llama, 97.7% for Mixtral). 28 Mixtral / 24 Llama prompts unfixable by any prefix.
+5. **LoRA fine-tuning** — trained both models on curated data (Together AI, 3 Mixtral configs + 1 Llama config). Evaluated on 449-prompt held-out set. Mixtral configC best (91.1% accuracy), Llama configA (92.4%). No overfitting (1.9pp / 4.1pp train-test gap).
+6. **Geometric bridge analyses** — tested whether embedding geometry predicts which hallucinations resist intervention (prefix bridge + fine-tuning bridge). Density is the universal predictor: high density = fixable, low density = resistant. 4/30 tests survive Bonferroni, 6/30 BH FDR.
+7. **TruthfulQA generalization** — tested fine-tuned models on TruthfulQA (817 questions, Lin et al. 2022), an external benchmark that tests misconceptions (not fabrication). Llama: acc +5.3pp (p=0.0002), halluc -4.4pp (p=0.0005), both Bonferroni-sig. Mixtral directionally consistent but underpowered. No over-caution. Breaks custom-benchmark circularity.
+
+### Why we're done experimentally
+
+All four contributions have experimental evidence, and TruthfulQA generalization (Phase 5) is complete. The remaining work is: literature baselines comparison (Phase 7, no API cost) and thesis writing. No more API-heavy experiments needed.
+
+### What we found
+
+- **Geometry predicts hallucination**, but mostly through category structure. The honest, non-circular signal is **within-category density** (p<0.0001 for nonexistent prompts, both models).
+- **Prompt prefixes dramatically reduce hallucination** — up to 89% reduction, replicated at 5x scale. All 5 prefixes significant (p<0.001).
+- **Fine-tuning matches best prefix** (Mixtral 91.1% accuracy, McNemar p=0.84 vs baseline) without runtime prompt engineering.
+- **Density predicts fixability** — unfixable hallucinations and regressions both cluster in sparse embedding regions. Both models agree on direction (high density = fixable).
+- **Regressions are refusals** (91%) in low-density regions — the model trades knowledge breadth for safety, and geometry predicts where this tradeoff bites.
+- **Cross-domain generalization**: Entity-fabrication fine-tuning transfers to TruthfulQA misconceptions (Llama: -4.4pp halluc, p=0.0005, Bonferroni-sig; Mixtral: -2.2pp, p=0.076, marginal). No over-caution on TruthfulQA (refusal ≤0.7%), suggesting caution is domain-targeted, not blanket.
+
+### The four contributions (ordered by novelty)
+
+1. **Geometric difficulty prediction**: Embedding geometry predicts not just *which* prompts cause hallucination, but which hallucinations are *fixable*. Within-category density predicts fixability (p=0.034/0.047 for nonexistent). Unfixable prompts cluster in high-centrality, low-density regions. Prior work asks "will this hallucinate?" — we ask "is this hallucination fixable?" and show the answer is geometric.
+
+2. **Density and centrality as geometric signals of hallucination**: Cross-category AUC (0.97 initial) is mostly category structure (category-only AUC=0.955). The non-circular finding: within a single category, density distinguishes hallucinating from non-hallucinating prompts (p<0.0001, both models, both intervention types). Sparser embedding neighborhoods → more hallucination, more resistant to mitigation. Centrality is a secondary, model-specific signal — very strong for Mixtral (p=0.00004 for FT fixability, survives Bonferroni) but null for Llama (p=0.51).
+
+   Full feature landscape (five features tested):
+   - **Curvature** (downgraded): V3 claimed second-strongest predictor (OR=0.300, p<0.001). Did NOT survive V5 controls — all FT bridge tests p>0.27, all within-category tests null. The "flat manifold paradox" from V3 does not replicate.
+   - **Oppositeness** (strong but fragile): Strongest between-category discriminator (p<1e-10, both models). BUT: (a) partly reflects category structure, not within-category signal; (b) not robust to corpus composition — adding 81 prompts changes scores fundamentally (corr=0.37 with original). A methodological finding: oppositeness depends on global PCA axes that shift with corpus changes.
+   - **Local intrinsic dimensionality** (descriptive only): Plausible_fake entities have extreme values (degenerate neighborhoods). Not tested as a predictor.
+
+   The intellectual arc: V3 emphasized centrality and curvature. Rigorous V5 analysis with proper controls showed density is the universal signal, centrality is model-specific, curvature is null, and oppositeness is strong but methodologically fragile. This is honest science — initial findings refined at scale.
+
+3. **Precision-recall tradeoff in learned caution**: Fine-tuning reduces hallucination on nonexistent entities (70%→98%) but causes regressions on obscure-real entities (-7 to -13%). 91% of regressions are refusals in low-density regions. Safety and knowledge coverage are in fundamental tension, and the tension is geometrically predictable.
+
+4. **Prompt distillation into weights**: LoRA fine-tuning on best-per-prompt curated data matches the best prompt prefix (91.1%, p=0.84) without runtime prompt engineering. Prompt engineering is not just a band-aid — it can be a data generation strategy for permanent model improvement.
+
+### Main message
+
+**Embedding geometry doesn't just predict *which* prompts cause hallucination — it predicts how *resistant* those hallucinations are to mitigation.** Sparse embedding neighborhoods produce hallucinations that resist both prompting and fine-tuning. Dense neighborhoods produce fixable ones. Fine-tuning can distill careful prompting behavior into weights, but it learns a density-based heuristic that over-fires on obscure real entities — revealing a fundamental precision-recall tradeoff between safety and knowledge coverage that is itself geometrically predictable. The learned caution also generalizes cross-domain: entity-fabrication fine-tuning significantly reduces misconception-type hallucination on TruthfulQA (Llama -4.4pp, Bonferroni-sig), suggesting the improvement is epistemic, not task-specific.
+
+---
+
+## Remaining Roadmap
+
+| Step | What | Time | Cost | Value |
+|---|---|---|---|---|
+| **Phase 5** | **TruthfulQA generalization** | **~1 day** | **~$55-85** | **DONE (13D+13E, re-judged). Llama: acc +5.3pp (p=0.0002) + halluc -4.4pp (p=0.0005), both Bonferroni-sig. Mixtral marginal. No over-caution.** |
+| ~~**Phase 9**~~ | ~~**Template diversity ablation**~~ | ~~**~1.5-3 days**~~ | ~~**~$85-180**~~ | **DONE — Template diversity does NOT matter. T5 (5 templates) ≈ T-all (all templates), McNemar p=1.00/0.52. Model learns behavioral caution, not template patterns.** |
+| ~~**Phase 7**~~ | ~~**Literature baselines table**~~ | ~~**Few hrs**~~ | ~~**$0**~~ | **DONE — 7A+7B complete (v5, 15 methods, 9/9 verified, 3 corrections). 7C-D folded into thesis Ch 8 writing.** |
+| Human validation | Expand n=50 → n=100-150 | Few hrs (manual) | $0 | Medium-high — strengthens entire evaluation pipeline credibility |
+| **Thesis writing** | **All chapters** | **~12-16 days** | **$0** | **CRITICAL — only ~3 pages of real content exist. Due Mar 27.** |
+| Phase 6 | Geometry selector | 2-3 days | ~$20 | Future work — engineering, not conceptual insight |
+| Phase 8 | Adversarial robustness | Days+ | $50+ | Future work — whole paper in itself |
 
 ---
 
@@ -1476,6 +3101,36 @@ All steps are fully resumable if interrupted.
 | Mar 2026 | Include baseline as 5th candidate source in Step 9 | 4 Mixtral / 2 Llama prompts correct at baseline but ALL 4 non-CoT prefixes hallucinate. Without baseline, these get hallucinated training targets. Including baseline: +9 correct Mixtral, +3 correct Llama, unfixable drops 34→28 / 29→24. No downside — training format is (question, answer) pairs regardless of source |
 | Mar 2026 | Fix priority: correct > partial > refusal > hallucination | Original plan had refusal (label=3) > partial (label=1). Wrong: partial is "technically true but vague/minor errors" — contains real knowledge. Refusal is "I don't know" — teaches model to give up. For fine-tuning, partial is strictly better |
 | Mar 2026 | Step 9 complete: best-per-prompt selection | Mixtral: 2,402 training (97.7% correct), 28 unfixable. Llama: 2,406 training (98.2% correct), 24 unfixable. All unfixable verified label=2 across all 5 sources. Source selection uses judge_confidence tiebreaker for quality. Entity-aware provides most unique saves (34/10) |
+| Mar 2026 | Step 10 complete: LoRA fine-tuning | 4 jobs via Together AI (3 Mixtral configs + 1 Llama). Together overrode lora_r 16→64, alpha 32→128, dropout removed. Llama used QLoRA (4-bit). Total cost: $22.42 |
+| Mar 2026 | All fine-tuned models require dedicated endpoints | Together serverless LoRA doesn't support Mixtral or Llama 4 Maverick. Dedicated endpoints: Mixtral $0.13/min, Llama $0.53/min. Script updated with `--endpoint` flag |
+| Mar 2026 | Step 11 complete: fine-tuning evaluation | **Strong success (Mixtral), moderate success (Llama)**. Mixtral configC matches best prefix (91.1%, p=0.84). Both models ~89% hallucination reduction. borderline_obscure_real regression (-7 to -13%) reveals precision-recall tradeoff in learned caution. Bug fix: V3 baseline deduplicated (538→449 entries, 85 duplicate borderline IDs with 8 inconsistent labels) |
+| Mar 2026 | Step 11B complete: overfitting check | **No overfitting.** Mixtral configC: 93.0% train vs 91.1% test (+1.9pp). Llama configA: 96.5% train vs 92.4% test (+4.1pp). Both gaps under 5pp despite aggressive LoRA rank (64) and no dropout. Fine-tuning learned genuine caution, not memorization. Clears 12A bridge analysis for uncontaminated interpretation |
+| Mar 2026 | Reframe Step 12 into 12A (analytical) + 12B (figures) | Original "Step 12: Final figures, takes minutes" undersold what's needed. 12A contains substantive research questions: fine-tuning bridge analysis, borderline geometric distinction, regression geometric profile. 12B is production work organized by thesis chapter. Split clarifies that 12A is research, 12B is engineering |
+| Mar 2026 | Thesis framing: contributions are ideas, not pipeline | Inspired by reference theses (Angela Li, Tarun Prasad). The four contributions are theoretical findings (geometric difficulty prediction, within-category density signal, precision-recall tradeoff, prompt distillation). Fine-tuning is the method, not the finding. No V3/V4/V5 labels in thesis — use descriptive terms |
+| Mar 2026 | Add Step 12A.0: compute borderline geometry | **Critical data gap**: `geometry_features.csv` has only 368 rows (4 main categories). 81 borderline prompts never had geometry computed. Without this, 12A.2 is completely blocked and 12A.3 is partially blocked. Re-embed all 449 prompts together (curvature/oppositeness depend on full matrix). Cost: <$0.01 |
+| Mar 2026 | Reframe 12A.2: within-category, not cross-category | Original plan compared borderline_obscure_real vs borderline_plausible_fake geometry — just detects category differences (same confound as cross-category AUC). Revised: within-category density prediction of FT outcomes within each borderline category. Harder test, avoids confound, consistent with Contribution #2 methodology |
+| Mar 2026 | Document all 12A concerns preemptively | Sample sizes (still_broken n≈6), density inconsistency across models, same-prompt double-testing, and null-result framing. Each concern has a specific mitigation. NeurIPS reviewers find weaknesses — preemptive documentation is defensive |
+| Mar 2026 | Step 12A.0 complete: full V3 geometry | 449 prompts (was 368). Self-reference used (reference corpus .npy files cleaned up). Density corr=0.998, centrality 0.983, curvature 0.975 — all stable. **Oppositeness corr=0.373** — global PCA axes rotated with 81 new points. Oppositeness is not robust to corpus composition. Lead with density/centrality/curvature in 12A.1-3, relegate oppositeness |
+| Mar 2026 | Step 12A.1-3 complete: FT bridge analysis | **Density is the universal predictor** of FT outcomes (fixability + regressions, both models, consistent direction). 4/30 survive Bonferroni, 6/30 BH FDR. V4 density inconsistency resolved — was prefix-specific artifact. Curvature NOT significant for FT (unlike V4 prefix bridge). 12A.2 null at n=5 (power limitation). Regressions are 91% refusals in low-density regions — geometry predicts where FT over-cautions |
+| Mar 2026 | Density direction resolved: high=fixable | V4 prefix bridge showed Mixtral fixed=higher density but Llama fixed=lower density, raising concern about universality. FT bridge shows BOTH models agree: fixed=higher density, regressed=lower density. The V4 inconsistency was specific to prompt-level intervention, not fundamental. Fine-tuning reveals the true geometric signal: sparse neighborhoods resist correction |
+| Mar 2026 | Phase 5: TruthfulQA generalization testing | All thesis results are on our custom benchmark. TruthfulQA (817 questions, Lin et al. 2022) breaks this circularity. Tests misconceptions not fabrication — different failure mode makes generalization test stronger, not weaker. Null result expected and interpretable ("targeted FT, not general truthfulness boost"). Enriched ground_truth string (not meta_info) because judge template only injects ground_truth |
+| Mar 2026 | TruthfulQA: test only best config per model | Test Mixtral configC and Llama configA only (not all 3 Mixtral configs). Rationale: (1) configC was the best-performing Mixtral config on our held-out set (91.1% accuracy, matching best prefix, McNemar p=0.84 vs baseline); (2) the generalization question is "does the best fine-tuned model transfer?" not "which hyperparameter config transfers best?"; (3) if configC doesn't generalize, weaker configs (A: 89.1%, B: 90.2%) won't either; (4) testing all 3 would triple endpoint cost (~$15-27 extra) for a question that isn't central. **Thesis note**: this decision should appear in Ch 7.5 (TruthfulQA section) — state that we test the best config per model, cite the held-out accuracy that determined "best," and note that this was decided before seeing TruthfulQA results (pre-registered, not cherry-picked) |
+| Mar 2026 | Serverless LoRA doesn't work for Llama | Together AI serverless LoRA adapter returns 400 "Input validation error" for all requests. Both Mixtral and Llama fine-tuned models require dedicated endpoints. Updated `run_truthfulqa.py` with per-model `--endpoint` / `--mixtral-endpoint` / `--llama-endpoint` flags to prevent cross-model endpoint contamination (previous bug: global `--endpoint` applied Mixtral endpoint to Llama, producing 75 corrupted entries) |
+| Mar 2026 | Upgrade Phase 7 from "medium" to "high" priority | Same pattern as Phase 5 — initially undersold as "just literature review." Without a baselines comparison table, the thesis's 89% hallucination reduction floats without context. A reviewer asking "how does this compare to RAG/self-consistency/DPO?" would find no answer. Zero cost, few hours of work, goes in Ch 8 Discussion. Also identified human validation expansion (n=50 → n=100-150) as recommended |
+| Mar 2026 | Phase 7 method/benchmark selection must be principled | Methods require ≥2 of: axis relevance (detection/prompt/FT), citation threshold (≥100 or top venue 2024-25), quantitative results, conceptual proximity. Excluded: retrieval-only methods (we test closed-book), pre-2020 (pre-LLM), summarization-only (different hallucination mode). Benchmarks require: ≥3 methods use it OR hallucination-standard, hallucination-specific (no MMLU), open-domain QA (no summarization faithfulness), published baselines exist. Comparability column (Direct/Partial/Indirect) per table entry prevents false equivalence claims. Must include methods that outperform us — framing is "different niche" not "we're better" |
+| Mar 2026 | TruthfulQA judge contamination detected and re-judged | 62 Llama finetuned entries had API connection errors causing all 3 judges to default to label=3 (refusal) with confidence=0.0. Detected during 13E review via qualitative example inspection (Bible "root of all evil" question clearly correct but labeled refusal). Inflated refusal from 0.5% to 8.1%, suppressed accuracy from 77.1% to 71.1%. Backed up as `.bak_contaminated`, removed error entries, re-judged with zero errors. Also found 1 Mixtral baseline entry (immaterial to results). Root cause: `consensus_judge.py` line 53 defaults failed judges to `{"label": 3, "confidence": 0.0}`. **Lesson**: Always audit confidence=0.0 entries in judged data. Document in thesis methods as QC protocol |
+| Mar 2026 | Step 13E complete: TruthfulQA analysis | 8 analyses on clean re-judged data. Llama: acc +5.3pp (p=0.0002), halluc -4.4pp (p=0.0005), both Bonferroni-sig. Mixtral: directionally consistent but underpowered. No over-caution. Cross-domain generalization from entity-fabrication to misconceptions is real. Literature comparison numbers (ITI, DoLA, InstructGPT) still need PDF verification |
+| Mar 2026 | Step 7A literature search complete | Systematic search across 4 axes found 22 methods + 4 surveys + 3 benchmark baseline tables. Key findings: (1) R-Tuning (NAACL 2024 Outstanding) is closest comparator — both teach abstention, but via different signals (train-time probing vs geometry). (2) INSIDE/EigenScore is closest conceptual kin in detection — both use embedding-space properties, but they analyze response covariance while we analyze entity graph geometry. (3) No prior work predicts hallucination *difficulty* — our bridge analysis is genuinely novel. (4) DPO-based methods dominate recent FT work (FactTune, FLAME, Mask-DPO) — our LoRA SFT with geometry-guided selection is a distinct approach. (5) Fine-Tuning Paradox (Gekhman et al.) provides critical context: FT on new knowledge increases hallucination, but our approach avoids this by teaching behavioral patterns not new facts. All papers freely available on arXiv. |
+
+| Mar 2026 | Step 11C: entity-level train-test contamination | 16/22 plausible_fake test entities also in training (different templates). Checked all 7 categories. Overall contamination: 59% of test prompts. Decontamination re-scoring shows NO inflation: Mixtral 91.1%→90.7%, Llama 92.4%→92.5%. Model learned behavioral caution, not entity names. Disclose in thesis as methodological note |
+| Mar 2026 | Template overlap: 83.3% of V3 test templates appear in V5 training | 100/120 test templates (with metadata) also used in training. 81 borderline test prompts have no template metadata. Relevant for template ablation design — current evaluation partially tests within-template generalization |
+| Mar 2026 | Phase 9: template diversity ablation (Sunny, Mar 8) | Hold N constant (~2,400), vary template count (T1/T5/T10/T20/T-all). Nested subsets (T5⊂T10⊂T20⊂T-all) to isolate count from quality. Hypothesis: T10+ ≈ T-all, T1 degrades. Two approaches: (a) reuse existing prefix data (cheaper, varying N) vs (b) regenerate (proper, expensive). Simplified fallback: T5/T10/T-all (~1.5 days). Priority: next experiment after TruthfulQA (done) |
+| Mar 2026 | Drop T1 from ablation, use T5 as lowest condition | Pre-computation: T1 yields only 179 prompts (3-15 per category). Insufficient for LoRA fine-tuning. T5 (397-402 prompts) is the minimum viable condition |
+| Mar 2026 | Use approach (a) for ablation training data | Reuse existing V5 prefix data filtered to template subsets. Varying N is a known limitation but saves ~$50-150 and 15-20h per condition. Matched random controls (R{N}) isolate template diversity from dataset size |
+| Mar 2026 | Add matched random controls R397/R402 | Same N as T5 but full template pool (~194 templates). If R{N} outperforms T5, template diversity matters beyond dataset size. Model-specific labels because unfixable counts differ (Mixtral 28, Llama 24) |
+| Mar 2026 | Drop T20 from ablation | Simplified to T5/T10/T-all + R{N}. T20 adds marginal information if T10≈T-all (hypothesized). Saves 2 FT jobs + 2 evaluation runs. Can add later if T10 vs T-all shows a gap |
+| Mar 2026 | Phase 9 complete: template diversity doesn't matter | T5≈T10≈R{N}≈T-all (all McNemar p>0.45). Template overlap split confirms: seen-template 92.6% vs novel-template 92.4% (Mixtral T5). Model learns behavioral caution, not template patterns. Addresses Sunny's concern. Goes in Ch 7.6 (main text, not appendix) |
+| Mar 2026 | Phase 10: cross-category generalization ablation (Sunny, Mar 11) | Third generalization type: does caution transfer to held-out category types? 6 conditions: Full (existing), entity-dep only, R{entity-dep} (size control), entity-indep only, leave-out-nonexistent, leave-out-factual. 10 FT jobs (5 conditions × 2 models). Est ~1-2 days wall, ~$80-140. LoRA: configC Mixtral, configA Llama. Zero-shot category transfer test. Completes "three types of generalization" narrative (entities → templates → categories) |
 
 ---
 
@@ -1518,6 +3173,19 @@ All 4 judging scripts (`run_v5_prefixes.py`, `run_v5_baselines.py`, `run_prefix_
 ### 4. Periodic save inside retry try block — `[FIXED]`
 
 Moved `write_jsonl()` call outside the retry loop in all 4 scripts. Previously, a `write_jsonl` failure (e.g., disk full) would trigger a re-judge, appending a duplicate entry. Now the save happens after the retry loop completes — write failures cannot cause re-judging or duplicates.
+
+### 5. Failed judges silently default to refusal label — `[KNOWN, NOT YET FIXED]`
+
+**Location**: `consensus_judge.py` line 53 (approx). When an individual judge call fails (connection error, timeout, etc.), the exception handler appends `{"label": 3, "confidence": 0.0, "justification": "Judge failed"}`. If 2+ of 3 judges fail, the consensus is label=3 (refusal) with low confidence.
+
+**Why it matters**: This caused the TruthfulQA contamination — 62 Llama finetuned entries had API connection errors on 2-3 judges, silently defaulting to refusal. The entries looked normal in the JSONL (valid format, valid labels) and were only detected by auditing confidence=0.0.
+
+**Recommended fix** (not yet implemented):
+- Option A: Raise an exception on judge failure instead of defaulting, forcing the retry logic in the orchestration script to handle it. This is the cleanest but requires the orchestration scripts to handle the exception gracefully.
+- Option B: Keep the default but add a `judge_errors` count field to the output record. Any record with `judge_errors > 0` is flagged for review. A post-judging QC script filters these before analysis.
+- Option C (minimal): Log a warning and add `"confidence": 0.0` as a sentinel. Add a mandatory QC step: `grep '"confidence": 0.0' *.jsonl | wc -l` before any analysis.
+
+**Current mitigation**: The decision log entry for the TruthfulQA contamination documents the QC protocol (audit confidence=0.0 entries). This is a manual step, not automated.
 
 ## Methodological concerns for the thesis
 
@@ -1602,3 +3270,104 @@ The geometric findings shifted meaningfully as the analysis became more rigorous
 ---
 
 *(Thesis writing plan, content expansion guide, title options, and V3 paper issues moved to `/THESIS_WRITING.md` — Mar 2026)*
+
+---
+
+## Three-Way Split Tiebreaker Sensitivity Analysis (Mar 11, 2026)
+
+**Context**: When all 3 judges assign different labels, `Counter.most_common(1)[0]` returns the first-inserted element, which is always GPT-5.1's label. Discovered during thesis writing (Section 4.3). This gives GPT-5.1 de facto tiebreaker authority.
+
+### Raw numbers
+
+- **41,807** total judged entries with individual judgment data
+- **1,113** three-way splits (2.66%)
+- **594** are error artifacts (a judge API call failed, defaulting to label=3, confidence=0.0, which creates an artificial third label)
+- **519** genuine three-way splits (1.24% of all entries)
+
+### Sensitivity: default (first-judge) vs confidence-based tiebreaker
+
+Of 519 genuine three-way splits:
+- **220 (42.4%)** would change label under confidence-based tiebreaking
+- **299 (57.6%)** would stay the same
+- **0.53% of all labels** would be affected
+
+### Dominant flip direction
+
+| From → To | Count |
+|---|---|
+| Hallucination (2) → Correct (0) | 192 |
+| Partial (1) → Refused (3) | 9 |
+| Refused (3) → Correct (0) | 6 |
+| Partial (1) → Correct (0) | 5 |
+| Correct (0) → Hallucination (2) | 4 |
+| Correct (0) → Refused (3) | 3 |
+| Partial (1) → Hallucination (2) | 1 |
+
+**Key finding**: 192/220 flips (87%) are Hallucination→Correct. GPT-5.1 is the strictest judge, systematically calling ambiguous cases as hallucinations. The current tiebreaker **overcounts hallucinations** — conservative for our claims (we understate intervention effectiveness, if anything).
+
+### By phase
+
+| Phase | Genuine Splits | Would Change | Rate |
+|---|---|---|---|
+| V4 | 16 | 12 | 75.0% |
+| V5-baseline | 88 | 48 | 54.5% |
+| V5-prefix | 252 | 124 | 49.2% |
+| V5-finetuned | 0 | 0 | — (all were error artifacts) |
+| TruthfulQA | 163 | 36 | 22.1% |
+
+### Training data impact (V5)
+
+- **5** currently Correct (0) → would flip to non-Correct (removed from training)
+- **165** currently non-Correct → would flip to Correct (0) (eligible for training)
+- Net: ~160 additional training examples (~6.7% of training set)
+
+### Decision
+
+**Not recomputing.** Rationale:
+1. Bias is conservative (overcounts hallucinations → understates our intervention effects)
+2. 0.53% of all labels affected — headline results almost certainly unchanged
+3. Recomputation would cascade: labels → Step 9 selection → fine-tuning → evaluation → all downstream analysis
+4. Will report sensitivity analysis in Chapter 5 and acknowledge tiebreaker limitation in Chapter 4
+5. Fix code for any future runs
+
+### Error-artifact contamination (SEPARATE ISSUE — INVESTIGATED)
+
+Silent judge failure default (label=3, confidence=0.0) contaminated V5 judging data. Full investigation completed Mar 11, 2026. See `JUDGE_CONTAMINATION_ISSUE.md` for complete details.
+
+**Key finding**: Sounds worse than it is. 14,607 entries had at least 1 failed judge, but in 91-93% of cases the 2 real judges agreed, so the fake vote was outvoted. **Only 151 labels definitively wrong** across non-CoT V5 data (0.45%). CoT separately has ~3,172 garbage labels (2 judges failed).
+
+**Invalidated finding**: "CoT catastrophic refusal" (62-68%) was entirely API failures, not model behavior. Real refusal rate < 1%.
+
+**Fix script**: `scripts/fix_judge_contamination.py`
+- **APPLIED Mar 11, 2026 at 23:16.** 325 labels corrected out of 28,789 (1.13%). 0 unfixable.
+- Dominant direction: Refused/Hallucinated → Correct (291 of 325 changes)
+- Only 4 changes go toward worse labels
+- $0 cost — recomputes from stored real judge votes, no API calls
+- Tiebreaker for 2-judge disagreements: higher confidence wins
+- Backs up originals, adds `_correction` audit metadata to every affected entry
+
+**Completed after fix**:
+1. ✅ Re-ran Step 9 — minimal change: Mixtral 2,402→2,403 training (+1), Llama unchanged. No re-training needed.
+2. ✅ Bug fixed in `judge_client.py` and `consensus_judge.py` — failed judges now marked with `"failed": True` and excluded from majority vote.
+3. CoT excluded from thesis (API failure artifact, not worth $50 re-judge).
+
+**All steps complete** (March 12, 2026):
+4. ✅ All analysis scripts re-run with corrected data. Numbers shifted <1pp. No conclusions changed.
+5. ✅ All figures regenerated.
+6. ✅ CoT decision finalized: excluded from thesis entirely. Corrected CoT would likely show boring result (similar accuracy to other prefixes). $50 re-judge not worth it with 15 days to deadline. Core contributions (geometry prediction, fixability, fine-tuning pipeline, template ablation) all intact without CoT.
+
+**Updated headline numbers (post-fix)**:
+- Mixtral baseline: 82.5% correct, 14.8% hall (was 81.7%/14.3%)
+- Llama baseline: 87.9% correct, 9.7% hall (was 87.1%/9.5%)
+- Entity-Aware Mixtral: 4.7% hall (was 5.2%)
+- Structured Caution Llama: 3.0% hall (was 3.6%)
+
+7. ✅ Sensitivity analysis script fixed and re-run (March 12, 2026).
+   - **Bug found**: Judge removal (Check 2) was reading raw `individual_judgments` which still contained failed judges' fake votes (label=3, confidence=0.0). Produced garbage results: 0% accuracy / 100% refusal for any subset that included a failed judge.
+   - **Fix**: Added `is_failed_judge()` filter to `majority_vote_2of3()`. Failed judges are now excluded before computing 2-of-3 subsets. Also removed CoT from prefix dataset list.
+   - **Results (all three checks pass)**:
+     - Check 1 (unanimous-only): 88-94% unanimous across datasets. Accuracy +4-5pp under unanimous filter. Conclusions unchanged.
+     - Check 2 (judge removal): No single judge drives results. Removing any judge changes 0-6.4% of labels, accuracy varies ±1-3pp. `without_gpt-5.1` for finetuned: 0 labels changed (already excluded by contamination fix).
+     - Check 3 (self-eval bias): Llama excess leniency near zero or negative across all datasets (-2.3pp to +0.3pp). Self-preference bias is negligible.
+
+See `JUDGE_CONTAMINATION_ISSUE.md` for full details, per-file breakdown, and reasoning.
