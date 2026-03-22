@@ -1,7 +1,165 @@
 %!TEX root = ../dissertation.tex
-\begin{savequote}[75mm]
-Nulla facilisi. In vel sem. Morbi id urna in diam dignissim feugiat. Proin molestie tortor eu velit. Aliquam erat volutpat. Nullam ultrices, diam tempus vulputate egestas, eros pede varius leo.
-\qauthor{Quoteauthor Lastname}
-\end{savequote}
 
 \chapter{Background}
+\label{ch:background}
+
+This chapter introduces the concepts and tools used throughout this thesis. We begin with large language models and the hallucination problem they exhibit, then introduce the embedding spaces and geometric concepts that underpin our analysis. We conclude with the LLM-as-judge evaluation paradigm and the parameter-efficient fine-tuning methods used in our intervention experiments.
+
+\section{Large Language Models}
+\label{sec:bg-llms}
+
+A large language model (LLM) is a neural network trained to predict the next token in a sequence, given all preceding tokens. The dominant architecture is the transformer \citep{vaswani2017attention}, whose self-attention mechanism allows each token's representation to be computed as a function of all prior tokens in the sequence. Through this mechanism, the model builds contextual representations of its input and produces a probability distribution over the vocabulary at each position. The training objective---next-token prediction on large corpora of internet text---is a general-purpose objective that produces models capable of answering questions, summarizing documents, writing code, and generating coherent text across domains \citep{brown2020language}. Crucially, this objective optimizes for \emph{statistical plausibility} rather than factual accuracy directly: the model learns which tokens typically follow which contexts, and while factual statements are often the most plausible continuations, the objective provides no explicit mechanism for distinguishing true statements from confident-sounding fabrications.
+
+Model capabilities improve predictably with parameter count, training data, and compute \citep{kaplan2020scaling}. Some capabilities appear to emerge discontinuously at scale, including in-context learning (adapting to new tasks from a few examples in the prompt) and instruction following \citep{wei2022emergent}. As a result, modern LLMs produce detailed, authoritative-sounding responses to nearly any question. The practical failure mode is not incoherence but \emph{plausible fabrication}: the model generates text that reads as authoritative, yet is factually wrong.
+
+\paragraph{Inference.} At inference time, the model generates tokens autoregressively. Each token is sampled from the predicted distribution, then appended to the context for the next prediction. A \emph{temperature} parameter controls the sharpness of this distribution: temperature 0 selects the most probable token deterministically, while higher temperatures produce more diverse (and less predictable) outputs.
+
+\paragraph{Instruction tuning and system prompts.} Pre-trained LLMs generate plausible continuations but do not reliably follow user instructions. \emph{Instruction tuning} \citep{ouyang2022training} addresses this by fine-tuning the model on (instruction, response) pairs, teaching it to interpret and follow natural-language directives. Instruction-tuned models accept a \emph{system prompt}: a prefix that conditions the model's behavior for an entire conversation (e.g., ``Answer concisely'' or ``If you are unsure, say so''). This system-prompt mechanism is the basis for the prompting interventions we study in Chapter~\ref{ch:prefixes}.
+
+\paragraph{Open-weight vs.\ closed models.} Closed-source models (e.g., GPT-5.1, Claude Opus 4.5) are accessible only through APIs, with no access to weights or internal representations. Open-weight models (e.g., Mixtral 8x7B, Llama 4 Maverick) provide full weight access, thus enabling fine-tuning and, in principle, extraction of internal representations. This distinction shapes our experimental design: our cross-model analysis (Chapter~\ref{ch:geo-predict-hallucination}) includes both types, but the intervention experiments (Chapters~\ref{ch:prefixes} and~\ref{ch:finetuning}) require open-weight models for LoRA fine-tuning (Section~\ref{sec:bg-lora}).
+
+\paragraph{Mixture-of-Experts architectures.} Both of our intervention target models use Mixture-of-Experts (MoE) routing, in which only a subset of parameters is active for each token. Mixtral 8x7B has 46.7 billion total parameters with approximately 12.9 billion active per token \citep{jiang2024mixtral}; Llama 4 Maverick routes among 128 experts with approximately 17 billion active parameters per token. MoE architectures achieve strong performance at lower inference cost than equivalently-sized dense models, and their use of distinct experts for different inputs provides architectural diversity between our two target models (Chapter~\ref{ch:setup}).
+
+\section{Hallucination in Large Language Models}
+\label{sec:bg-hallucination}
+
+\emph{Hallucination} in the LLM context refers to model-generated content that is fluent and confident but factually incorrect, fabricated, or unverifiable. The term is borrowed from cognitive science, where humans \emph{confabulate}: producing plausible but false memories when probed at the boundaries of their knowledge. Unlike simple errors such as typos and misparsed inputs, LLM hallucinations are plausible-sounding statements generated with apparent confidence.
+
+\subsection{Taxonomy}
+\label{sec:bg-halluc-taxonomy}
+
+The standard taxonomy distinguishes \emph{intrinsic} hallucinations, where the output contradicts a provided source document, from \emph{extrinsic} hallucinations, where the output introduces information that cannot be verified from the source \citep{ji2023survey, maynez2020faithfulness}. This distinction was developed for tasks with explicit reference material (summarization, translation). In open-ended question answering---the setting studied in this thesis---there is no source document to contradict. The relevant question is not how the output relates to a reference, but \emph{why the model fabricated}: did it invent a nonexistent entity? Confuse a real entity with a similar one? Answer a question that has no definitive answer? This motivates our benchmark design (Chapter~\ref{ch:setup}), which organizes prompts by the type of knowledge failure rather than by the source relationship.
+
+\subsection{Causes}
+\label{sec:bg-halluc-causes}
+
+Several factors contribute to hallucination in LLMs:
+
+\begin{itemize}
+    \item \textbf{Training objective mismatch.} The next-token prediction objective assigns high probability to tokens that are \emph{typical continuations} of the context. For well-documented entities, the correct fact dominates the training distribution and is reliably learned. But for rare or absent entities, the objective provides no mechanism to distinguish a correct claim from a plausible-sounding fabrication: both receive similar probability if they fit the syntactic and semantic context.
+
+    \item \textbf{Soft knowledge boundaries.} LLMs do not have a hard boundary between ``known'' and ``unknown.'' Confidence degrades gradually with entity rarity: models reliably recall facts about common entities but produce increasingly unreliable outputs for entities in the long tail of the training distribution \citep{sun2024entity, kandpal2023large}. This gray zone---where the model has partial, noisy, or absent training signal---is where hallucination concentrates.
+
+    \item \textbf{No explicit retrieval.} Unlike a search engine, a standard (non-retrieval-augmented) LLM must reconstruct information from compressed parametric memory. When the memory signal for a query is weak, the model interpolates, generating text that is statistically plausible given the context, but not grounded in any specific source.
+
+    \item \textbf{Overconfidence.} LLMs trained to be helpful tend to produce complete, confident-sounding answers even when their parametric knowledge is insufficient. Models can, to some degree, distinguish what they know from what they do not---\citet{kadavath2022language} show that LLM confidence correlates with accuracy---but they rarely express uncertainty spontaneously without explicit prompting \citep{yin2023large}.
+\end{itemize}
+
+\subsection{Consequences and Detection Challenges}
+\label{sec:bg-halluc-consequences}
+
+Hallucinated content poses concrete risks in deployment: fabricated medical advice, invented legal citations, false historical claims. The core danger is that hallucinations are \emph{plausible}---a user who cannot independently verify the claim may accept it as true, especially as overreliance on AI-generated text is a well-documented tendency in human-AI interaction \citep{passi2022overreliance}. As LLMs are deployed in search, customer service, education, and decision support, the surface area for hallucination-caused harm grows, and automated detection becomes necessary because human review does not scale.
+
+Detection is difficult precisely because hallucinations are fluent and locally coherent. Surface-level features---grammar, length, apparent confidence---do not reliably distinguish hallucinated from correct responses. Two broad approaches exist: \emph{post-generation detection}, which analyzes the model's output or internal states after a response is produced \citep{manakul2023selfcheckgpt, farquhar2024detecting}, and \emph{pre-generation risk estimation}, which predicts \emph{before generation} whether a given input is likely to elicit hallucination. This thesis explores the second approach through embedding geometry, while also investigating post-hoc mitigation via prompting and fine-tuning. Formal impossibility results suggest that hallucination cannot be fully eliminated from any LLM \citep{xu2024hallucination}, motivating the focus on detection, prediction, and reduction rather than elimination.
+
+\section{Text Embeddings and Embedding Geometry}
+\label{sec:bg-embeddings}
+
+The geometric analysis in this thesis operates on \emph{text embeddings}---fixed-dimensional vector representations of natural language. This section introduces the embedding space, the distance metric we use, and the geometric concepts that our features (defined precisely in Chapter~\ref{ch:setup}) formalize.
+
+\subsection{Text Embeddings}
+\label{sec:bg-text-embeddings}
+
+A text embedding model maps a variable-length token sequence to a fixed-dimensional real-valued vector $\mathbf{x} \in \mathbb{R}^d$. The mapping is learned via contrastive training: the model maximizes similarity between embeddings of semantically related texts and minimizes similarity between unrelated texts \citep{reimers2019sentencebert}. The result is a continuous vector space in which geometric proximity reflects semantic similarity: questions about similar topics are mapped to nearby points, while unrelated questions are mapped to distant ones \citep{bengio2013representation}.
+
+\subsection{Cosine Distance}
+\label{sec:bg-cosine}
+
+All distance computations in this thesis use \emph{cosine distance}. For two vectors $\mathbf{x}, \mathbf{y} \in \mathbb{R}^d$, the cosine similarity is
+\begin{equation}
+\text{sim}(\mathbf{x}, \mathbf{y}) = \frac{\mathbf{x} \cdot \mathbf{y}}{\|\mathbf{x}\|\,\|\mathbf{y}\|},
+\label{eq:cosine-sim}
+\end{equation}
+and the cosine distance is $d_{\cos}(\mathbf{x}, \mathbf{y}) = 1 - \text{sim}(\mathbf{x}, \mathbf{y})$, ranging from 0 (identical direction) to 2 (opposite direction). Cosine distance is invariant to vector magnitude and depends only on the angle between vectors, making it appropriate for embeddings where direction carries more semantic information than magnitude. When vectors are L2-normalized (as in our setting), cosine distance and squared Euclidean distance are related by $\|\mathbf{x} - \mathbf{y}\|^2 = 2\,(1 - \text{sim}(\mathbf{x}, \mathbf{y}))$, so the choice of metric is equivalent.
+
+\subsection{High-Dimensional Geometry}
+\label{sec:bg-highdim}
+
+Our embeddings reside in $\mathbb{R}^d$ for $d = 3{,}072$ (the dimensionality of the embedding model selected in Chapter~\ref{ch:setup}). High-dimensional spaces exhibit counterintuitive geometric properties that affect how we interpret distance-based features. A well-known example is \emph{distance concentration}: pairwise distances between random points in high dimensions converge to a narrow range, making absolute distances less informative \citep{aggarwal2001surprising}. Within structured datasets, however, relative distances---which points are closer or farther than others---remain meaningful. All of our geometric features (Chapter~\ref{ch:setup}) are defined relative to the corpus distribution rather than in absolute terms, making them robust to concentration effects. When embeddings are L2-normalized, all points lie on the surface of the unit hypersphere in $\mathbb{R}^{3072}$, and cosine distance is the natural metric on this surface.
+
+\subsection{The Manifold Hypothesis}
+\label{sec:bg-manifold}
+
+High-dimensional data often lies on or near a lower-dimensional \emph{manifold}---a smooth subspace embedded in the ambient space \citep{fefferman2016testing}. Text embeddings are not uniformly distributed across $\mathbb{R}^{3072}$; they concentrate on a structured subspace determined by the distribution of natural language. This structure creates meaningful local geometry: some regions of the manifold are densely populated (many semantically similar texts), while others are sparse; the manifold may curve differently in different regions; and certain directions of variation are more prominent than others.
+
+The central hypothesis of this thesis, stated informally, is that geometric properties of a prompt's position on this manifold---its local density, the structure of its neighborhood, its distance from typical regions---carry information about whether a language model will hallucinate in response. This is a hypothesis, not an assumption; Chapter~\ref{ch:geo-predict-hallucination} tests it empirically.
+
+\subsection{Geometric Concepts}
+\label{sec:bg-geometric-concepts}
+
+The geometric features defined in Chapter~\ref{ch:setup} each formalize a different aspect of manifold structure. Before those precise definitions, we introduce the underlying concepts.
+
+\paragraph{$k$-nearest neighbors.} For a point $\mathbf{x}_i$ in a dataset of $N$ points, its $k$-nearest neighbors ($k$-NN) are the $k$ points with smallest distance to $\mathbf{x}_i$ under the chosen metric. The $k$-NN set is the building block for most of our geometric features: it defines the ``local neighborhood'' within which we measure density, dimensionality, and curvature. The choice of $k$ controls the locality of the analysis: small $k$ captures fine-grained structure; large $k$ smooths over broader neighborhoods.
+
+\paragraph{Principal Component Analysis.} Principal Component Analysis (PCA) finds the orthogonal directions of maximum variance in a dataset---the eigenvectors of the covariance matrix, ordered by eigenvalue magnitude. The \emph{explained variance ratio} of the top $p$ components,
+\begin{equation}
+\text{EVR}(p) = \frac{\sum_{j=1}^{p} \sigma_j^2}{\sum_{\ell} \sigma_\ell^2},
+\label{eq:evr}
+\end{equation}
+where $\sigma_j^2$ are the eigenvalues, measures how well a $p$-dimensional linear subspace approximates the data. PCA appears in two roles in our work: measuring how well a flat subspace approximates a local neighborhood (curvature), and constructing a novel ``semantic opposite'' of each point (oppositeness). Both are defined precisely in Chapter~\ref{ch:setup}.
+
+\paragraph{Intrinsic dimensionality.} The \emph{intrinsic dimension} of a dataset at a point estimates the number of effective directions of variation in the local neighborhood. A manifold embedded in 3,072-dimensional space may have far fewer effective local dimensions. Standard estimators include the TwoNN method \citep{facco2017twonn}, which uses only the ratio of distances to the two nearest neighbors, and the maximum likelihood estimator of \citet{levina2004maximum}, which averages log-distance ratios over a larger neighborhood for a smoother estimate.
+
+\paragraph{Local density.} The \emph{density} at a point measures how many similar points surround it---equivalently, the inverse of the average distance to nearby neighbors. High density indicates a well-represented region with many semantically similar texts; low density indicates an isolated point with few nearby neighbors, potentially representing out-of-distribution or under-represented content. Density-based measures are standard in anomaly detection \citep{breunig2000lof}.
+
+\paragraph{Curvature.} The \emph{curvature} of the manifold at a point reflects how well a flat (linear) subspace approximates the local neighborhood. If the neighborhood lies on a flat subspace, PCA captures most of the variance and the residual is small (low curvature). If the neighborhood bends or twists, the linear approximation misses variance and the residual is large (high curvature).
+
+\paragraph{Centrality.} The \emph{centrality} of a point, as used in this thesis, measures its distance from the center of the distribution (e.g., the corpus mean embedding); higher values indicate more \emph{peripheral} points. Points far from the center may represent unusual, specialized, or boundary-region content.
+
+\paragraph{Oppositeness.} In addition to these standard geometric concepts, Chapter~\ref{ch:setup} defines a novel \emph{oppositeness} feature that measures how far a point's ``semantic opposite'' (constructed by flipping principal component directions) lies from the nearest real data point. The construction is specific to our experimental design and is defined precisely in Section~\ref{sec:oppositeness}.
+
+\section{Evaluating Language Model Outputs}
+\label{sec:bg-evaluation}
+
+Evaluating whether an LLM response is factually correct, partially correct, hallucinated, or a refusal requires semantic judgment that scales beyond traditional automated metrics and human annotation. This section introduces the LLM-as-judge paradigm that our evaluation pipeline builds on.
+
+\subsection{The Evaluation Bottleneck}
+\label{sec:bg-eval-bottleneck}
+
+A typical hallucination study may require evaluating tens of thousands of model responses across multiple models and experimental conditions. Human annotation at this scale is infeasible. Traditional automated metrics such as BLEU and ROUGE measure surface-level overlap with reference texts and cannot capture the semantic judgment needed for hallucination detection---whether a response fabricates an entity or invents a citation cannot be determined by $n$-gram matching.
+
+\subsection{LLM-as-Judge}
+\label{sec:bg-llm-judge}
+
+The LLM-as-judge approach uses a large language model to evaluate the outputs of another LLM. The judge receives the original question, the model's response, and optionally a ground-truth reference, then produces a label and confidence score according to a rubric. \citet{zheng2023judging} demonstrated that GPT-4 judgments align with human preferences over 80\% of the time on conversational quality assessment, and \citet{liu2023geval} showed that rubric-based LLM evaluation outperforms traditional metrics on summarization quality. Two modes are common: \emph{reference-free} evaluation, where the judge assesses quality without a gold standard, and \emph{reference-based} evaluation, where the judge compares the response against a provided ground truth. Our pipeline uses reference-based evaluation, providing judges with the known correct answer to reduce subjectivity.
+
+\subsection{Known Biases}
+\label{sec:bg-judge-biases}
+
+LLM judges exhibit several documented systematic biases. \emph{Verbosity bias}: longer, more detailed responses tend to receive higher ratings even when the additional content is not more accurate \citep{zheng2023judging}. \emph{Position bias}: in pairwise comparisons, the response presented first or second may receive systematically different treatment \citep{zheng2023judging}. \emph{Self-preference bias}: a model may rate its own outputs more favorably than those of other models \citep{wataoka2024selfpreference, panickssery2024llm}---relevant in settings where evaluated models also serve as judges. \emph{Shared blind spots}: judges trained on similar data may share systematic errors, all failing to detect the same hallucination.
+
+These biases motivate two design principles for our evaluation pipeline (Chapter~\ref{ch:setup}): using a \emph{multi-judge panel} rather than a single judge (reducing any individual judge's influence), and selecting judges from \emph{different model families} (reducing correlated errors). The cost of a panel scales linearly with the number of judges; an odd-numbered panel ($n = 3$) avoids ties in majority-vote aggregation while remaining affordable.
+
+\subsection{Rubric Design}
+\label{sec:bg-rubric}
+
+Hallucination evaluation requires distinguishing among multiple response types. A binary correct/incorrect rubric loses the distinction between a model that fabricates content (active harm) and one that refuses to answer (safe but unhelpful). This distinction matters for fine-tuning (Chapter~\ref{ch:finetuning}): fabricated responses should be excluded from training data, while refusals and partial responses carry different training signal. Multi-category rubrics are standard in hallucination evaluation---TruthfulQA uses separate truthfulness and informativeness axes \citep{lin2022truthfulqa}; our four-point rubric is defined in Chapter~\ref{ch:setup}.
+
+\section{Fine-Tuning and Parameter-Efficient Adaptation}
+\label{sec:bg-finetuning}
+
+Chapter~\ref{ch:finetuning} presents experiments in which we fine-tune language models to reduce hallucination. This section introduces the relevant concepts.
+
+\subsection{Supervised Fine-Tuning}
+\label{sec:bg-sft}
+
+After pre-training on next-token prediction, a model can be \emph{fine-tuned} on a curated dataset of (input, desired output) pairs to adapt its behavior for a specific task. \emph{Instruction tuning} \citep{ouyang2022training} is a widely-used variant in which the fine-tuning data consists of instructions paired with high-quality responses. Fine-tuning trades generality for task-specific performance, with the risk of \emph{overfitting}---memorizing specific training answers rather than learning generalizable behavior. Even modest datasets can be effective: \citet{zhou2023lima} demonstrate that fine-tuning on as few as 1,000 carefully curated examples can substantially improve instruction following, suggesting that data quality matters more than quantity.
+
+\subsection{LoRA: Low-Rank Adaptation}
+\label{sec:bg-lora}
+
+Full fine-tuning updates all model parameters, which is prohibitively expensive for models with tens or hundreds of billions of parameters. \emph{Low-Rank Adaptation} (LoRA) \citep{hu2022lora} instead freezes the pre-trained weights and adds small trainable matrices to the attention layers. For a weight matrix $W \in \mathbb{R}^{d \times d}$, LoRA parameterizes the update as
+\begin{equation}
+\Delta W = B A, \quad B \in \mathbb{R}^{d \times r},\; A \in \mathbb{R}^{r \times d},\; r \ll d,
+\label{eq:lora}
+\end{equation}
+so the effective weight at inference is $W + BA$. The rank $r$ controls the capacity of the adaptation: typical values range from 8 to 64, reducing trainable parameters to roughly 0.1\% of the full model. A scaling factor $\alpha$ controls the effective learning rate of the adapter (the update is scaled by $\alpha / r$). LoRA inherently limits the risk of catastrophic forgetting---overwriting the model's general capabilities---because the vast majority of weights remain frozen.
+
+\emph{QLoRA} \citep{dettmers2023qlora} extends LoRA by quantizing the frozen base model to 4-bit precision, further reducing memory requirements while maintaining fine-tuning quality. Our fine-tuning experiments (Chapter~\ref{ch:finetuning}) use LoRA for Mixtral and QLoRA for Llama 4 Maverick, as determined by the fine-tuning API.
+
+\subsection{Self-Distillation}
+\label{sec:bg-distillation}
+
+Our fine-tuning approach (Chapter~\ref{ch:finetuning}) is a form of \emph{self-distillation}: the model is fine-tuned on its own best outputs, selected across multiple prompting conditions. Rather than training on externally-generated targets, the model learns to produce its best observed behavior by default, without requiring a system prompt at inference time. Self-distillation is well-established as a technique for improving model performance: \citet{hinton2015distilling} introduced knowledge distillation between models, and subsequent work showed that training on a model's own outputs can improve performance through implicit regularization \citep{furlanello2018born}.
+
+This chapter has introduced the conceptual foundations for the remainder of this thesis: the structure and generation process of large language models, the hallucination problem and its causes, the embedding spaces and geometric concepts that underpin our analysis, the LLM-as-judge evaluation paradigm, and parameter-efficient fine-tuning. Chapter~\ref{ch:litreview} surveys the existing literature on hallucination detection, mitigation, and geometric analysis of neural representations, identifying the specific gaps that this thesis addresses. Chapter~\ref{ch:setup} then describes our experimental infrastructure.

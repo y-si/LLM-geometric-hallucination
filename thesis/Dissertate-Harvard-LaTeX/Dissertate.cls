@@ -36,7 +36,7 @@
     \newcommand{\dnormalspacing}{1.2}
     \newcommand{\dcompressedspacing}{1.0}
 }{
-    \newcommand{\dnormalspacing}{2.0}
+    \newcommand{\dnormalspacing}{1.5}
     \newcommand{\dcompressedspacing}{1.2}
 }
 
@@ -78,6 +78,7 @@
 \usepackage{hyperref}
 \RequirePackage{url}
 \RequirePackage{amssymb}
+\RequirePackage{amsmath}
 \RequirePackage{mathspec}
 \setmathsfont(Digits,Latin,Greek)[Numbers={Proportional}]{EB Garamond}
 \setmathrm{EB Garamond}
@@ -90,7 +91,7 @@
 \setmonofont[Scale=MatchLowercase]{Source Code Pro}
 \RequirePackage[labelfont={bf,sf,footnotesize,singlespacing},
                 textfont={sf,footnotesize,singlespacing},
-                justification={justified,RaggedRight},
+                justification=justified,
                 singlelinecheck=false,
                 margin=0pt,
                 figurewithin=chapter,
@@ -101,13 +102,16 @@
 
 % Headings and headers.
 \RequirePackage{fancyhdr}
-\RequirePackage[tiny, md, sc]{titlesec}
+\RequirePackage[md, sc]{titlesec}
+\titleformat{\section}{\large\scshape}{\thesection}{1em}{}
+\titleformat{\subsection}{\small\scshape}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\small\scshape}{\thesubsubsection}{1em}{}
 \setlength{\headheight}{15pt}
 \pagestyle{plain}
 \RequirePackage{titling}
 
 % Front matter.
-\setcounter{tocdepth}{1}
+\setcounter{tocdepth}{2}
 \usepackage[titles]{tocloft}
 \usepackage[titletoc]{appendix}
 \renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
@@ -294,6 +298,7 @@
 \renewcommand{\backmatter}{
     \begin{appendices}
         \include{chapters/appendixA}
+        \include{chapters/appendixB}
     \end{appendices}
     \input{endmatter/personalize}
     \clearpage

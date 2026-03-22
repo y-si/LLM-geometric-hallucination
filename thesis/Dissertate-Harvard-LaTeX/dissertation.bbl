@@ -1,16 +1,176 @@
 \begin{thebibliography}{}
 
+\bibitem[Aggarwal et~al., 2001]{aggarwal2001surprising}
+Aggarwal, C.~C., Hinneburg, A., \& Keim, D.~A. (2001).
+\newblock On the surprising behavior of distance metrics in high dimensional
+  space.
+\newblock In {\em Proceedings of the 8th International Conference on Database
+  Theory (ICDT)}  (pp.\ 420--434).
+
+\bibitem[Arora et~al., 2024]{arora2024structured}
+Arora, S., Narayan, A., Chen, M.~F., Orr, L., Guha, N., Bhatia, K., Chami, I.,
+  \& R{\'e}, C. (2024).
+\newblock Ask me anything: A simple strategy for prompting language models.
+\newblock {\em arXiv preprint arXiv:2210.02441}.
+\newblock ICLR 2023.
+
+\bibitem[Asai et~al., 2024]{asai2024selfrag}
+Asai, A., Wu, Z., Wang, Y., Sil, A., \& Hajishirzi, H. (2024).
+\newblock Self-{RAG}: Learning to retrieve, generate, and critique through
+  self-reflection.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Azaria \& Mitchell, 2023]{azaria2023internal}
+Azaria, A. \& Mitchell, T. (2023).
+\newblock The internal state of an {LLM} knows when it's lying.
+\newblock In {\em Findings of the Association for Computational Linguistics:
+  EMNLP 2023}.
+
+\bibitem[Bai et~al., 2022]{bai2022constitutional}
+Bai, Y., Kadavath, S., Kundu, S., Askell, A., Kernion, J., Jones, A., Chen, A.,
+  Goldie, A., Mirhoseini, A., McKinnon, C., et~al. (2022).
+\newblock Constitutional {AI}: Harmlessness from {AI} feedback.
+\newblock {\em arXiv preprint arXiv:2212.08073}.
+
+\bibitem[Bengio et~al., 2013]{bengio2013representation}
+Bengio, Y., Courville, A., \& Vincent, P. (2013).
+\newblock Representation learning: A review and new perspectives.
+\newblock {\em IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  35(8), 1798--1828.
+
+\bibitem[Breunig et~al., 2000]{breunig2000lof}
+Breunig, M.~M., Kriegel, H.-P., Ng, R.~T., \& Sander, J. (2000).
+\newblock {LOF}: Identifying density-based local outliers.
+\newblock In {\em Proceedings of the 2000 ACM SIGMOD International Conference
+  on Management of Data}  (pp.\ 93--104).
+
+\bibitem[Brown et~al., 2020]{brown2020language}
+Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J.~D., Dhariwal, P.,
+  Neelakantan, A., Shyam, P., Sastry, G., Askell, A., et~al. (2020).
+\newblock Language models are few-shot learners.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Burger et~al., 2024]{burger2024truth}
+Burger, L., Hamprecht, F.~A., \& Nadler, B. (2024).
+\newblock Truth is universal: Robust detection of lies in {LLMs}.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Burns et~al., 2023]{burns2023discovering}
+Burns, C., Ye, H., Klein, D., \& Steinhardt, J. (2023).
+\newblock Discovering latent knowledge in language models without supervision.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Chen et~al., 2024]{chen2024inside}
+Chen, C., Zhao, K., Chen, U., Durmus, E., Madotto, A., Lee, H.-y., \& He, H.
+  (2024).
+\newblock {INSIDE}: {LLM}'s internal states retain the power of hallucination
+  detection.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Chuang et~al., 2024]{chuang2024dola}
+Chuang, Y.-S., Xie, Y., Luo, H., Kim, Y., Glass, J., \& He, P. (2024).
+\newblock {DoLa}: Decoding by contrasting layers improves factuality and
+  reasoning of large language models.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Dettmers et~al., 2023]{dettmers2023qlora}
+Dettmers, T., Pagnoni, A., Holtzman, A., \& Zettlemoyer, L. (2023).
+\newblock {QLoRA}: Efficient finetuning of quantized language models.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Dhuliawala et~al., 2024]{dhuliawala2023chainofverification}
+Dhuliawala, S., Komeili, M., Xu, J., Raileanu, R., Li, X., Celikyilmaz, A., \&
+  Weston, J. (2024).
+\newblock Chain-of-verification reduces hallucination in large language models.
+\newblock In {\em Findings of ACL}.
+\newblock Originally arXiv 2023.
+
+\bibitem[Du et~al., 2024]{du2024haloscope}
+Du, X., Xiao, C., \& Li, Y. (2024).
+\newblock {HaloScope}: Harnessing unlabeled {LLM} generations for hallucination
+  detection.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Facco et~al., 2017]{facco2017twonn}
+Facco, E., d'Errico, M., Rodriguez, A., \& Laio, A. (2017).
+\newblock Estimating the intrinsic dimension of datasets by a minimal
+  neighborhood information.
+\newblock {\em Scientific Reports}, 7(1), 12140.
+
+\bibitem[Farquhar et~al., 2024]{farquhar2024detecting}
+Farquhar, S., Kossen, J., Kuhn, L., \& Gal, Y. (2024).
+\newblock Detecting hallucinations in large language models using semantic
+  entropy.
+\newblock {\em Nature}, 630, 625--630.
+
+\bibitem[Fefferman et~al., 2016]{fefferman2016testing}
+Fefferman, C., Mitter, S., \& Narayanan, H. (2016).
+\newblock Testing the manifold hypothesis.
+\newblock {\em Journal of the American Mathematical Society}, 29(4), 983--1049.
+
+\bibitem[Ferrando et~al., 2025]{ferrando2024knowledge}
+Ferrando, J., Obeso, O., Rajamanoharan, S., \& Nanda, N. (2025).
+\newblock Do {I} know this entity? {K}nowledge awareness and hallucinations in
+  language models.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+\newblock arXiv:2411.14257.
+
+\bibitem[Furlanello et~al., 2018]{furlanello2018born}
+Furlanello, T., Lipton, Z.~C., Tschannen, M., Itti, L., \& Anandkumar, A.
+  (2018).
+\newblock Born again neural networks.
+\newblock In {\em Proceedings of the 35th International Conference on Machine
+  Learning (ICML)}.
+
+\bibitem[Gekhman et~al., 2024]{gekhman2024does}
+Gekhman, Z., Yona, G., Aharoni, R., Eyal, M., Feder, A., Reichart, R., \&
+  Herzig, J. (2024).
+\newblock Does fine-tuning {LLMs} on new knowledge encourage hallucinations?
+\newblock In {\em Proceedings of the 2024 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}.
+
+\bibitem[Hendrycks \& Gimpel, 2017]{hendrycks2017baseline}
+Hendrycks, D. \& Gimpel, K. (2017).
+\newblock A baseline for detecting misclassified and out-of-distribution
+  examples in neural networks.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+\newblock arXiv:1610.02136.
+
+\bibitem[Hinton et~al., 2015]{hinton2015distilling}
+Hinton, G., Vinyals, O., \& Dean, J. (2015).
+\newblock Distilling the knowledge in a neural network.
+\newblock {\em arXiv preprint arXiv:1503.02531}.
+
 \bibitem[Hu et~al., 2022]{hu2022lora}
 Hu, E.~J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L., \&
   Chen, W. (2022).
 \newblock {LoRA}: Low-rank adaptation of large language models.
 \newblock In {\em International Conference on Learning Representations (ICLR)}.
 
+\bibitem[Huang et~al., 2023]{huang2023survey}
+Huang, L., Yu, W., Ma, W., Zhong, W., Feng, Z., Wang, H., Chen, Q., Peng, W.,
+  Feng, X., Qin, B., \& Liu, T. (2023).
+\newblock A survey on hallucination in large language models: Principles,
+  taxonomy, challenges, and open questions.
+\newblock {\em arXiv preprint arXiv:2311.05232}.
+
 \bibitem[Ji et~al., 2023]{ji2023survey}
 Ji, Z., Lee, N., Frieske, R., et~al. (2023).
 \newblock Survey of hallucination in natural language generation.
 \newblock {\em ACM Computing Surveys}.
 \newblock arXiv:2202.03629.
+
+\bibitem[Jiang et~al., 2024]{jiang2024mixtral}
+Jiang, A.~Q., Sablayrolles, A., Roux, A., Mensch, A., Savary, B., Bamford, C.,
+  Chaplot, D.~S., de~las Casas, D., Hanna, E.~B., Bressand, F., et~al. (2024).
+\newblock Mixtral of experts.
+\newblock {\em arXiv preprint arXiv:2401.04088}.
+
+\bibitem[Jones et~al., 2024]{jones2024teaching}
+Jones, E., Palangi, H., Simoes~Ribeiro, C., Chandrasekaran, V., Mukherjee, S.,
+  Mitra, A., Awadallah, A., \& Kamar, E. (2024).
+\newblock Teaching language models to hallucinate less with synthetic tasks.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
 
 \bibitem[Kadavath et~al., 2022]{kadavath2022language}
 Kadavath, S., Conerly, T., Askell, A., Henighan, T., Drain, D., Perez, E.,
@@ -19,11 +179,41 @@ Kadavath, S., Conerly, T., Askell, A., Henighan, T., Drain, D., Perez, E.,
 \newblock Language models (mostly) know what they know.
 \newblock {\em arXiv preprint arXiv:2207.05221}.
 
+\bibitem[Kandpal et~al., 2023]{kandpal2023large}
+Kandpal, N., Deng, H., Roberts, A., Wallace, E., \& Raffel, C. (2023).
+\newblock Large language models struggle to learn long-tail knowledge.
+\newblock In {\em Proceedings of the 40th International Conference on Machine
+  Learning (ICML)}.
+
+\bibitem[Kaplan et~al., 2020]{kaplan2020scaling}
+Kaplan, J., McCandlish, S., Henighan, T., Brown, T.~B., Chess, B., Child, R.,
+  Gray, S., Radford, A., Wu, J., \& Amodei, D. (2020).
+\newblock Scaling laws for neural language models.
+\newblock {\em arXiv preprint arXiv:2001.08361}.
+
+\bibitem[Levina \& Bickel, 2004]{levina2004maximum}
+Levina, E. \& Bickel, P.~J. (2004).
+\newblock Maximum likelihood estimation of intrinsic dimension.
+\newblock {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  17.
+
 \bibitem[Li et~al., 2023]{li2023halueval}
 Li, J., Cheng, X., Zhao, W.~X., Nie, J.-Y., \& Wen, J.-R. (2023).
 \newblock {HaluEval}: A large-scale hallucination evaluation benchmark for
   large language models.
 \newblock In {\em Proceedings of EMNLP}.
+
+\bibitem[Li et~al., 2024]{li2024inferencetime}
+Li, K., Patel, O., Vi{\'e}gas, F., Pfister, H., \& Wattenberg, M. (2024).
+\newblock Inference-time intervention: Eliciting truthful answers from a
+  language model.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+\newblock Originally arXiv 2023.
+
+\bibitem[Liang et~al., 2022]{liang2022helm}
+Liang, P., Bommasani, R., et~al. (2022).
+\newblock {HELM}: Holistic evaluation of language models.
+\newblock {\em arXiv preprint arXiv:2211.09110}.
 
 \bibitem[Lin et~al., 2022]{lin2022truthfulqa}
 Lin, S., Hilton, J., \& Evans, O. (2022).
@@ -36,10 +226,74 @@ Liu, Y., Iter, D., Xu, Y., Wang, S., Xu, R., \& Zhu, C. (2023).
 \newblock In {\em Proceedings of the 2023 Conference on Empirical Methods in
   Natural Language Processing (EMNLP)}  (pp.\ 2511--2522).
 
+\bibitem[Madaan et~al., 2023]{madaan2023selfrefine}
+Madaan, A., Tandon, N., Gupta, P., Hallinan, S., Gao, L., Wiegreffe, S., Alon,
+  U., Dziri, N., Prabhumoye, S., Yang, Y., Gupta, S., Majumder, B.~P., Hermann,
+  K., Welleck, S., Yazdanbakhsh, A., \& Clark, P. (2023).
+\newblock Self-refine: Iterative refinement with self-feedback.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Mallen et~al., 2023]{mallen2023when}
+Mallen, A., Asai, A., Zhong, V., Das, R., Khashabi, D., \& Hajishirzi, H.
+  (2023).
+\newblock When not to trust language models: Investigating effectiveness of
+  parametric and non-parametric memories.
+\newblock In {\em Proceedings of the 61st Annual Meeting of the Association for
+  Computational Linguistics (ACL)}.
+
+\bibitem[Manakul et~al., 2023]{manakul2023selfcheckgpt}
+Manakul, P., Liusie, A., \& Gales, M. (2023).
+\newblock Selfcheckgpt: Zero-resource black-box hallucination detection for
+  generative large language models.
+\newblock In {\em Proceedings of EMNLP}.
+
+\bibitem[Marks \& Tegmark, 2023]{marks2023geometry}
+Marks, S. \& Tegmark, M. (2023).
+\newblock The geometry of truth: Emergent linear structure in large language
+  model representations of true/false datasets.
+\newblock {\em arXiv preprint arXiv:2310.06824}.
+
 \bibitem[Maynez et~al., 2020]{maynez2020faithfulness}
 Maynez, J., Narayan, S., Bohnet, B., \& McDonald, R. (2020).
 \newblock On faithfulness and factuality in abstractive summarization.
 \newblock In {\em Proceedings of ACL}.
+
+\bibitem[Min et~al., 2023]{min2023factscore}
+Min, S., Krishna, K., Lyu, X., Lewis, M., Yih, W.-t., Koh, P.~W., Iyyer, M.,
+  Zettlemoyer, L., \& Hajishirzi, H. (2023).
+\newblock {FActScore}: Fine-grained atomic evaluation of factual precision in
+  long form text generation.
+\newblock In {\em Proceedings of EMNLP}.
+
+\bibitem[Orgad et~al., 2025]{orgad2025llms}
+Orgad, H., Toker, M., Gekhman, Z., Reichart, R., Szpektor, I., Kotek, H., \&
+  Belinkov, Y. (2025).
+\newblock {LLMs} know more than they show: On the intrinsic representation of
+  {LLM} hallucinations.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Ouyang et~al., 2022]{ouyang2022training}
+Ouyang, L., Wu, J., Jiang, X., et~al. (2022).
+\newblock Training language models to follow instructions with human feedback.
+\newblock In {\em Proceedings of NeurIPS}.
+
+\bibitem[Panickssery et~al., 2024]{panickssery2024llm}
+Panickssery, A., Bowman, S.~R., \& Feng, S. (2024).
+\newblock {LLM} evaluators recognize and favor their own generations.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Reimers \& Gurevych, 2019]{reimers2019sentencebert}
+Reimers, N. \& Gurevych, I. (2019).
+\newblock Sentence-{BERT}: Sentence embeddings using siamese {BERT}-networks.
+\newblock In {\em Proceedings of the 2019 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}.
+
+\bibitem[Singhal et~al., 2024]{singhal2024characterizing}
+Singhal, A., Devlin, J., Durmus, E., Nushi, B., \& Khashabi, D. (2024).
+\newblock Characterizing truthfulness in {LLM} generations with local intrinsic
+  dimension.
+\newblock In {\em Proceedings of the 41st International Conference on Machine
+  Learning (ICML)}.
 
 \bibitem[Sun et~al., 2024]{sun2024entity}
 Sun, K., Xu, Y., Zha, H., Liu, Y., \& Dong, X.~L. (2024).
@@ -47,10 +301,49 @@ Sun, K., Xu, Y., Zha, H., Liu, Y., \& Dong, X.~L. (2024).
   {A.K.A.} will {LLMs} replace knowledge graphs?
 \newblock In {\em Proceedings of NAACL}.
 
+\bibitem[Tian et~al., 2024]{tian2024finetuning}
+Tian, K., Mitchell, E., Yao, H., Manning, C.~D., \& Finn, C. (2024).
+\newblock Fine-tuning language models for factuality.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
+\bibitem[Tonmoy et~al., 2024]{tonmoy2024comprehensive}
+Tonmoy, S. M. T.~I., Zaman, S. M.~M., Jain, V., Rani, A., Rawber, V., \&
+  Chadha, A. (2024).
+\newblock A comprehensive survey of hallucination mitigation techniques in
+  large language models.
+\newblock {\em arXiv preprint arXiv:2401.01313}.
+
+\bibitem[Vaswani et~al., 2017]{vaswani2017attention}
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.~N.,
+  Kaiser, {\L}., \& Polosukhin, I. (2017).
+\newblock Attention is all you need.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Verga et~al., 2024]{verga2024replacing}
+Verga, P., Hofstatter, S., Althammer, S., Su, Y., Gurevych, I., \& Hajishirzi,
+  H. (2024).
+\newblock Replacing judges with juries: Evaluating {LLM} generations with a
+  panel of diverse models.
+\newblock {\em arXiv preprint arXiv:2404.18796}.
+
+\bibitem[Wang et~al., 2023]{wang2023selfconsistency}
+Wang, X., Wei, J., Schuurmans, D., Le, Q., Chi, E., Narang, S., Chowdhery, A.,
+  \& Zhou, D. (2023).
+\newblock Self-consistency improves chain of thought reasoning in language
+  models.
+\newblock In {\em International Conference on Learning Representations (ICLR)}.
+
 \bibitem[Wataoka et~al., 2024]{wataoka2024selfpreference}
 Wataoka, K., Takahashi, T., \& Ri, R. (2024).
 \newblock Self-preference bias in {LLM}-as-a-judge.
 \newblock {\em arXiv preprint arXiv:2410.21819}.
+
+\bibitem[Wei et~al., 2022a]{wei2022emergent}
+Wei, J., Tay, Y., Bommasani, R., Raffel, C., Zoph, B., Borgeaud, S., Yogatama,
+  D., Bosma, M., Zhou, D., Metzler, D., Chi, E.~H., Hashimoto, T., Vinyals, O.,
+  Liang, P., Dean, J., \& Fedus, W. (2022a).
+\newblock Emergent abilities of large language models.
+\newblock {\em Transactions on Machine Learning Research}.
 
 \bibitem[Wei et~al., 2024]{wei2024simpleqa}
 Wei, J., Tay, Y., Bommasani, R., Raffel, C., Zoph, B., Borgeaud, S., Yogatama,
@@ -59,10 +352,43 @@ Wei, J., Tay, Y., Bommasani, R., Raffel, C., Zoph, B., Borgeaud, S., Yogatama,
 \newblock {SimpleQA}: Measuring short-form factuality in large language models.
 \newblock {\em arXiv preprint arXiv:2410.07338}.
 
+\bibitem[Wei et~al., 2022b]{wei2022chainofthought}
+Wei, J., Wang, X., Schuurmans, D., Bosma, M., Ichter, B., Xia, F., Chi, E., Le,
+  Q., \& Zhou, D. (2022b).
+\newblock Chain-of-thought prompting elicits reasoning in large language
+  models.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Wen et~al., 2025]{wen2025know}
+Wen, B., Cao, Y., Liu, X., \& Cohan, A. (2025).
+\newblock Know your limits: A survey of abstention in large language models.
+\newblock {\em Transactions of the Association for Computational Linguistics},
+  13.
+
+\bibitem[Xia et~al., 2024]{xia2024less}
+Xia, M., Malladi, S., Gururangan, S., Arora, S., \& Chen, D. (2024).
+\newblock {LESS}: Selecting influential data for targeted instruction tuning.
+\newblock In {\em Proceedings of the 41st International Conference on Machine
+  Learning (ICML)}.
+
+\bibitem[Xu et~al., 2024]{xu2024hallucination}
+Xu, Z., Jain, S., \& Kankanhalli, M. (2024).
+\newblock Hallucination is inevitable: An innate limitation of large language
+  models.
+\newblock {\em arXiv preprint arXiv:2401.11817}.
+
 \bibitem[Yin et~al., 2023]{yin2023large}
 Yin, Z., Sun, Q., Guo, Q., Wu, J., Qiu, X., \& Huang, X. (2023).
 \newblock Do large language models know what they don't know?
 \newblock In {\em Findings of ACL}.
+
+\bibitem[Zhang et~al., 2024]{zhang2023rtuning}
+Zhang, H., Diao, S., Lin, Y., Fung, Y.~R., Lian, Q., Wang, X., Chen, Y., Ji,
+  H., \& Zhang, T. (2024).
+\newblock {R-Tuning}: Instructing large language models to say ``{I} don't
+  know''.
+\newblock In {\em Proceedings of NAACL}.
+\newblock Originally arXiv 2023.
 
 \bibitem[Zheng et~al., 2023]{zheng2023judging}
 Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., Lin, Z.,
@@ -76,5 +402,13 @@ Zhou, C., Liu, P., Xu, P., Iyer, S., Sun, J., Mao, Y., Ma, X., Efrat, A., Yu,
   (2023).
 \newblock {LIMA}: Less is more for alignment.
 \newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem[Zou et~al., 2023]{zou2023representation}
+Zou, A., Phan, L., Chen, S., Campbell, J., Guo, P., Ren, R., Pan, A., Yin, X.,
+  Mazeika, M., Dombrowski, A.-K., Goel, S., Li, N., Byun, M.~J., Wang, Z.,
+  Mallen, A., Basart, S., Koyejo, S., Song, D., Fredrikson, M., Kolter, J.~Z.,
+  \& Hendrycks, D. (2023).
+\newblock Representation engineering: A top-down approach to {AI} transparency.
+\newblock {\em arXiv preprint arXiv:2310.01405}.
 
 \end{thebibliography}

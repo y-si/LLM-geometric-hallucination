@@ -1,0 +1,63 @@
+%!TEX root = ../dissertation.tex
+\chapter{Supplementary Analysis}
+\label{AppendixB}
+
+This appendix provides supplementary analyses referenced from the main text. These analyses support but are not required for the main arguments.
+
+\section{Cross-Model Correlation Matrix}
+\label{app:kendall-matrix}
+
+% TODO: Insert the full 10x10 Kendall's tau heatmap.
+% Source: results/v3/multi_model/stats/kendall_tau_matrix.csv
+% Also available as figure: results/v3/multi_model/consistency_heatmap.png
+% Caption should note: Kendall's tau rank correlation of per-prompt binary
+% hallucination indicators across all 10 models on the 449-prompt initial
+% benchmark. Mean tau = 0.319, range 0.068--0.617. Same-family pairs
+% (e.g., GPT-4.1-mini / GPT-4o-mini, tau = 0.617) show stronger correlations
+% than cross-family pairs (e.g., Qwen / Claude Sonnet, tau = 0.068).
+% Referenced from Section 5.1.
+
+\section{Embedding Model Robustness}
+\label{app:embedding-robustness}
+
+% TODO: Report the preliminary 3-embedding-model comparison.
+% Models: text-embedding-3-small (1,536 dim), text-embedding-3-large (3,072 dim),
+%         all-mpnet-base-v2 (768 dim, open-source)
+% Conducted on the 449-prompt initial benchmark (4 main categories, 368 prompts
+% with geometry; borderline prompts excluded due to missing embeddings at time
+% of comparison).
+% Report:
+%   - Spearman rank correlations between features computed with different models
+%   - Qualitative assessment of which features are most/least stable
+%   - Note: oppositeness is unstable across embedding models (PCA axes change)
+%   - Note: density and centrality are relatively stable
+% Source: results/v3/robustness/ (if exists), or recompute from archived data
+% Referenced from Section 4.4 and Section 5.5.
+
+\section{Human Validation Details}
+\label{app:human-validation}
+
+% TODO: Report the full disagreement analysis from the n=50 human validation.
+% Source: results/v3/human_verification_report.json
+% Include:
+%   - Table of the 5 disagreement cases: prompt ID, category, human label,
+%     consensus label, brief description of disagreement
+%   - Note: 3 of 5 disagreements involve consensus labeling hallucination
+%     where human panel judged correct (conservative bias direction)
+%   - Note: single human panel (3 undergrads including author), labels reached
+%     by discussion not independent coding — limitation acknowledged in Section 4.3
+% Referenced from Section 5.1.
+
+\section{Geometric Feature Visualizations}
+\label{app:geometry-heatmaps}
+
+% TODO: Include UMAP projections with geometric feature overlays.
+% Two figures:
+%   1. Initial benchmark (449 prompts): results/v3/figures/geometry_heatmaps_umap.png
+%      Caption: UMAP projection colored by each geometric feature value.
+%   2. Expanded benchmark (2,430 prompts, Mixtral):
+%      results/v5_baselines/analysis/v5_geometry_heatmaps_umap.png
+%      Caption: Same visualization on the expanded benchmark.
+% These show how density, oppositeness, curvature, etc. vary spatially
+% across the embedding manifold. Referenced from Chapter 5 if cited;
+% otherwise include as supplementary visualization.

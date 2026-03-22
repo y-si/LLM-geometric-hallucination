@@ -389,6 +389,32 @@ results/v5_baselines/analysis/
 └── v5_within_category_llama-4-maverick-17b.png
 ```
 
+## 2.5.7 Surface-feature baseline comparison `[DONE — Mar 21, 2026]`
+
+**Purpose**: Test whether simple text-level properties (question length, entity name length) capture the same within-category signal as density, addressing the reviewer concern that density might just proxy for surface features.
+
+**Method**: Mann-Whitney U tests within the nonexistent category (same framework as 2.5.3), comparing hallucinated vs. correct prompts on:
+1. Question length (word count) — template-controlled, expected null
+2. Entity name length (character count) — could reflect "exoticness"
+
+**Results**:
+
+| Feature | Mixtral p | Mixtral |r| | Llama p | Llama |r| |
+|---|---|---|---|---|
+| Question word count | 0.67 | 0.022 | 0.06 | 0.113 |
+| Entity name length (chars) | 0.002 | 0.162 | 0.93 | 0.005 |
+| **Density (for comparison)** | **5.7×10⁻⁷** | **0.259** | **3.4×10⁻⁵** | **0.249** |
+
+**Key findings**:
+- Question word count: null for both models (expected — template-controlled)
+- Entity name length: significant for Mixtral only (p=0.002, |r|=0.162), null for Llama (p=0.93). Model-specific, weaker than density
+- Density: significant for both models with larger effect sizes (|r|=0.259/0.249)
+- Density–entity name length correlation: Spearman r=−0.186 (modest). Longer entity names sit in sparser neighborhoods, but density captures substantially more variance
+
+**Conclusion**: Density carries genuine geometric signal beyond surface text properties. Entity name length has a model-specific partial association but doesn't explain the cross-model density signal.
+
+**Written into**: Thesis Chapter 5, Section 5.6 (Discussion), "Why density" paragraph.
+
 ---
 
 # Part 3: Benchmark Scaling & Fine-Tuning Preparation (Next)

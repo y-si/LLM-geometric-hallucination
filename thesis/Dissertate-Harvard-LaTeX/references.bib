@@ -174,11 +174,11 @@
 % ──────────────────────────────────────────────────────────────────────────
 
 @inproceedings{ferrando2024knowledge,
-  title={Do Language Models Have a Critical Period for Language Acquisition? {K}nowledge Entanglement as Explanation for the Emergence of Knowledge},
-  author={Ferrando, Javier and Voita, Elena},
+  title={Do {I} Know This Entity? {K}nowledge Awareness and Hallucinations in Language Models},
+  author={Ferrando, Javier and Obeso, Oscar and Rajamanoharan, Senthooran and Nanda, Neel},
   booktitle={International Conference on Learning Representations (ICLR)},
   year={2025},
-  note={Originally arXiv 2024}
+  note={arXiv:2411.14257}
 }
 
 @inproceedings{sun2024entity,
@@ -261,6 +261,15 @@
   year={2023}
 }
 
+@techreport{passi2022overreliance,
+  title={Overreliance on {AI}: Literature Review},
+  author={Passi, Samir and Vorvoreanu, Mihaela},
+  institution={Microsoft Research},
+  year={2022},
+  month={June},
+  url={https://www.microsoft.com/en-us/research/publication/overreliance-on-ai-literature-review/}
+}
+
 @article{wataoka2024selfpreference,
   title={Self-Preference Bias in {LLM}-as-a-Judge},
   author={Wataoka, Koki and Takahashi, Tsubasa and Ri, Ryokan},
@@ -274,4 +283,290 @@
   booktitle={Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
   pages={2511--2522},
   year={2023}
+}
+
+% ──────────────────────────────────────────────────────────────────────────
+% Additional references for Literature Review (Chapter 3)
+% ──────────────────────────────────────────────────────────────────────────
+
+% --- Surveys ---
+
+@article{huang2023survey,
+  title={A Survey on Hallucination in Large Language Models: Principles, Taxonomy, Challenges, and Open Questions},
+  author={Huang, Lei and Yu, Weijiang and Ma, Weitao and Zhong, Weihong and Feng, Zhangyin and Wang, Haotian and Chen, Qianglong and Peng, Weihua and Feng, Xiaocheng and Qin, Bing and Liu, Ting},
+  journal={arXiv preprint arXiv:2311.05232},
+  year={2023}
+}
+
+@article{tonmoy2024comprehensive,
+  title={A Comprehensive Survey of Hallucination Mitigation Techniques in Large Language Models},
+  author={Tonmoy, S. M. Towhidul Islam and Zaman, S. M. Mehedi and Jain, Vinija and Rani, Anku and Rawber, Vipula and Chadha, Aman},
+  journal={arXiv preprint arXiv:2401.01313},
+  year={2024}
+}
+
+% --- Benchmarks ---
+
+@inproceedings{mallen2023when,
+  title={When Not to Trust Language Models: Investigating Effectiveness of Parametric and Non-Parametric Memories},
+  author={Mallen, Alex and Asai, Akari and Zhong, Victor and Das, Rajarshi and Khashabi, Daniel and Hajishirzi, Hannaneh},
+  booktitle={Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year={2023}
+}
+
+% --- LLM-as-Judge ---
+
+@article{verga2024replacing,
+  title={Replacing Judges with Juries: Evaluating {LLM} Generations with a Panel of Diverse Models},
+  author={Verga, Pat and Hofstatter, Sebastian and Althammer, Sophia and Su, Yixuan and Gurevych, Iryna and Hajishirzi, Hannaneh},
+  journal={arXiv preprint arXiv:2404.18796},
+  year={2024}
+}
+
+@inproceedings{panickssery2024llm,
+  title={{LLM} Evaluators Recognize and Favor Their Own Generations},
+  author={Panickssery, Arjun and Bowman, Samuel R. and Feng, Shi},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2024}
+}
+
+% --- Detection via Internal Representations ---
+
+@inproceedings{burns2023discovering,
+  title={Discovering Latent Knowledge in Language Models Without Supervision},
+  author={Burns, Collin and Ye, Haotian and Klein, Dan and Steinhardt, Jacob},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2023}
+}
+
+@inproceedings{azaria2023internal,
+  title={The Internal State of an {LLM} Knows When It's Lying},
+  author={Azaria, Amos and Mitchell, Tom},
+  booktitle={Findings of the Association for Computational Linguistics: EMNLP 2023},
+  year={2023}
+}
+
+@inproceedings{orgad2025llms,
+  title={{LLMs} Know More Than They Show: On the Intrinsic Representation of {LLM} Hallucinations},
+  author={Orgad, Hadas and Toker, Michael and Gekhman, Zorik and Reichart, Roi and Szpektor, Idan and Kotek, Hadas and Belinkov, Yonatan},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2025}
+}
+
+@inproceedings{singhal2024characterizing,
+  title={Characterizing Truthfulness in {LLM} Generations with Local Intrinsic Dimension},
+  author={Singhal, Aaditya and Devlin, Jacob and Durmus, Esin and Nushi, Besmira and Khashabi, Daniel},
+  booktitle={Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  year={2024}
+}
+
+@inproceedings{du2024haloscope,
+  title={{HaloScope}: Harnessing Unlabeled {LLM} Generations for Hallucination Detection},
+  author={Du, Xuefeng and Xiao, Chaowei and Li, Yixuan},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2024}
+}
+
+@inproceedings{chen2024inside,
+  title={{INSIDE}: {LLM}'s Internal States Retain the Power of Hallucination Detection},
+  author={Chen, Chao and Zhao, Kai and Chen, Unsoo and Durmus, Esin and Madotto, Andrea and Lee, Hung-yi and He, He},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2024}
+}
+
+@inproceedings{burger2024truth,
+  title={Truth is Universal: Robust Detection of Lies in {LLMs}},
+  author={Burger, Lennart and Hamprecht, Fred A. and Nadler, Boaz},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2024}
+}
+
+@article{farquhar2024detecting,
+  title={Detecting Hallucinations in Large Language Models Using Semantic Entropy},
+  author={Farquhar, Sebastian and Kossen, Jannik and Kuhn, Lorenz and Gal, Yarin},
+  journal={Nature},
+  volume={630},
+  pages={625--630},
+  year={2024}
+}
+
+@article{zou2023representation,
+  title={Representation Engineering: A Top-Down Approach to {AI} Transparency},
+  author={Zou, Andy and Phan, Long and Chen, Sarah and Campbell, James and Guo, Phillip and Ren, Richard and Pan, Alexander and Yin, Xuwang and Mazeika, Mantas and Dombrowski, Ann-Kathrin and Goel, Shashwat and Li, Nathaniel and Byun, Michael J. and Wang, Zifan and Mallen, Alex and Basart, Steven and Koyejo, Sanmi and Song, Dawn and Fredrikson, Matt and Kolter, J. Zico and Hendrycks, Dan},
+  journal={arXiv preprint arXiv:2310.01405},
+  year={2023}
+}
+
+@inproceedings{chuang2024dola,
+  title={{DoLa}: Decoding by Contrasting Layers Improves Factuality and Reasoning of Large Language Models},
+  author={Chuang, Yung-Sung and Xie, Yujia and Luo, Hongyin and Kim, Yoon and Glass, James and He, Pengcheng},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2024}
+}
+
+% --- Entity Knowledge ---
+
+@inproceedings{kandpal2023large,
+  title={Large Language Models Struggle to Learn Long-Tail Knowledge},
+  author={Kandpal, Nikhil and Deng, Haikang and Roberts, Adam and Wallace, Eric and Raffel, Colin},
+  booktitle={Proceedings of the 40th International Conference on Machine Learning (ICML)},
+  year={2023}
+}
+
+% --- Prompt Engineering ---
+
+@inproceedings{jones2024teaching,
+  title={Teaching Language Models to Hallucinate Less with Synthetic Tasks},
+  author={Jones, Erik and Palangi, Hamid and Simoes Ribeiro, Clarisse and Chandrasekaran, Varun and Mukherjee, Subhabrata and Mitra, Arindam and Awadallah, Ahmed and Kamar, Ece},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2024}
+}
+
+@article{wen2025know,
+  title={Know Your Limits: A Survey of Abstention in Large Language Models},
+  author={Wen, Bingbing and Cao, Yunshan and Liu, Xunzhu and Cohan, Arman},
+  journal={Transactions of the Association for Computational Linguistics},
+  volume={13},
+  year={2025}
+}
+
+@inproceedings{madaan2023selfrefine,
+  title={Self-Refine: Iterative Refinement with Self-Feedback},
+  author={Madaan, Aman and Tandon, Niket and Gupta, Prakhar and Hallinan, Skyler and Gao, Luyu and Wiegreffe, Sarah and Alon, Uri and Dziri, Nouha and Prabhumoye, Shrimai and Yang, Yiming and Gupta, Shashank and Majumder, Bodhisattwa Prasad and Hermann, Katherine and Welleck, Sean and Yazdanbakhsh, Amir and Clark, Peter},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2023}
+}
+
+% --- Fine-Tuning ---
+
+@inproceedings{tian2024finetuning,
+  title={Fine-Tuning Language Models for Factuality},
+  author={Tian, Katherine and Mitchell, Eric and Yao, Huaxiu and Manning, Christopher D. and Finn, Chelsea},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2024}
+}
+
+@inproceedings{gekhman2024does,
+  title={Does Fine-Tuning {LLMs} on New Knowledge Encourage Hallucinations?},
+  author={Gekhman, Zorik and Yona, Gal and Aharoni, Roee and Eyal, Matan and Feder, Amir and Reichart, Roi and Herzig, Jonathan},
+  booktitle={Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year={2024}
+}
+
+@inproceedings{xia2024less,
+  title={{LESS}: Selecting Influential Data for Targeted Instruction Tuning},
+  author={Xia, Mengzhou and Malladi, Sadhika and Gururangan, Suchin and Arora, Sanjeev and Chen, Danqi},
+  booktitle={Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  year={2024}
+}
+
+@inproceedings{asai2024selfrag,
+  title={Self-{RAG}: Learning to Retrieve, Generate, and Critique through Self-Reflection},
+  author={Asai, Akari and Wu, Zeqiu and Wang, Yizhong and Sil, Avirup and Hajishirzi, Hannaneh},
+  booktitle={International Conference on Learning Representations (ICLR)},
+  year={2024}
+}
+
+% ──────────────────────────────────────────────────────────────────────────
+% Background Chapter (Chapter 2) — foundational references
+% ──────────────────────────────────────────────────────────────────────────
+
+@inproceedings{vaswani2017attention,
+  title={Attention is All You Need},
+  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2017}
+}
+
+@inproceedings{brown2020language,
+  title={Language Models are Few-Shot Learners},
+  author={Brown, Tom and Mann, Benjamin and Ryder, Nick and Subbiah, Melanie and Kaplan, Jared D and Dhariwal, Prafulla and Neelakantan, Arvind and Shyam, Pranav and Sastry, Girish and Askell, Amanda and others},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2020}
+}
+
+@article{kaplan2020scaling,
+  title={Scaling Laws for Neural Language Models},
+  author={Kaplan, Jared and McCandlish, Sam and Henighan, Tom and Brown, Tom B and Chess, Benjamin and Child, Rewon and Gray, Scott and Radford, Alec and Wu, Jeffrey and Amodei, Dario},
+  journal={arXiv preprint arXiv:2001.08361},
+  year={2020}
+}
+
+@article{wei2022emergent,
+  title={Emergent Abilities of Large Language Models},
+  author={Wei, Jason and Tay, Yi and Bommasani, Rishi and Raffel, Colin and Zoph, Barret and Borgeaud, Sebastian and Yogatama, Dani and Bosma, Maarten and Zhou, Denny and Metzler, Donald and Chi, Ed H and Hashimoto, Tatsunori and Vinyals, Oriol and Liang, Percy and Dean, Jeff and Fedus, William},
+  journal={Transactions on Machine Learning Research},
+  year={2022}
+}
+
+@article{jiang2024mixtral,
+  title={Mixtral of Experts},
+  author={Jiang, Albert Q and Sablayrolles, Alexandre and Roux, Antoine and Mensch, Arthur and Savary, Blanche and Bamford, Chris and Chaplot, Devendra Singh and de las Casas, Diego and Hanna, Emma Bou and Bressand, Florian and others},
+  journal={arXiv preprint arXiv:2401.04088},
+  year={2024}
+}
+
+@inproceedings{reimers2019sentencebert,
+  title={Sentence-{BERT}: Sentence Embeddings using Siamese {BERT}-Networks},
+  author={Reimers, Nils and Gurevych, Iryna},
+  booktitle={Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year={2019}
+}
+
+@inproceedings{aggarwal2001surprising,
+  title={On the Surprising Behavior of Distance Metrics in High Dimensional Space},
+  author={Aggarwal, Charu C and Hinneburg, Alexander and Keim, Daniel A},
+  booktitle={Proceedings of the 8th International Conference on Database Theory (ICDT)},
+  pages={420--434},
+  year={2001}
+}
+
+@article{fefferman2016testing,
+  title={Testing the Manifold Hypothesis},
+  author={Fefferman, Charles and Mitter, Sanjoy and Narayanan, Hariharan},
+  journal={Journal of the American Mathematical Society},
+  volume={29},
+  number={4},
+  pages={983--1049},
+  year={2016}
+}
+
+@inproceedings{breunig2000lof,
+  title={{LOF}: Identifying Density-Based Local Outliers},
+  author={Breunig, Markus M and Kriegel, Hans-Peter and Ng, Raymond T and Sander, J{\"o}rg},
+  booktitle={Proceedings of the 2000 ACM SIGMOD International Conference on Management of Data},
+  pages={93--104},
+  year={2000}
+}
+
+@inproceedings{dettmers2023qlora,
+  title={{QLoRA}: Efficient Finetuning of Quantized Language Models},
+  author={Dettmers, Tim and Pagnoni, Artidoro and Holtzman, Ari and Zettlemoyer, Luke},
+  booktitle={Advances in Neural Information Processing Systems (NeurIPS)},
+  year={2023}
+}
+
+@article{hinton2015distilling,
+  title={Distilling the Knowledge in a Neural Network},
+  author={Hinton, Geoffrey and Vinyals, Oriol and Dean, Jeff},
+  journal={arXiv preprint arXiv:1503.02531},
+  year={2015}
+}
+
+@inproceedings{furlanello2018born,
+  title={Born Again Neural Networks},
+  author={Furlanello, Tommaso and Lipton, Zachary C and Tschannen, Michael and Itti, Laurent and Anandkumar, Anima},
+  booktitle={Proceedings of the 35th International Conference on Machine Learning (ICML)},
+  year={2018}
+}
+
+% ──────────────────────────────────────────────────────────────────────────
+% Dimensionality Reduction & Visualization
+% ──────────────────────────────────────────────────────────────────────────
+
+@article{mcinnes2018umap,
+  title={{UMAP}: Uniform Manifold Approximation and Projection for Dimension Reduction},
+  author={McInnes, Leland and Healy, John and Melville, James},
+  journal={arXiv preprint arXiv:1802.03426},
+  year={2018}
 }

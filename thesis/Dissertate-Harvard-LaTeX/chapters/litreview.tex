@@ -1,8 +1,136 @@
 %!TEX root = ../dissertation.tex
 \begin{savequote}[75mm]
-This is some random quote to start off the chapter.
-\qauthor{Firstname lastname}
+Geometry is not true, it is advantageous.
+\qauthor{Henri Poincar\'{e}}
 \end{savequote}
 
 \chapter{Literature Review}
+\label{ch:litreview}
 
+This chapter surveys prior work across four areas that converge in this thesis: hallucination taxonomy, benchmarking, and evaluation methodology; representation-based approaches to truthfulness; entity knowledge and its limits; and intervention via prompting and fine-tuning. Each section identifies a specific gap that motivates the research questions addressed in later chapters. A concluding synthesis distills these gaps into the three questions that structure the remainder of the thesis.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Hallucination: Taxonomy and Theoretical Limits}
+\label{sec:lit-taxonomy}
+
+\citet{maynez2020faithfulness} established a foundational distinction between \emph{intrinsic} hallucinations, which contradict a source text, and \emph{extrinsic} hallucinations, which introduce unverifiable information.  Subsequent surveys generalized this taxonomy across natural language generation (NLG) tasks.  \citet{ji2023survey} mapped causes, definitions, and mitigations across modalities; \citet{huang2023survey} introduced a distinct axis of \emph{factuality} hallucination (claims contradicting world knowledge) versus \emph{faithfulness} hallucination (claims contradicting a provided context); and \citet{tonmoy2024comprehensive} compiled the most detailed mitigation comparison to date, covering 32 methods.  This thesis focuses on factuality hallucination: cases where a model generates claims about entities or facts that are verifiably false.
+
+A key theoretical result motivates the shift from elimination to prediction.  \citet{xu2024hallucination} proved that hallucination cannot be fully eliminated: any computable LLM will hallucinate on some inputs.  If total prevention is impossible, the research agenda must turn to \emph{predicting where} hallucinations will occur and \emph{mitigating the ones that do}.  This is the central premise of our geometric prediction approach.
+
+Yet existing surveys treat hallucination as a behavioral property of model outputs.  None ask whether hallucination has a geometric \emph{signature} in the representation space of the input---a signal that could be detected before generation begins.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Benchmarks for Factuality Evaluation}
+\label{sec:lit-benchmarks}
+
+Factuality benchmarks have evolved through several generations, each probing a deeper aspect of the problem.  Early efforts focused on \emph{whether} models hallucinate: \textsc{TruthfulQA} \citep{lin2022truthfulqa} tested whether models reproduce common human falsehoods, producing the surprising finding that larger models are not necessarily more truthful, and \textsc{HELM} \citep{liang2022helm} incorporated factuality into holistic evaluation across capabilities and risks.  Subsequent benchmarks shifted toward \emph{how much} and \emph{at what granularity}: \textsc{HaluEval} \citep{li2023halueval} scaled to 35,000 samples across QA, dialogue, and summarization, while \textsc{FActScore} \citep{min2023factscore} decomposed biography generation into atomic claims, revealing that only 58\% of ChatGPT's biographical statements are supported by knowledge sources.  More recent work such as \textsc{SimpleQA} \citep{wei2024simpleqa} tests short-form factual recall with unambiguously verifiable answers, tightening the evaluation loop further.
+
+A parallel line of benchmarks asks not just how often models fail, but \emph{on what kinds of entities}.  \textsc{PopQA} \citep{mallen2023when} organized 14,000 questions by Wikipedia entity popularity and established that LLM accuracy correlates directly with training data frequency---a result that reframes hallucination as partly a data coverage problem rather than a purely architectural one.  Our benchmark complements this popularity-based stratification by introducing a distinct axis: \emph{existence status}---real, nonexistent, borderline---testing failure modes at the boundary of model knowledge rather than across the popularity spectrum (Chapter~\ref{ch:setup}).
+
+Despite this progression, existing benchmarks quantify \emph{how often} models hallucinate and \emph{on what topics}, but none are designed to enable analysis of \emph{why} certain prompts are harder in geometric terms.  No benchmark stratifies by representational properties of entities in embedding space.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Automated Evaluation and the LLM-as-Judge Paradigm}
+\label{sec:lit-judge}
+
+Human evaluation remains the gold standard but does not scale.  \citet{zheng2023judging} demonstrated with MT-Bench and Chatbot Arena that LLM judges achieve strong human--model agreement, especially when diverse architectures are used in consensus.  G-Eval \citep{liu2023geval} showed that GPT-4 outperforms traditional NLG metrics.  The Panel of LLM evaluators (PoLL) approach \citep{verga2024replacing} further showed that panels of smaller, diverse-family models outperform a single large judge while costing less and exhibiting lower intra-model bias---directly motivating our three-family consensus design.
+
+Known biases in LLM judges have been extensively characterized.  Self-preference bias is real and causal: \citet{panickssery2024llm} demonstrated that LLMs can identify their own outputs and rate them higher, with a linear relationship between self-recognition ability and bias strength.  \citet{wataoka2024selfpreference} confirmed this across model families.  These findings motivate using judges from \emph{different} model families than the models being evaluated, and aggregating via majority vote to dilute individual biases.
+
+Multi-judge consensus has been validated for preference ranking and general-purpose NLG evaluation, but its application to \emph{hallucination-specific} multi-label classification (correct, partial, hallucinated, refused) on entity-level prompts has received little study.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Detecting Hallucination from Internal Representations}
+\label{sec:lit-detection}
+
+A rapidly growing body of work uses internal model representations to detect hallucination.  This section is the most directly relevant to our thesis, and we review it in detail.
+
+\subsection{Probing for Truthfulness}
+
+\citet{burns2023discovering} showed with Contrast-Consistent Search (CCS) that truth directions exist in LLM hidden states without any supervision---models often ``know'' the correct answer internally even when generating incorrectly.  \citet{azaria2023internal} trained classifiers on hidden-layer activations, detecting truthfulness with 71--83\% accuracy.  \citet{marks2023geometry} found that LLMs linearly represent truth and falsehood: linear probes trained on one factual dataset generalize to others, and causal interventions along the truth direction flip model judgments.  This ``Geometry of Truth'' work is the most direct conceptual antecedent to our thesis.
+
+However, subsequent work has complicated the picture.  \citet{orgad2025llms} showed that truthfulness encoding is \emph{not universal}---it generalizes only within tasks requiring similar cognitive skills, challenging the idea of a single truth direction.  This is an important qualifier for our own cross-category results: geometric features that predict hallucination within one entity category may not transfer to categories requiring different skills.
+
+\subsection{Geometric and Spectral Methods}
+
+Where probing methods train classifiers on raw activations, a parallel line of work asks whether the \emph{geometry} of representation space itself carries truthfulness information---shifting from ``can we learn to detect lies?'' to ``does the shape of the manifold encode them?''
+
+\citet{singhal2024characterizing} provided early evidence that it does: they showed that Local Intrinsic Dimension (LID) of model activations predicts hallucination, with truthful outputs occupying more structured, lower-dimensional manifold neighborhoods.  Subsequent methods exploited this geometric structure in different ways.  HaloScope \citep{du2024haloscope} identifies a hallucination-associated \emph{subspace} via SVD factorization, matching supervised detection accuracy without labels---suggesting the truthfulness signal is concentrated in a low-rank component of the activation space.  INSIDE \citep{chen2024inside} takes a spectral approach, computing eigenvalues of response embedding covariance matrices and outperforming logit-based baselines.  Most strikingly, \citet{burger2024truth} found that a single two-dimensional subspace separates true from false across multiple LLM families (Gemma, LLaMA, Mistral), suggesting that geometric structure for truthfulness may be shared across architectures rather than being model-specific.
+
+\subsection{Uncertainty-Based and Inference-Time Methods}
+
+The methods above detect hallucination from static representations; a separate class of approaches instead exploits the \emph{dynamics} of the generation process itself.  Sampling-based methods probe output consistency: Semantic Entropy \citep{farquhar2024detecting} clusters semantically equivalent sampled answers before measuring entropy, achieving state-of-the-art detection across five QA datasets, while SelfCheckGPT \citep{manakul2023selfcheckgpt} uses a simpler consistency check requiring no external knowledge.  Both rely on the insight that a model confident in a fact will produce consistent answers, while hallucinated claims vary across samples.
+
+A more interventionist line of work goes beyond detection to \emph{causally steering} model outputs.  ITI \citep{li2024inferencetime} identifies truthful directions in attention head activations and shifts representations along them, roughly doubling truthfulness scores on TruthfulQA.  Representation Engineering \citep{zou2023representation} generalizes this to population-level steering of truth-related features.  DoLA \citep{chuang2024dola} takes a different approach entirely, contrasting logit distributions across early and late transformer layers to amplify factual knowledge that is localized in specific layers.  Collectively, these methods establish that truthfulness information not only exists in model representations but can be causally manipulated---a finding that motivates asking, as we do, whether similar structure exists in the \emph{input} embedding space.
+
+All existing work detects hallucination from \emph{internal} model representations \emph{during or after} generation---requiring white-box access to activations, hidden states, or sampling distributions.  Our approach differs in two ways: (1)~we predict hallucination from the \emph{embedding geometry of the input prompt}, before generation, using an external embedding model with no white-box access to the target model; and (2)~we predict not only hallucination \emph{occurrence} but hallucination \emph{difficulty}---which hallucinations resist mitigation and why.  No prior work addresses fixability prediction.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Entity Knowledge and Knowledge Boundaries}
+\label{sec:lit-entity}
+
+\citet{kandpal2023large} established the foundational result: LLM accuracy on factual questions correlates with the number of documents mentioning the relevant entity in training data.  Scaling model size improves recall of popular entities but fails on the long tail.  \citet{mallen2023when} confirmed this with PopQA and showed that retrieval augmentation helps rare entities but can hurt popular ones.  \citet{sun2024entity} demonstrated with Head-to-Tail that hallucination rate is inversely correlated with entity popularity across knowledge graph triples.
+
+At the mechanistic level, \citet{ferrando2024knowledge} applied sparse autoencoders to LLM residual streams and discovered \emph{entity recognition features}---internal directions that detect whether a model can recall facts about a given entity.  These features generalize across entity types and are causally relevant: activating them can induce hallucination about known entities or refusal about unknown ones.  \citet{kadavath2022language} showed models can predict $P(\text{IK})$---the probability of knowing an answer---establishing that LLMs maintain internal representations of their own knowledge boundaries.  \citet{yin2023large} confirmed that models possess self-knowledge capacity but with a significant gap versus human proficiency.
+
+Entity popularity is a well-established predictor of hallucination, but its connection to \emph{embedding geometry} has not been tested.  Our density metric may capture a related signal: entities in sparse embedding neighborhoods may correspond to entities underrepresented in training data, where models default to fabrication over appropriate refusal.  Our benchmark is specifically designed with entity-existence categories---nonexistent, plausible-but-fake, obscure-but-real---that test this geometric--knowledge boundary hypothesis.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Prompt Engineering for Factuality}
+\label{sec:lit-prompt}
+
+Prompting-based hallucination mitigation spans reasoning augmentation and system-level instruction design.  The dominant paradigm has been multi-pass reasoning.  Chain-of-thought prompting \citep{wei2022chainofthought} dramatically improved LLM reasoning, though its effect on factuality specifically is mixed.  Subsequent methods built on this foundation: Self-Consistency \citep{wang2023selfconsistency} samples multiple reasoning paths and takes a majority vote, Chain-of-Verification \citep{dhuliawala2023chainofverification} adds explicit self-verification stages that reduce factual hallucination by 50--70\%, and Self-Refine \citep{madaan2023selfrefine} iterates on outputs using self-generated feedback.  These approaches share a common tradeoff: they improve reliability at the cost of multiple generation passes per query, making them expensive at inference time.
+
+At the system-prompt level, fewer controlled studies exist.  SynTra \citep{jones2024teaching} is the closest prior work to ours: it optimizes continuous prefix embeddings for system messages via synthetic task transfer, reducing hallucination by 29\%.  However, SynTra requires gradient-based optimization, while our discrete, interpretable prefixes need no training.  \citet{arora2024structured} showed that explicit, structured prompting rules materially improve truthfulness over vague instructions.  The abstention literature provides additional context: \citet{wen2025know} survey abstention approaches comprehensively, noting that fine-tuning can degrade a model's willingness to abstain, motivating prompt-based abstention strategies as a complementary approach.  R-Tuning \citep{zhang2023rtuning}, which teaches refusal as a transferable meta-skill via fine-tuning, demonstrates that the abstention capability our prompts attempt to activate does generalize beyond training distributions.
+
+No prior work systematically compares multiple discrete system-prompt-level interventions on the same entity-level hallucination benchmark under controlled conditions.  SynTra uses continuous optimization; CoVe requires multi-stage pipelines; most studies test a single prompting strategy.  Furthermore, no work connects prompt effectiveness to geometric properties of the prompts being modified---our bridge analysis (Chapter~\ref{ch:finetuning}) tests exactly this.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Fine-Tuning for Truthfulness}
+\label{sec:lit-finetuning}
+
+\subsection{Alignment and Its Costs}
+
+InstructGPT \citep{ouyang2022training} showed that RLHF improves instruction-following but does not fully address factuality.  Constitutional AI \citep{bai2022constitutional} uses self-critique and revision guided by explicit principles.  A growing body of evidence suggests alignment can actively \emph{hurt} factuality: standard supervised fine-tuning on human-written answers introduces knowledge the model does not have, increasing hallucination \citep{gekhman2024does}.  This ``fine-tuning paradox'' implies that SFT should teach behavioral patterns, not inject new factual knowledge---a principle central to our pipeline design.
+
+\subsection{Factuality-Targeted Fine-Tuning}
+
+R-Tuning \citep{zhang2023rtuning} is the closest comparator to our fine-tuning approach.  Both teach models to handle knowledge boundaries, but through different signals: R-Tuning uses binary train-time probing (``can the model answer this?''), while our pipeline selects training data by testing multiple prompt interventions and keeping the best response per prompt.  Our geometric analysis then explains \emph{why} certain prompts resist correction---a diagnostic role, not an operational one.  Other approaches differ in mechanism: FactTune \citep{tian2024finetuning} uses DPO with automatically generated preference pairs, achieving a 58\% reduction in factual errors on biography generation, while Self-RAG \citep{asai2024selfrag} combines fine-tuning with learned retrieval to ground generation in evidence.
+
+\subsection{Data Selection}
+
+Evidence increasingly shows that training data quality dominates quantity.  LIMA \citep{zhou2023lima} demonstrated that 1,000 carefully curated examples match much larger datasets for alignment.  LESS \citep{xia2024less} showed that influence-function-selected 5\% of data often outperforms the full dataset, and that selected data transfers across model families.  These results motivate our best-per-prompt selection strategy, which curates training data by choosing, for each prompt, the response generated under the most effective intervention.
+
+Existing fine-tuning approaches select training data by model performance (R-Tuning), preference pairs (DPO family), or influence functions (LESS).  None analyze the geometric properties of the resulting training distribution---embedding density, centrality, oppositeness---to understand \emph{why} certain prompts are harder to correct.  Our bridge analysis fills this diagnostic gap, showing that geometric features predict which hallucinations resist intervention (Chapter~\ref{ch:finetuning}).  Furthermore, no prior work quantifies the precision--recall tradeoff between hallucination reduction and false refusal of obscure-but-real entities---a tradeoff we document in that chapter.
+
+
+%% ═══════════════════════════════════════════════════════════════════════════
+\section{Synthesis and Research Questions}
+\label{sec:lit-synthesis}
+
+The literature reviewed above reveals three convergent gaps.
+
+\textbf{A geometric gap.}  Section~\ref{sec:lit-detection} showed that geometric properties of representations encode truthfulness, and Section~\ref{sec:lit-entity} showed that entity frequency predicts hallucination.  But no work has tested whether geometric features of \emph{prompt embeddings}---density, oppositeness, centrality, curvature---predict hallucination before generation and across models.
+
+\textbf{An intervention selection gap.}  Section~\ref{sec:lit-prompt} showed that prompting reduces hallucination, and Section~\ref{sec:lit-finetuning} showed that fine-tuning can teach abstention.  But which prompts benefit from which intervention---and can geometric features predict this?
+
+\textbf{A distillation gap.}  No work has tested whether the behavioral effects of prompt-based interventions can be consolidated into model weights via fine-tuning, with geometric analysis explaining where the resulting model succeeds and fails.
+
+These gaps motivate three research questions:
+
+\begin{enumerate}
+    \item \textbf{Geometric prediction} (Chapter~\ref{ch:geo-predict-hallucination}): Can geometric properties of prompt embeddings predict hallucination, and does this signal survive after controlling for category structure?
+
+    \item \textbf{Prompt intervention} (Chapter~\ref{ch:prefixes}): Can discrete system-prompt prefixes reduce hallucination in a controlled comparison, and do different prefixes work for different entity categories?
+
+    \item \textbf{Geometry-guided fine-tuning} (Chapter~\ref{ch:finetuning}): Can geometric features predict which hallucinations are fixable by prompting, and can the best prompt behavior be distilled into model weights?
+\end{enumerate}
+
+Together, these questions form a progressive narrative: geometry as diagnostic, prompts as treatment, fine-tuning as consolidation---with geometry predicting where the consolidation has side effects.  The literature reviewed in this chapter shows each component exists in isolation; the contribution of this thesis is connecting them into an integrated, empirically validated pipeline.

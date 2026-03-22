@@ -1,9 +1,56 @@
 %!TEX root = ../dissertation.tex
-\begin{savequote}[75mm]
-This is some random quote to start off the chapter.
-\qauthor{Firstname lastname}
-\end{savequote}
-
 \chapter{Can Prompts Reduce Hallucinations?}
 \label{ch:prefixes}
 
+% CHAPTER OPENING PARAGRAPH — write after body sections are complete.
+% Purpose: (1) State the research question: can discrete system-prompt prefixes
+%   reduce entity-level hallucination in a controlled comparison?
+% (2) Motivate: Ch 5 showed geometry predicts hallucination; now we test whether
+%   simple interventions can reduce it, and whether the effect varies by mechanism.
+% (3) Roadmap: Section 6.1 introduces the prefix designs. Section 6.2 presents
+%   the pilot study on the held-out benchmark. Section 6.3 replicates at scale
+%   on the expanded benchmark. Section 6.4 analyzes category-level effects.
+%   Section 6.5 examines the correctness-safety tradeoff.
+
+
+\section{Prefix Design}
+\label{sec:prefix-design}
+
+The literature review (Section~\ref{sec:lit-prompt}) identified a gap in prompting-based hallucination mitigation: most approaches require multi-pass reasoning \citep{dhuliawala2023chainofverification,wang2023selfconsistency} or gradient-based optimization of continuous prefixes \citep{jones2024teaching}.  System-prompt prefixes represent a simpler alternative---a single instruction passed once per query, requiring no training, no white-box model access, and no additional generation passes.  This makes them a natural first-line intervention to test before the more expensive fine-tuning approach explored in Chapter~\ref{ch:finetuning}.  The question is whether different instructions targeting different failure modes produce differential effects on entity-level factuality, and if so, which mechanisms matter most.
+
+We designed four prefixes, each targeting a distinct hallucination mechanism identified in prior work.  The prefixes form a spectrum from least to most restrictive behavioral constraint, ranging from a one-sentence encouragement to express uncertainty to a five-rule protocol combining multiple strategies.  Each prefix is delivered as the \textbf{system message} in the chat API---cleanly separated from the user's query, which remains the unmodified benchmark question.  The baseline condition uses no system message at all, providing a null condition rather than a generic default such as ``You are a helpful assistant.''  Full prefix texts are reproduced verbatim in Appendix~\ref{app:prefixes}; Table~\ref{tab:prefix-design} summarizes the design rationale.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{p{2.8cm} p{3.2cm} p{4.5cm} p{3.0cm}}
+\toprule
+\textbf{Prefix} & \textbf{Target mechanism} & \textbf{Key instruction} & \textbf{Literature basis} \\
+\midrule
+Epistemic Humility &
+  Uncertainty surfacing &
+  ``If you genuinely do not know something, say `I don't know' rather than guessing.'' &
+  \citet{kadavath2022language}; \citet{yin2023large} \\[6pt]
+Fact-Grounded &
+  Fabrication prohibition &
+  ``Do not fabricate names, dates, statistics, or other specific details.'' &
+  \citet{min2023factscore}; \citet{varshney2023stitch} \\[6pt]
+Entity-Aware &
+  Entity existence verification &
+  ``Consider whether the entity or concept in the question actually exists. If it appears to be fictional, fabricated, or nonexistent, say so clearly.'' &
+  \citet{ferrando2024knowledge}; \citet{sun2024entity} \\[6pt]
+Structured Caution &
+  Combined multi-rule protocol &
+  Five numbered rules covering uncertainty, entity verification, logical impossibility, anti-speculation, and ``I don't know'' preference. &
+  \citet{arora2024structured}; \citet{li2024inferencetime} \\
+\bottomrule
+\end{tabular}
+\caption[Prompt prefix design summary]{Design summary of the four prompt prefixes used in this study. Each targets a distinct hallucination mechanism and is delivered as a system-level instruction. The prefixes are ordered from least to most restrictive behavioral constraint.}
+\label{tab:prefix-design}
+\end{table}
+
+The four prefixes test competing hypotheses about what makes prompting effective for factuality.  Epistemic Humility applies the lightest possible nudge: does merely asking a model to express uncertainty reduce hallucination?  Prior work suggests models possess internal calibration \citep{kadavath2022language} but need explicit encouragement to surface it \citep{yin2023large}; this prefix tests whether a single sentence of encouragement suffices.  Fact-Grounded is more targeted, prohibiting fabrication by category---names, dates, statistics---rather than asking for general caution, motivated by the finding that fabricated details concentrate in specific categories \citep{min2023factscore}.  Entity-Aware is the most benchmark-specific prefix: it explicitly asks the model to verify whether entities exist before answering, directly addressing the nonexistent and borderline categories that comprise nearly half the benchmark.  This targets the entity recognition capability that \citet{ferrando2024knowledge} showed exists internally but is not always engaged during generation.  Structured Caution tests whether enumerating all mechanisms as explicit numbered rules produces better compliance than any single instruction, motivated by evidence that explicit, structured prompting outperforms vague directives \citep{arora2024structured}.  The core design question is whether \emph{specificity}---targeting the dominant failure mode (entity existence)---outperforms \emph{breadth}---covering many failure modes in a single prefix.
+
+A fifth prefix, Chain-of-Thought Verification, was initially included.  Inspired by Chain-of-Verification \citep{dhuliawala2023chainofverification} and chain-of-thought reasoning \citep{wei2022chainofthought}, it asked the model to briefly verify its claims before providing a final answer.  This prefix was excluded from all analyses after a judge API failure artifact was discovered that corrupted approximately 65\% of its evaluation labels; the details of this artifact and its resolution are documented in Appendix~\ref{app:prefixes} and Section~\ref{sec:judge-contamination}.  All results in this chapter use the four non-CoT prefixes plus the no-prefix baseline.
+
+The controlled design---same prompts, same models, same generation parameters (Chapter~\ref{ch:setup}), same consensus evaluation, different system messages---isolates the effect of instruction content from all other variables.  Unlike SynTra's continuous optimization or CoVe's multi-stage pipeline, our prefixes are discrete, interpretable, and require no additional computation beyond a single generation call.  This enables a direct comparison of competing hypotheses: does the model benefit most from general encouragement to be uncertain, from specific prohibitions, from entity-targeted verification, or from exhaustive rule specification?  Sections~\ref{sec:pilot-study} and~\ref{sec:replication} test these hypotheses on the held-out and expanded benchmarks, respectively.
