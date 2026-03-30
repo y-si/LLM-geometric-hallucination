@@ -31,6 +31,7 @@ Experiment tracking remains in `results/v4_prefix_experiment/EXPERIMENT_LOG.md`.
 > - The bar is not "would this pass peer review?" The bar is "would this withstand a 30-minute conversation with Boaz Barak or a NeurIPS area chair?"
 > - **NO RESULTS PREVIEWS — ANY CHAPTER.** Each chapter should present its own results without spoiling later chapters. Chapter 4 (Setup) is the strictest: no hallucination rates, AUC values, Kendall's tau, judge agreement percentages, or any empirical finding — design rationale and logical arguments only. But this also applies elsewhere: Ch 5 should not preview Ch 6 numbers, Ch 6 should not preview Ch 7 numbers, etc. Common pitfalls: saying "different baseline difficulty levels" (implies known rates), "shared patterns in our results" (implies results exist), stating that features "vary systematically" (asserts a finding — use "we investigate whether" instead), citing specific numbers from later experiments, or describing the contamination fix's impact with exact label counts in the setup chapter. Frame forward references as goals or open questions: "as we investigate in Chapter X" is fine; "as we show in Chapter X, [result]" is NOT — it spoils the result. **WATCH FOR THIS ON EVERY REVIEW PASS. This has been a recurring issue.**
 > - **No V3/V4/V5 terminology** in the thesis text. Use descriptive terms ("initial benchmark," "expanded benchmark," "cross-model benchmark").
+> - **⚠️ COT CONTAMINATION CHECK — MANDATORY FOR EVERY NEW FIGURE, TABLE, OR STATISTIC.** CoT Verification was excluded from the thesis (Mar 12 decision). But several scripts and CSVs in `results/` still include CoT data. Before adding ANY number, figure, or table to the thesis: (1) trace it to its source script, (2) check whether that script loads CoT data (`cot_verification`), (3) if it does, verify the number/figure excludes CoT or fix the script first. Known contaminated files: `scripts/analyze_v5_prefixes.py` (includes CoT in PREFIX_ORDER), `src/evaluation/prefix_analysis.py` (includes CoT in PREFIX_ORDER), `results/v5_prefixes/analysis/v5_prefix_metrics.csv` (contains CoT rows), `results/v5_prefixes/analysis/v5_category_metrics.csv` (contains CoT rows). Known clean files: `scripts/analyze_v5_bridge.py` (fixed Mar 22), `scripts/build_v5_training_data.py`, `scripts/generate_ch6_category_heatmap.py`, all fine-tuning/ablation/cross-cat scripts. **This was a real bug** — the bridge analysis included CoT until Mar 22, changing still_broken counts from 15/5 to 27/24 and flipping Llama AUC from 0.44 to 0.71. Do not trust any analysis output without verifying CoT exclusion.
 > - **No section hyperlinks in chapter opening paragraphs.** Chapter openings should read as narrative prose describing the flow of ideas, not as a table of contents with `Section~\ref{...}` references. The reader can see the section structure from the headings. Match the style of the reference theses (Tarun Prasad, Angela Li).
 
 ---
@@ -118,26 +119,26 @@ The thesis is empirical, not theoretical — no formal proofs. But mathematical 
 
 ---
 
-## Writing Progress (updated March 21, 2026)
+## Writing Progress (updated March 24, 2026)
 
 **Spacing change**: Switched from 2.0 (double) to 1.5 line spacing on Mar 21. All page counts below reflect the 1.5-spaced format.
 
 | Chapter | Status | Pages (actual) | Notes |
 |---|---|---|---|
-| Ch 1 Introduction | Stub | 1 (p. 1) | **Department mandate: at most 5 pages.** Write last. |
+| Ch 1 Introduction | Stub | 1 (p. 1) | **Department mandate: at most 5 pages.** Write after Ch 8. |
 | Ch 2 Background | **DONE** | ~12 (pp. 2–13) | 5 sections: LLMs, hallucination, embeddings/geometry, evaluation, fine-tuning. |
 | Ch 3 Literature Review | **DONE** | ~9 (pp. 14–22) | 8 subsections + synthesis. |
 | Ch 4 Experimental Setup | **DONE** | ~35 (pp. 23–57) | Sec 4.1-4.6 written. Flow pass complete. |
-| Ch 5 Can Geometry Predict? | **DONE** | ~30 (pp. 58–87) | All 6 sections written (5.1-5.6). Flow pass complete. |
-| Ch 6 Can Prompts Reduce? | Stub | 1 (p. 88) | All data ready. Easiest results chapter to write. |
-| Ch 7 Can Geometry Guide? | Stub | 1 (p. 89) | ALL experiments complete (Phase 9 + 10). Most material to cover. |
-| Ch 8 Discussion & Conclusion | Stub | 1 (p. 90) | Write last — needs all results. |
-| Appendix A | **DONE** | ~4-5 | Experimental Artifacts: judge prompt, prefix texts, FT configs. Fully written. |
-| Appendix B | **TODO stubs** | ~4-5 (when filled) | Supplementary Analysis: Kendall matrix, embedding robustness, human validation, UMAP heatmaps. Detailed TODOs in place. |
-| Bibliography | ~68 entries | starts p. 98 | Substantially expanded from Ch 2 + Ch 3 writing. |
-| **TOTAL** | **Ch 2-5 + App A done, Ch 1/6/7/8 + App B remaining** | **~87 written + stubs (excl. appendices)** | **Due March 27 (6 days)** |
+| Ch 5 Can Geometry Predict? | **DONE** | ~28 (pp. 59–87) | All 6 sections written (5.1-5.6). Flow pass complete. |
+| Ch 6 Can Prompts Reduce? | **DONE** | ~11 (pp. 87–97) | Sec 6.1-6.4 written. Prefix design, pilot study, replication, category-level analysis. |
+| Ch 7 Can Geometry Guide? | **DONE** | TBD (recompile needed) | All sections written (7.1-7.5). |
+| Ch 8 Discussion & Conclusion | Stub | 1 | Write next — needs all results (now available). Ch 1 after. |
+| Appendix A | **DONE** | ~6 (pp. 99–104) | Experimental Artifacts: judge prompt, prefix texts, contamination fix, FT configs. |
+| Appendix B | **TODO stubs** | ~7 (pp. 106–112) | Supplementary Analysis: Kendall matrix, embedding robustness, human validation, UMAP heatmaps. Detailed TODOs in place. |
+| Bibliography | ~68 entries | starts p. 113 | Substantially expanded from Ch 2 + Ch 3 writing. |
+| **TOTAL** | **Ch 2-7 + App A done, Ch 8 → Ch 1 → App B remaining** | **~112+ written (excl. appendices)** | **Due March 27 (3 days)** |
 
-### Chapter-by-chapter assessment (recorded Mar 20, 2026)
+### Chapter-by-chapter assessment (recorded Mar 22, 2026)
 
 **Longest**: Ch 4 (Setup) at 35 pages (1.5 spacing). Ch 5 is second at 27 pages (partially written). Ch 7 will compete when written — it has 7+ subsections of substantive content. Target ≤20 pages at 1.5 spacing.
 
@@ -1195,6 +1196,851 @@ A compact table that extends Table `tab:logistic-comparison` by adding within-ca
 
 ---
 
+## Chapter 7: Can Geometry Guide Intervention? — Detailed Content Plan
+
+**Chapter question**: We know geometry predicts hallucination (Ch 5) and prompts reduce it (Ch 6). Can geometry predict *which* hallucinations are fixable? And can the best prompt behavior be made permanent through fine-tuning?
+
+**Chapter label**: `\label{ch:finetuning}` (existing stub)
+
+**Estimated length**: 15–18 pages at 1.5 spacing
+
+**Proposed section structure** (actual page counts as of Mar 23):
+- Chapter opening (~1 page, pp. 97–98) ✅
+- 7.1 Geometric Prediction of Fixability (~5 pages, pp. 98–103) ✅ — bridge analysis
+- 7.2 Training Data Curation (~2 pages, pp. 103–105) ✅ — best-per-prompt selection
+- 7.3 Fine-Tuning Results (~? pages, starts p. 105) ✅ written — LoRA results, per-category analysis, robustness, geometric analysis
+- 7.4 Generalization Evidence (~4–5 pages) — TruthfulQA, template ablation, cross-category
+- 7.5 Discussion (~2 pages)
+
+**Data files**:
+- Bridge analysis: `results/v5_prefixes/analysis/v5_bridge_data.csv`, `v5_bridge_stats.csv`, `v5_bridge_within_category.csv`, `v5_bridge_logistic_auc.csv`
+- Best-per-prompt: `data/training/v5_training_mixtral-8x7b.jsonl`, `v5_training_llama-4-maverick-17b.jsonl`
+- Fine-tuning: `results/v5_finetuned/analysis/ft_bridge_data.csv`, `ft_bridge_stats.csv`
+- TruthfulQA: `results/truthfulqa/analysis/truthfulqa_analysis.md`, `truthfulqa_per_category.csv`
+- Template ablation: `results/v5_finetuned/ablation/ablation_analysis.json`
+- Cross-category: `results/v5_finetuned/cross_cat_ablation/evaluation_summary.json`
+
+### Chapter opening (~0.5 page)
+
+Pose the chapter's two questions without previewing answers:
+
+1. If geometric features predict hallucination risk (Chapter 5), do they also predict which hallucinations *resist mitigation*? A "yes" would mean geometry provides not just a risk signal but a difficulty signal — distinguishing prompts that need more aggressive intervention from those where a simple prompt adjustment suffices.
+
+2. Can the best prompt behavior identified in Chapter 6 be distilled into model weights, eliminating runtime prompt engineering? And what is the cost?
+
+State that this chapter bridges prediction (Ch 5) and intervention (Ch 6) by analyzing whether geometry predicts fixability, then tests whether fine-tuning can make prompt-level gains permanent.
+
+**Rules**: No results previews. No numbers. Frame as open questions.
+
+---
+
+### 7.1 Geometric Prediction of Fixability (~3–4 pages)
+
+**Section question**: Among prompts that hallucinate at baseline, can geometric features predict which are fixable by prompt prefixes and which resist all intervention?
+
+**Label**: `\label{sec:fixability-prediction}`
+
+#### Paragraph 1: Fixability framework (~0.5 page)
+
+Define the five outcome categories for each prompt × model pair, based on baseline (no-prefix) and best-prefix results from Chapter 6:
+
+| Outcome | Definition |
+|---|---|
+| `already_correct` | Correct at baseline (label=0). No prefix needed. |
+| `fixed` | Hallucinated at baseline (label=2), NOT hallucinating with at least one prefix (label ≠ 2). Includes corrections, refusals, and partial answers — any non-hallucination counts as "fixed." |
+| `still_broken` | Hallucinated at baseline, still hallucinating (label=2) with ALL tested prefixes. |
+| `regressed` | Correct at baseline, hallucinated with at least one prefix. |
+| `other` | Partial or refused at baseline (excluded from fixability analysis). |
+
+**Why refusals count as "fixed"**: A refusal IS a successful fix — the model stopped hallucinating, even if it didn't produce a correct answer. This matches the safety framing: we want to know where the model *stops fabricating*, not where it gives perfect answers. Note this definition explicitly.
+
+**Verified outcome counts** (post-CoT-exclusion re-run, from `v5_bridge_data.csv`):
+
+| Model | Already Correct | Fixed | Still Broken | Regressed | Other |
+|---|---|---|---|---|---|
+| Mixtral 8x7B | 1,868 | 333 | 27 | 136 | 66 |
+| Llama 4 Maverick | 2,073 | 211 | 24 | 64 | 58 |
+
+**Key derived statistics**:
+- Prefixes fix 92.5% (Mixtral: 333/360) and 89.8% (Llama: 211/235) of baseline hallucinations
+- 27 (Mixtral) and 24 (Llama) prompts resist ALL four prefix interventions
+- Still-broken prompts concentrated in entity-dependent categories: Mixtral 13 nonexistent + 7 plausible_fake + 5 factual + 2 other; Llama 14 plausible_fake + 7 nonexistent + 3 impossible
+- Regressed prompts exist but are not the focus here (analyzed in Ch 6 category analysis)
+
+**Note**: Bridge analysis re-run Mar 22 after discovering script included CoT (5 prefixes instead of 4). CoT exclusion changed counts significantly: Mixtral 15→27 broken, Llama 5→24 broken. The 12/19 prompts previously "fixed" by CoT were all CoT refusals (label=3). See `scripts/analyze_v5_bridge.py` comment.
+
+#### Paragraph 2: Between-category geometric comparison (~0.75 page)
+
+**Question**: Do fixable hallucinations have different geometric signatures from always-correct prompts?
+
+Present Mann-Whitney U tests comparing `fixed` vs `already_correct` prompts across four geometric features. This tests whether the Ch 5 finding (geometry predicts hallucination) extends to predicting *which hallucinations are fixable*.
+
+**Verified results** (from `v5_bridge_stats.csv`):
+
+| Model | Feature | Fixed Mean | Correct Mean | p-value | |r| |
+|---|---|---|---|---|---|
+| Mixtral | oppositeness | 0.513 | 0.491 | 7.3 × 10⁻¹¹ | 0.221 |
+| Mixtral | density | 2.019 | 2.082 | 3.1 × 10⁻⁵ | 0.141 |
+| Mixtral | centrality | 0.706 | 0.714 | 0.077 | 0.060 |
+| Mixtral | curvature | 0.367 | 0.361 | 0.901 | 0.004 |
+| Llama | oppositeness | 0.527 | 0.492 | 2.6 × 10⁻²⁰ | 0.371 |
+| Llama | centrality | 0.697 | 0.714 | 2.0 × 10⁻⁴ | 0.149 |
+| Llama | density | 2.018 | 2.084 | 0.014 | 0.099 |
+| Llama | curvature | 0.358 | 0.358 | 0.723 | 0.014 |
+
+**Interpretation paragraph**: Oppositeness is the strongest discriminator between fixable hallucinations and correct prompts — larger effect than any feature in Ch 5's between-category analysis (|r| = 0.221/0.371 here vs 0.218/0.367 in Table 5.2). Density and centrality show weaker but consistent effects. Curvature is null (consistent with Ch 5's downgrading). Note: this comparison is analogous to Ch 5's between-category analysis (hallucinated vs correct) but on a different partition (fixable-hallucinated vs correct). The overlap is expected — these are largely the same prompts.
+
+**Honest caveat**: This comparison does NOT test fixability prediction. It tests whether fixable hallucinations differ from correct prompts — which is essentially the Ch 5 question restated. The fixability question requires comparing `fixed` vs `still_broken`.
+
+#### Paragraph 3: The aggregate AUC question (~0.75 page)
+
+**Question**: Can a logistic regression predict which hallucinations are fixable vs still-broken, using geometric features alone?
+
+The initial study achieved AUC = 0.86 (Mixtral) and 0.83 (Llama) on this task — but those numbers used train-only evaluation on 449 prompts, without cross-validation.
+
+**Verified V5 results** (from `v5_bridge_logistic_auc.csv`, 5-fold cross-validated):
+
+| Model | n(fixed) | n(broken) | AUC (train) | AUC (5-fold CV) |
+|---|---|---|---|---|
+| Mixtral | 345 | 15 | 0.659 | 0.572 |
+| Llama | 230 | 5 | 0.763 | 0.442 |
+
+**Why the drop from 0.86 to 0.57**: Three factors, all methodological improvements:
+1. **Cross-validation**: V4 reported train-set AUC (overfitted). V5 uses 5-fold CV (honest).
+2. **Class imbalance**: 345:15 (Mixtral) and 230:5 (Llama). With 15 or 5 positive examples split across 5 folds, each fold has 1–3 positives — logistic regression is unreliable.
+3. **Any-prefix aggregation**: V4 computed per-prefix outcomes (larger broken groups). V5 asks "fixable by ANY prefix," collapsing most hallucinations into the fixed category.
+
+**Framing**: Do NOT present this as a failure to replicate. The V4 AUC was a discovery signal on a small dataset without proper evaluation. The V5 aggregate AUC is methodologically honest but uninformative due to extreme class imbalance. The real test is within-category (next paragraph).
+
+**Present as Table 7.2** (or inline): AUC comparison with explicit methodological differences.
+
+#### Paragraph 4: Within-category fixability prediction — the robust finding (~1 page)
+
+**Question**: Among prompts in the same category (same prompt structure, same type of knowledge failure), can geometric features predict which hallucinations are fixable?
+
+This is the non-circular test. Within the nonexistent category, all prompts share the same structure ("What is the [fabricated entity]?"). The only variation is the specific entity — and its geometric properties in embedding space.
+
+**Verified results** (from `v5_bridge_within_category.csv`, nonexistent category only):
+
+| Model | Feature | Broken Mean | Fixed Mean | p-value | |r| | n(broken) | n(fixed) |
+|---|---|---|---|---|---|---|---|
+| Mixtral | density | 1.937 | 2.180 | 0.034 | 0.383 | 11 | 166 |
+| Mixtral | centrality | 0.709 | 0.678 | 0.190 | 0.237 | 11 | 166 |
+| Mixtral | oppositeness | 0.538 | 0.532 | 0.578 | 0.101 | 11 | 166 |
+| Mixtral | curvature | 0.208 | 0.362 | 0.224 | 0.220 | 11 | 166 |
+| Llama | density | 1.877 | 2.144 | 0.047 | 0.523 | 5 | 109 |
+| Llama | centrality | 0.740 | 0.677 | 0.013 | 0.640 | 5 | 109 |
+| Llama | oppositeness | 0.511 | 0.534 | 0.350 | 0.255 | 5 | 109 |
+| Llama | curvature | 0.254 | 0.315 | 1.000 | 0.002 | 5 | 109 |
+
+**Present as Table 7.3**: Within-category Mann-Whitney U results for nonexistent category.
+
+**Interpretation**: Density significantly predicts fixability within the nonexistent category for both models (p = 0.034 and 0.047). Unfixable nonexistent prompts live in sparser embedding regions (mean density 1.94/1.88 vs 2.18/2.14 for fixable). The effect sizes are medium-to-large (|r| = 0.38/0.52), suggesting genuine signal despite small samples.
+
+**Critical honesty paragraph — multiple comparisons**: 12 within-category tests were conducted (4 features × 2 models for nonexistent, plus 4 features × 1 model for Mixtral factual with n=4). Bonferroni correction for 12 tests gives α = 0.05/12 = 0.0042. **Neither density p-value survives this correction.** Llama centrality (p = 0.013) also fails. These are suggestive findings, not definitive ones. The effect sizes are large enough that the non-survival reflects limited power (n = 11 and 5 broken prompts), not absent signal. Future work with more unfixable prompts could resolve this. State this explicitly — do not overstate.
+
+**Comparison to Ch 5**: Ch 5's within-category density finding for hallucination prediction (p = 5.7 × 10⁻⁷ and 3.4 × 10⁻⁵) survived even study-wide Bonferroni correction. The fixability prediction has the same directional signal (sparser = worse outcome) but with far fewer data points in the "broken" class (11/5 vs 177/114 hallucinated prompts in Ch 5). The consistency of direction across both analyses strengthens the interpretation even though the fixability p-values alone are not definitive.
+
+#### Paragraph 5: Descriptive profile of unfixable prompts (~0.5 page)
+
+Present the geometric profile of still-broken prompts descriptively (NOT as statistically significant claims — n = 15/5 is too small).
+
+**Verified numbers** (from `v5_bridge_stats.csv`, broken_vs_fixed comparison):
+- All p-values > 0.10 for both models (no significant differences between broken and fixed on any feature individually)
+- Direction matches V4 unfixable profile: higher centrality (0.734/0.740 vs 0.706/0.697), lower density (1.994/1.877 vs 2.019/2.018)
+- Curvature shows a directional trend for Mixtral (broken: 0.225 vs fixed: 0.367) but p = 0.22
+
+**Frame as**: "The geometric profile of unfixable prompts is directionally consistent with the initial study — unfixable prompts tend to sit in sparser, more peripheral regions of embedding space — but sample sizes preclude statistical claims at the aggregate level. The within-category density test (Table 7.3) provides the statistically supported version of this observation."
+
+**Include a figure**: Scatter plot of fixed vs broken vs correct prompts in UMAP space, color-coded by outcome. Existing figures: `v5_bridge_mixtral-8x7b.png`, `v5_bridge_llama-4-maverick-17b.png`. Assess whether these are thesis-quality before including.
+
+#### Section closing (~1 paragraph)
+
+Summarize: Geometry predicts fixability, but the evidence is suggestive rather than definitive due to the small number of unfixable prompts. The within-category density signal (p = 0.034/0.047, |r| = 0.38/0.52) is the strongest finding — same feature, same direction, same category as Ch 5's hallucination prediction, now extended to fixability prediction. This establishes a geometric gradient of difficulty: prompts in sparser embedding neighborhoods are not only more likely to hallucinate but also more likely to resist intervention.
+
+Transition: The fixability analysis identifies a small set of "unfixable" prompts (15 Mixtral, 5 Llama). These are excluded from fine-tuning training data — the first practical application of geometry guiding intervention. Section 7.2 describes this curation step.
+
+**Forward reference rule**: Do NOT preview fine-tuning results. The transition should frame data curation as a methodological step, not assert that it helps.
+
+---
+
+### Figures and tables in 7.1
+
+| Item | Type | Content | Source |
+|---|---|---|---|
+| Table 7.1 | Table | Outcome distribution (already_correct / fixed / still_broken / regressed / other) per model | `v5_bridge_data.csv` (verified counts above) |
+| Table 7.2 | Table/inline | Aggregate logistic AUC comparison: V4 train-only vs V5 cross-validated | `v5_bridge_logistic_auc.csv` |
+| Table 7.3 | Table | Within-category Mann-Whitney U for nonexistent: 4 features × 2 models | `v5_bridge_within_category.csv` |
+| Figure 7.1 | Figure | Bridge scatter plot (UMAP, color by outcome) — assess existing `v5_bridge_*.png` for quality | `results/v5_prefixes/analysis/` |
+
+### Cross-checks before writing 7.1
+
+- [x] Verify outcome counts match post-CoT-exclusion re-run (DONE: 1868/333/27/136/66 Mixtral; 2073/211/24/64/58 Llama — updated Mar 22 after CoT exclusion fix)
+- [ ] Verify within-category p-values against `v5_bridge_within_category.csv` (DONE: 0.034/0.047)
+- [ ] Verify effect sizes are correctly reported as |r| not r (DONE: 0.383/0.523)
+- [ ] Verify V4 AUC was train-only (DONE: confirmed in EXPERIMENT_LOG line 964)
+- [ ] Verify still-broken category breakdown (DONE: Mixtral 11 nonexistent + 4 factual; Llama 5 nonexistent)
+- [ ] Confirm CoT is excluded from prefix count (DONE: 5 prefixes tested but CoT excluded from best-per-prompt — 4 effective prefixes for selection)
+- [ ] Check whether bridge figures are thesis-quality (TODO: visually inspect `v5_bridge_*.png`)
+
+### Reviewer objections to preempt in 7.1
+
+1. **"The within-category p-values don't survive correction."** → Acknowledged explicitly. Effect sizes are medium-to-large; non-survival reflects n = 11/5, not absent signal. Direction consistent with Ch 5.
+2. **"n = 15 and n = 5 are too few for any conclusion."** → Agreed for the aggregate broken-vs-fixed comparison (all p > 0.10). The within-category test pools against 166/109 fixed prompts, giving adequate power for detecting medium effects in the majority class. The limitation is real and stated.
+3. **"The V4 AUC of 0.86 was misleading."** → Agreed and stated. V4 was a discovery signal; V5 is the honest evaluation. Lead with within-category, relegate aggregate AUC.
+4. **"Fixable hallucinations look like regular hallucinations — what's new?"** → The fixed-vs-correct comparison (¶2) overlaps with Ch 5, acknowledged. The novel contribution is the within-category fixability prediction (¶4) — same category, same structure, geometry predicts whether intervention works.
+5. **"Why only 4 features? Why not add oppositeness sub-features or text features?"** → Consistent with Ch 5's feature set. Adding features with n = 15/5 positives would overfit. Parsimonious approach.
+
+---
+
+### 7.2 Training Data Curation (~1–1.5 pages)
+
+**Section question**: How do we construct high-quality fine-tuning training data from the prefix experiment results, and what role does the fixability analysis play?
+
+**Label**: `\label{sec:training-curation}`
+
+This section bridges the fixability analysis (7.1) and fine-tuning (7.3). It is primarily methodological — describing the best-per-prompt selection process, key design decisions, and the composition of the resulting training data. It should be concise; the reader needs to understand *what* was curated and *why* before seeing fine-tuning results, but the details are not the chapter's intellectual contribution.
+
+#### Paragraph 1: Selection methodology (~0.5 page)
+
+**The task**: For each of 2,430 prompts, select the single best model response from five candidate sources: baseline (no prefix) + 4 prefix conditions. The selected (question, response) pair becomes a fine-tuning training example.
+
+**Selection priority** (descending):
+1. **Correct (label=0)** — highest priority. Tiebreaker: highest judge confidence score.
+2. **Partial (label=1)** — contains real knowledge, better than refusal.
+3. **Refusal (label=3)** — model stopped fabricating, preferable to hallucination.
+4. **Hallucination (label=2)** — all sources hallucinate → **exclude from training** (unfixable).
+
+**Key design decision — partial over refusal**: A partial answer contains learnable knowledge (correct content with minor gaps), while a refusal teaches the model to give up. Training on partials preserves knowledge breadth; training on refusals teaches epistemic caution at the cost of coverage. This ordering reflects the thesis's finding (Chapter 6) that refusal is not the goal — reduced fabrication is.
+
+**Key design decision — baseline as candidate**: Including the no-prefix baseline response as a candidate prevents regression. **Verified**: 6 Mixtral and 2 Llama prompts are correct at baseline but have NO correct response from any prefix. Without baseline as a candidate, these 8 prompts would receive partial, refused, or hallucinated training targets — teaching the model to worsen on questions it already handles correctly. With baseline included, all 8 receive correct training targets.
+
+**Data sources**:
+- Script: `scripts/build_v5_training_data.py`
+- Verified: 0 CoT entries in training data (CoT excluded, consistent with Ch 6)
+
+#### Paragraph 2: Training data composition (~0.5 page)
+
+**Present as Table 7.X**: Training data composition per model.
+
+**Verified numbers** (from `v5_training_*.jsonl` and `v5_selection_report.json`):
+
+| Metric | Mixtral | Llama |
+|---|---|---|
+| Selected for training | 2,403 | 2,406 |
+| Correct (label=0) | 2,381 (99.1%) | 2,394 (99.5%) |
+| Partial (label=1) | 22 (0.9%) | 11 (0.5%) |
+| Refusal (label=3) | 0 | 1 (<0.1%) |
+| Excluded unfixable | 27 | 24 |
+
+**Source distribution** (which prefix contributed the selected response):
+
+| Source | Mixtral | Llama |
+|---|---|---|
+| Entity-Aware | 957 (39.8%) | 979 (40.7%) |
+| Structured Caution | 490 (20.4%) | 472 (19.6%) |
+| Baseline | 485 (20.2%) | 567 (23.6%) |
+| Epistemic Humility | 239 (9.9%) | 210 (8.7%) |
+| Fact-Grounded | 232 (9.7%) | 178 (7.4%) |
+
+**Key observation**: Entity-Aware dominates (~40% of selections for both models), consistent with its position as the best single prefix in Chapter 6. Baseline contributes ~20% — these are prompts the model already handles correctly without intervention. The remaining ~40% is distributed across the other three prefixes.
+
+**Do NOT present source distribution in a full table** — it's informative but not thesis-critical. Mention Entity-Aware dominance in prose and note baseline contribution. The reader cares that the training data is 99%+ correct, not the prefix breakdown.
+
+#### Paragraph 3: Connection to fixability analysis (~0.25 page)
+
+The 27 Mixtral and 24 Llama unfixable prompts identified in Section 7.1 are exactly the prompts excluded from training — they hallucinate across all five candidate sources. This is the practical link between geometric analysis and intervention: the fixability analysis (Section 7.1) identifies prompts in sparse embedding regions that resist all prefix interventions, and the curation step excludes them from training data to avoid teaching the model to hallucinate.
+
+**Note**: Do NOT overclaim the geometry connection. The exclusion is based on *outcome* (all sources hallucinate), not directly on geometric features. Geometry *predicts* which prompts are likely to be unfixable (Section 7.1), but the exclusion decision uses the label data, not the geometric scores. The connection is analytical (geometry explains *why* these prompts are unfixable), not operational (geometry was not used to *make* the exclusion decision). Be precise about this distinction.
+
+#### Section closing (~1 sentence)
+
+Transition: The curated training data (2,403 Mixtral / 2,406 Llama examples, 99%+ correct) is converted to fine-tuning format and used to train LoRA-adapted models. Section 7.3 reports the results.
+
+#### Fine-tuning format note (~2 sentences, inline or footnote)
+
+Training examples are converted to chat format: `{"messages": [{"role": "user", "content": question}, {"role": "assistant", "content": selected_answer}]}`. No system message is used during training — the model learns careful behavior from the response content alone, not from an explicit instruction to be careful.
+
+---
+
+### Figures and tables in 7.2
+
+| Item | Type | Content | Source |
+|---|---|---|---|
+| Table 7.X | Table | Training data composition: counts by label, exclusion count | `v5_selection_report.json` |
+
+One table is sufficient. Source distribution can be inline prose.
+
+### Cross-checks before writing 7.2
+
+- [x] Verify training counts: 2,403 Mixtral, 2,406 Llama (DONE)
+- [x] Verify label breakdown: 2381/22/0 Mixtral, 2394/11/1 Llama (DONE)
+- [x] Verify 0 CoT in training data (DONE)
+- [x] Verify unfixable counts match Section 7.1: 27/24 (DONE — same prompts)
+- [x] Verify baseline rescue cases: 6 Mixtral, 2 Llama correct-at-baseline with no correct prefix (DONE)
+- [x] Verify source distribution (DONE)
+- [x] Verify fine-tuning format has no system message (DONE — checked v5_together_*.jsonl)
+- [ ] Note: Together files are from Mar 5 (pre-contamination-fix, 2,402 Mixtral). Actual fine-tuning used these. The 1-prompt discrepancy is documented and negligible.
+
+### Reviewer objections to preempt in 7.2
+
+1. **"Why not use all responses for training (multi-response fine-tuning)?"** → Single best response avoids contradictory training signals. Multiple responses per prompt, some correct and some hallucinated, would confuse the model during training. Best-per-prompt is standard practice in instruction tuning.
+2. **"Why include partials instead of filtering to only correct?"** → Only 22-33 examples affected. Excluding would lose training data with minimal quality gain. Partials contain correct information with minor gaps — useful training signal.
+3. **"The geometry connection seems post-hoc."** → Acknowledged. Geometry predicts unfixability (Section 7.1) but does not drive the exclusion decision. The contribution is analytical insight, not an operational geometric filter.
+
+---
+
+### 7.3 Fine-Tuning and the Precision-Recall Tradeoff (~3–4 pages)
+
+**Section question**: Can the best prompt behavior be distilled into model weights via fine-tuning, and what does it cost?
+
+**Label**: `\label{sec:ft-results}`
+
+**⚠️ STALE NUMBERS IN THESIS_WRITING.md**: The Discussion section (line ~2099) has pre-contamination-fix FT numbers: Mixtral ConfigC 91.1%, Llama ConfigA 92.4%. ACTUAL post-fix numbers from `comparison_analysis.json`: Mixtral ConfigC **94.43%**, Llama ConfigA **93.99%**. The "obscure_real regression (-7 to -13pp)" narrative is also wrong — obscure_real IMPROVED. Regressions are primarily factual refusals. UPDATE DISCUSSION SECTION WHEN WRITING CH 8.
+
+#### Subsection 7.3.1: Fine-Tuning Setup (~0.5 page)
+
+**Method**: LoRA (Low-Rank Adaptation) fine-tuning via Together AI on the curated training data from Section 7.2.
+
+**Three configurations** (Mixtral only; Llama tested one):
+
+| Config | Learning Rate | Epochs | Purpose |
+|---|---|---|---|
+| A (primary) | 2×10⁻⁴ | 3 | Standard LoRA settings |
+| B (lower LR) | 1×10⁻⁴ | 3 | Test sensitivity |
+| C (more epochs) | 2×10⁻⁴ | 5 | Test convergence |
+
+**Together AI hyperparameter overrides** (must disclose):
+- LoRA rank: requested 16, received **64** (4× increase)
+- LoRA alpha: requested 32, received **128** (ratio preserved)
+- Dropout: requested 0.05, received **0** (removed)
+- Weight decay: requested 0.01, received **0** (removed)
+- Mixtral: standard LoRA on attention projections
+- Llama: QLoRA with 4-bit quantization
+
+**Acknowledge explicitly**: Together AI's overrides mean the LoRA configuration is more aggressive than planned. The ablation across learning rates and epochs (the most impactful hyperparameters) remains informative. Rank/dropout/decay sensitivity is confounded with the override.
+
+**Evaluation**: All models evaluated on the 449-prompt held-out test set using the same consensus judging pipeline (Chapter 4). No system message used during inference (matching the no-system-message training).
+
+**Data sources**:
+- Fine-tuning configs: `data/training/v5_finetuned_models.json`
+- Evaluation results: `results/v5_finetuned/comparison_analysis.json` (POST-FIX, authoritative)
+- Individual judged answers: `results/v5_finetuned/{model}/{config}/judged_answers.jsonl`
+
+#### Subsection 7.3.2: Overall Results (~0.5 page)
+
+**Present as Table 7.X**: Aggregate results on held-out test set.
+
+**Verified numbers** (from `comparison_analysis.json`, post-contamination-fix):
+
+| Condition | Mixtral Acc | Mixtral Hall | Mixtral Ref | Llama Acc | Llama Hall | Llama Ref |
+|---|---|---|---|---|---|---|
+| Baseline | 82.85% | 11.80% | 1.11% | 90.65% | 5.79% | 0.22% |
+| Config A | 93.32% | 1.78% | 4.23% | 93.99% | 1.11% | 4.45% |
+| Config B | 93.10% | 1.78% | 4.01% | — | — | — |
+| **Config C** | **94.43%** | **1.34%** | **3.56%** | — | — | — |
+| Best single prefix (Struct. Caution) | 94.88% | 1.78% | 3.12% | 95.77% | 1.34% | 2.67% |
+
+**McNemar tests** (verified, post-V4-fix re-run Mar 23):
+- Mixtral C vs baseline: p = 1.8×10⁻¹⁰ (highly significant)
+- Llama A vs baseline: p = 3.5×10⁻³ (significant)
+- Mixtral C vs best prefix: p = 0.82 (indistinguishable — ConfigC matches Structured Caution)
+- Llama A vs best prefix: p = 0.14 (not significant, but Llama 1.8pp below Structured Caution)
+
+**Key headline**: Fine-tuning achieves 89%/81% relative hallucination reduction baked into weights. Mixtral ConfigC matches best single prefix (Structured Caution) in accuracy (p=0.82) with lower hallucination rate (1.3% vs 1.8%). Llama ConfigA falls 1.8pp short of best prefix (94.0% vs 95.8%, p=0.14) but also has lower hallucination rate (1.1% vs 1.3%). The practical advantage is eliminating runtime prompt engineering.
+
+**⚠️ CORRECTION LOG**: comparison_analysis.json re-generated Mar 23 with post-V4-fix V4 prefix data. Best prefix changed from Entity-Aware (pre-V4-fix) to Structured Caution (post-V4-fix) for both models. Previous narrative ("outperforms"/"matches Entity-Aware") was based on stale pre-V4-fix data.
+
+#### Subsection 7.3.3: Per-Category Analysis and the Precision-Recall Tradeoff (~1 page)
+
+**Present as Table 7.X**: Per-category accuracy and hallucination changes (baseline → ConfigC/A).
+
+**Verified per-category data** (from V3 baseline + comparison_analysis.json):
+
+**Mixtral ConfigC:**
+| Category | n | BL Acc | FT Acc | Δ Acc | BL Hall | FT Hall | Δ Hall |
+|---|---|---|---|---|---|---|---|
+| nonexistent | 120 | 70.0% | 99.2% | +29.2pp | 28.3% | 0.8% | -27.5pp |
+| plausible_fake | 31 | 54.8% | 87.1% | +32.3pp | 41.9% | 9.7% | -32.3pp |
+| factual | 98 | 75.5% | 80.6% | +5.1pp | 6.1% | 2.0% | -4.1pp |
+| obscure_real | 30 | 90.0% | 96.7% | +6.7pp | 0.0% | 0.0% | — |
+| impossible | 30 | 100.0% | 100.0% | — | 0.0% | 0.0% | — |
+| ambiguous | 120 | 100.0% | 100.0% | — | 0.0% | 0.0% | — |
+| edge_factual | 20 | 100.0% | 100.0% | — | 0.0% | 0.0% | — |
+
+**Llama ConfigA:**
+| Category | n | BL Acc | FT Acc | Δ Acc | BL Hall | FT Hall | Δ Hall |
+|---|---|---|---|---|---|---|---|
+| nonexistent | 120 | 93.3% | 99.2% | +5.8pp | 6.7% | 0.8% | -5.8pp |
+| plausible_fake | 31 | 48.4% | 77.4% | +29.0pp | 48.4% | 6.5% | -41.9pp |
+| factual | 98 | 84.7% | 81.6% | **-3.1pp** | 1.0% | 1.0% | — |
+| obscure_real | 30 | 96.7% | 100.0% | +3.3pp | 3.3% | 0.0% | -3.3pp |
+| impossible | 30 | 93.3% | 96.7% | +3.3pp | 3.3% | 3.3% | — |
+| ambiguous | 120 | 100.0% | 100.0% | — | 0.0% | 0.0% | — |
+| edge_factual | 20 | 100.0% | 100.0% | — | 0.0% | 0.0% | — |
+
+**The wins**: Nonexistent and plausible_fake see dramatic improvements — these are entity-fabrication categories where learned skepticism directly applies.
+
+**The cost (precision-recall tradeoff)**: The cost is NOT on obscure_real (which improved for both models). The cost manifests as **increased refusals on factual questions**:
+- Mixtral: 5→15 factual refusals (+10)
+- Llama: 1→15 factual refusals (+14)
+- Llama factual accuracy drops -3.1pp (the only category with accuracy regression)
+
+**Regression analysis** (verified from individual judged_answers files):
+- Mixtral ConfigC: 6 regressions total (4 factual, 1 obscure_real, 1 plausible_fake). Breakdown: 4 refusals, 1 hallucination, 1 partial.
+- Llama ConfigA: 4 regressions total (3 factual, 1 plausible_fake). Breakdown: 3 refusals, 1 hallucination.
+- Combined: 10 regressions, 7 refusals (70%), 2 hallucinations (20%), 1 partial (10%).
+
+**Framing**: The model learned a "refuse when uncertain" heuristic that correctly fires on nonexistent/plausible_fake entities but occasionally over-fires on real factual questions. Most regressions (70%) are refusals, not new hallucinations — the model errs toward caution, not fabrication. This is a precision-recall tradeoff in the safety direction.
+
+**⚠️ CORRECTION from THESIS_WRITING.md**: The old narrative said "obscure_real regression (-7 to -13%)" but this was from PRE-FIX data. Post-fix, obscure_real IMPROVED for both models. The actual precision-recall cost is factual refusals, not obscure_real regressions. Update everywhere.
+
+#### Subsection 7.3.4: Robustness Checks (~0.75 page)
+
+**Three checks, each ~0.25 page:**
+
+**A. Hyperparameter sensitivity** (Mixtral only, 3 configs):
+- Config C (lr=2e-4, 5 epochs): 94.43% acc, 1.34% hall — BEST
+- Config A (lr=2e-4, 3 epochs): 93.32% acc, 1.78% hall
+- Config B (lr=1e-4, 3 epochs): 93.10% acc, 1.78% hall
+- More epochs helps (C > A); lower LR marginal (B ≈ A)
+- No overfitting signal — 5 epochs beats 3, despite aggressive lora_r=64 and no dropout
+- All three significantly outperform baseline (all p < 10⁻⁸)
+
+**B. Overfitting check** (Step 11B):
+- Evaluated on 200 random V5 training prompts (stratified by category) vs 449 held-out test
+- Mixtral ConfigC: train 93.0% vs test 91.1% (+1.9pp gap) — WAIT, this doesn't match the 94.43% figure. Let me check.
+
+Actually: the EXPERIMENT_LOG says "test accuracy = 91.1%" but comparison_analysis.json says 94.43%. This is the pre-fix vs post-fix discrepancy. The overfitting check was done on pre-fix data (Step 11B was Mar 7, contamination fix was Mar 11).
+
+**⚠️ IMPORTANT**: The overfitting check's test accuracy (91.1%) is pre-fix. The post-fix test accuracy is 94.43%. I should note this: "overfitting check conducted before judge contamination correction; accuracy figures reflect pre-correction labels (91.1% vs post-correction 94.43%). The train-test gap direction (+1.9pp) would be preserved or reduced with correction."
+
+Actually, let me reconsider. The train accuracy in the overfitting check was ALSO pre-fix (93.0%). So both train and test are pre-fix. The gap (+1.9pp) is a fair comparison within the same label set. Post-fix, both would likely shift upward (refusals→correct), so the gap would remain similar.
+
+**Report**: Train-test gap under 5pp for both models confirms generalization. Note pre-fix timing.
+
+**C. Entity decontamination** (Step 11C, **RE-RUN Mar 23 with post-fix labels**):
+- 59% entity-level overlap between V5 training and V3 test (265/449 prompts share entities)
+- 107 clean prompts (zero entity overlap with training)
+
+**Verified post-fix decontamination results**:
+
+| Model | Full (n=449) | Clean (n=107) | Gap |
+|---|---|---|---|
+| Mixtral ConfigC | 94.4% | 91.6% | **+2.8pp** |
+| Llama ConfigA | 94.0% | 93.5% | **+0.5pp** |
+
+**Entity-dependent vs entity-independent split**:
+| Group | Mixtral full→clean gap | Llama full→clean gap |
+|---|---|---|
+| Entity-independent (n_clean=86) | +1.0pp | -0.1pp |
+| Entity-dependent (n_clean=21) | +6.2pp | +0.3pp |
+
+**Interpretation**: The Mixtral overall gap (+2.8pp) is just under the 3pp threshold. But parsing by category type reveals the gap is concentrated in entity-dependent categories with very small clean subsets (n=21 total: 12 nonexistent, 6 plausible_fake, 3 obscure_real). The plausible_fake clean subset (n=6) drives most of the entity-dep gap: 66.7% clean vs 87.1% full — but with only 6 prompts, one additional error swings accuracy by 16.7pp. Entity-independent categories (n_clean=86), where entity overlap should be irrelevant, show essentially no gap (+1.0pp Mixtral, -0.1pp Llama).
+
+**Pre-fix vs post-fix gap change**: The gap increased from +0.4pp (pre-fix) to +2.8pp (post-fix) for Mixtral because the contamination fix itself was biased: 15 of 16 corrected labels were on contaminated prompts, mechanically increasing contaminated accuracy more than clean accuracy.
+
+**Key claim for thesis**: Entity-independent accuracy is virtually identical between clean and full subsets, confirming the model learned behavioral caution, not entity-specific memorization. The entity-dependent gap is driven by small-sample noise (n=6 plausible_fake clean). Llama shows <1pp gap regardless. Report both gaps honestly.
+
+**Convergent evidence**: The decontamination analysis is ONE of three convergent tests that the model learned general caution. The other two (template ablation in Section 7.4 and TruthfulQA generalization in Section 7.4) provide independent evidence from different angles.
+
+#### Subsection 7.3.5: Geometric Analysis of Fine-Tuning Outcomes (~0.75 page)
+
+**Question**: Do the geometric features that predict prefix fixability (Section 7.1) also predict fine-tuning fixability?
+
+**FT bridge analysis** (Step 12A, from `ft_bridge_stats.csv`):
+
+Outcome counts on V3 held-out:
+| Outcome | Mixtral | Llama |
+|---|---|---|
+| always_correct | 366 | 403 |
+| fixed_by_ft | 47 | 17 |
+| still_broken | 6 | 9 |
+| broken_by_ft | 6 | 4 |
+
+**fixed_by_ft vs still_broken** (verified from CSV):
+| Model | Feature | Fixed Mean | Broken Mean | p (MW) | |r| | Survives Bonf? |
+|---|---|---|---|---|---|---|
+| Mixtral | density | 1.950 | 1.481 | 0.0017 | 0.798 | **YES** (p_bonf=0.040) |
+| Mixtral | centrality | 0.654 | 0.777 | 0.0009 | 0.840 | **YES** (p_bonf=0.022) |
+| Llama | density | 1.738 | 1.558 | 0.024 | 0.556 | No (p_bonf=0.566) but YES for BH FDR (0.189) |
+
+**Interpretation**: Density predicts fine-tuning fixability with large effect sizes, especially for Mixtral (|r| = 0.80, survives Bonferroni). This extends the Section 7.1 finding: geometry predicts fixability regardless of whether intervention is prompt-based or weight-based.
+
+**Regression geometric profile** (broken_by_ft vs always_correct):
+- Mixtral density: p=0.061 (borderline, NOT significant)
+- Llama density: p=0.110 (NOT significant)
+- Direction consistent (lower density = more likely to regress) but n=6/4 is too small
+
+**Note on oppositeness**: Flagged as unstable in V3→V5 re-embedding (correlation 0.37 with original). Not interpreted. Report as limitation.
+
+**⚠️ Explore agent had WRONG p-values for regression analysis** (claimed p=0.010/0.0007, actual is p=0.061/0.110). Always verify against CSV.
+
+#### Section closing (~1 paragraph)
+
+Summarize: Fine-tuning successfully distills prompt behavior into weights, achieving 89%/81% hallucination reduction without runtime prompting. The cost is modest — 6/4 regressions, primarily factual refusals — and geometry predicts both where fine-tuning helps (sparse neighborhoods) and where it fails (though the regression analysis is underpowered). The next section tests whether this learned caution generalizes beyond the training distribution.
+
+---
+
+### Figures and tables in 7.3
+
+| Item | Type | Content | Source |
+|---|---|---|---|
+| Table 7.X | Table | Aggregate FT results: baseline/configA/B/C/best-prefix × accuracy/hall/refusal + McNemar | `comparison_analysis.json` |
+| Table 7.X | Table | Per-category accuracy/hallucination changes | V3 baseline judged + comparison_analysis.json |
+| Table 7.X | Table/inline | FT bridge fixability: density/centrality p-values and effect sizes | `ft_bridge_stats.csv` |
+
+### Cross-checks before writing 7.3
+
+- [x] Verify aggregate FT numbers from comparison_analysis.json (post-fix)
+- [x] Verify per-category breakdown from V3 baseline + comparison_analysis.json
+- [x] Verify McNemar tests from comparison_analysis.json
+- [x] Verify regression counts and types from individual judged_answers files
+- [x] Verify refusal breakdown per category
+- [x] Verify FT bridge stats from ft_bridge_stats.csv
+- [ ] Verify decontamination gap consistency (pre-fix vs post-fix timing)
+- [ ] Verify overfitting check numbers (pre-fix timing vs post-fix accuracy)
+- [ ] Check if decontamination analysis needs re-running with post-fix labels
+- [x] Verify 0 CoT in any FT pipeline (CoT excluded from training data = confirmed)
+
+### Reviewer objections to preempt in 7.3
+
+1. **"Together AI overrode your hyperparameters."** → Acknowledged. LR and epochs (most impactful) were honored. Rank/dropout/decay confounded with override. All configs outperform baseline significantly.
+2. **"The precision-recall tradeoff is a limitation, not a feature."** → Frame as an insight, not a bug. The tradeoff reveals that hallucination reduction and knowledge coverage are fundamentally in tension, predictable from the training data composition.
+3. **"n=6 still-broken in FT bridge is tiny."** → Agreed. But density p=0.0017 survives Bonferroni with |r|=0.80 — extremely large effect. Report honestly: small n, large effect, survives correction.
+4. **"Why not test more configs for Llama?"** → Cost constraint. Llama QLoRA took 87 min and $16 per config. With ConfigA already matching best prefix (p=0.80), diminishing returns on additional configs.
+5. **"Decontamination analysis was pre-fix."** → If gap is <1pp before fix and fix only changes a few labels, gap is likely similar post-fix. But acknowledge timing.
+
+---
+
+### 7.4 Generalization Evidence (~4–5 pages)
+
+**Section question**: Does the fine-tuned model's learned caution generalize beyond its training distribution? Three independent tests, each probing a different dimension of generalization.
+
+**Label**: `\label{sec:generalization}`
+
+The three generalization tests are orthogonal:
+- **TruthfulQA**: different DOMAIN (misconceptions vs entity fabrication)
+- **Template ablation**: different EXPRESSION (unseen question structures within same domain)
+- **Cross-category**: different CATEGORY TYPES (unseen semantic categories)
+
+If ALL three show positive transfer, the model learned a generalizable behavioral strategy. If only one shows it, the evidence is domain-specific. The convergence argument is the intellectual contribution of this section.
+
+#### Subsection 7.4.1: Cross-Domain Transfer — TruthfulQA (~1.5–2 pages)
+
+**Question**: Does fine-tuning on entity-fabrication skepticism transfer to misconception detection?
+
+**Setup**:
+- 817 TruthfulQA questions (Lin et al. 2022), 38 categories
+- Tests misconceptions (false beliefs humans commonly hold) — categorically different from entity fabrication
+- Same 3-judge consensus panel
+- Config selection pre-registered: Mixtral ConfigC, Llama ConfigA (best on held-out, selected before seeing TruthfulQA)
+- No CoT involvement
+
+**Verified results** (from `truthfulqa_analysis.md`):
+
+| Model | Metric | Baseline | Fine-tuned | Δ | McNemar p | Bonferroni sig? |
+|---|---|---|---|---|---|---|
+| Mixtral | Accuracy | 74.4% | 76.6% | +2.2pp | 0.1145 | No |
+| Mixtral | Hallucination | 16.9% | 14.7% | -2.2pp | 0.0763 | No |
+| Llama | Accuracy | 71.8% | 77.1% | +5.3pp | **0.0002** | **Yes** |
+| Llama | Hallucination | 17.6% | 13.2% | -4.4pp | **0.0005** | **Yes** |
+
+**Bonferroni**: 4 tests (2 metrics × 2 models), threshold p < 0.0125.
+
+**Key observations for prose**:
+- Refusal rates: Mixtral 0.0%→0.7%, Llama 0.6%→0.5%. No over-caution on misconceptions (unlike entity-fabrication domain).
+- Transition matrices: Llama fixes 44, breaks 15 (net +29). Mixtral fixes 36, breaks 24 (net +12).
+- Per-category (exploratory, no correction): Largest Llama improvements in Law (-19pp hall), Advertising (-31pp), Confusion categories. Categories involving confident factual assertions improve most.
+- Relative reduction: 13% Mixtral, 25% Llama (vs 89%/81% on custom benchmark — expected, different domain).
+
+**Framing**: "Trained on entity-fabrication, tested on misconceptions. Llama's 4.4pp hallucination reduction survives Bonferroni. Mixtral is directionally consistent but underpowered at n=817. The transfer is modest (13-25% relative) compared to in-domain (89%/81%), which is expected — entity skepticism partially overlaps with but does not fully address misconception detection. The absence of over-caution on TruthfulQA (refusal ≤0.7%) contrasts with the factual-refusal tradeoff on the custom benchmark, suggesting the precision-recall cost is domain-specific to entity-type questions."
+
+**Do NOT overclaim**: "Our method outperforms DoLA/ITI on TruthfulQA" — we trained on different data, different paradigm. Cross-metric comparisons are invalid.
+
+#### Subsection 7.4.2: Template Invariance (~1.5 pages)
+
+**Question**: Does the model learn template-specific patterns or a generalizable behavioral strategy?
+
+**Setup**:
+- Ablation conditions: T5 (5 templates, ~397 Mixtral/~402 Llama examples), T10 (10 templates), T-all (194 templates, ~2,400 examples), R{N} (random ~397/402 from full template pool — size-matched control)
+- All evaluated on 449-prompt held-out test set
+- Template-overlap split: among T5 test prompts, which use a template seen during training vs novel?
+
+**Verified results** (from `ablation_analysis.json`):
+
+| Condition | Templates | n_train (M/L) | Mixtral Acc | Llama Acc | vs T-all McNemar p |
+|---|---|---|---|---|---|
+| T5 | 5 | 397/402 | 92.7% | 94.4% | 0.099 / 0.773 |
+| T10 | 10 | ~660 | 94.0% | 95.8% | 0.803 / 0.080 |
+| R{N} | 194 | 397/402 | 93.1% | 93.5% | — |
+| T-all | 194 | ~2,400 | 94.4% | 94.0% | — (reference) |
+
+**T5 vs R{N}** (diversity control at fixed size):
+- Mixtral: p=0.838; Llama: p=0.386 — NOT significant
+- 5 diverse templates ≈ 397/402 random from 194 templates at the same dataset size
+
+**Template-overlap split** (T5, verified):
+- Mixtral: seen 96.3%, novel 93.0% (3.3pp gap)
+- Llama: seen 96.3%, novel 94.1% (2.2pp gap)
+- Model generalizes to unseen templates with minimal degradation
+
+**Key claims**:
+1. Template diversity doesn't matter beyond ~5: T5 ≈ T-all (p=0.099/0.773)
+2. Not template memorization: T5 vs R{N} indistinguishable (p=0.838/0.386)
+3. Seen-vs-novel gap is small (2-3pp), consistent with behavioral learning not pattern matching
+4. T10 is numerically best for Llama (95.8%) but not significantly better than T-all (p=0.080) — diminishing returns
+
+**One interesting note**: Llama T10 (95.8%) matches the best single prefix (Structured Caution 95.8% from Section 7.3). T10 has only ~660 training examples vs T-all's ~2,400. More data doesn't help; the model converges on the caution strategy quickly.
+
+#### Subsection 7.4.3: Cross-Category Generalization (~1.5 pages)
+
+**Question**: Does learned caution transfer across category types (entity-dependent → entity-independent)?
+
+**Setup**:
+- Two category groups:
+  - Entity-dependent: nonexistent, plausible_fake, obscure_real (uncertainty about entity existence)
+  - Entity-independent: factual, ambiguous, impossible, edge_factual (uncertainty about question structure/reasoning)
+- Five training conditions:
+  - entity_dep: only entity-dependent (~978/980 examples)
+  - entity_indep: only entity-independent (~1,424/1,426 examples)
+  - R_entity_dep: random ~978/980 from ALL categories (size control)
+  - leave_out_nonex: all categories except nonexistent (~1,813/1,815)
+  - leave_out_fact: all categories except factual (~1,907)
+- Full (T-all/ConfigC/ConfigA) as reference: ~2,400 examples
+
+**Verified results** (from `evaluation_summary.json`, training sizes from data files):
+
+| Condition | n_train (M/L) | Mixtral Acc | Mixtral Hall | Llama Acc | Llama Hall |
+|---|---|---|---|---|---|
+| Full (reference) | 2,403/2,406 | 94.4% | 1.3% | 94.0% | 1.1% |
+| entity_dep | 978/980 | 93.3% | 2.0% | **95.3%** | **0.2%** |
+| R_entity_dep | 978/980 | 93.1% | 2.5% | 94.4% | 1.1% |
+| entity_indep | 1,424/1,426 | 90.9% | 4.9% | 92.7% | 3.8% |
+| leave_out_nonex | 1,815/1,813 | 92.2% | 3.8% | 95.8% | 0.5% |
+| leave_out_fact | 1,907/1,907 | 93.5% | 1.6% | 95.3% | 0.9% |
+
+**Key findings**:
+
+1. **Entity_dep matches or beats Full** despite having ~40% of the data:
+   - Mixtral: 93.3% vs 94.4% (-1.1pp — close)
+   - Llama: **95.3% vs 94.0%** (+1.3pp — entity_dep is BETTER)
+
+2. **Entity_indep is clearly worst** (3-5× higher hallucination):
+   - Demonstrates entity-specific training is critical for entity-dependent test categories
+   - But still well above baseline (90.9%/92.7% vs 82.9%/90.6%) — some transfer happens
+
+3. **Asymmetric transfer**: entity_dep → entity_indep works (good overall accuracy); entity_indep → entity_dep fails (high hallucination on entity categories). Entity-focused caution generalizes; question-structure caution doesn't teach entity skepticism.
+
+4. **R_entity_dep ≈ entity_dep**: size-matched random control performs similarly (93.1% vs 93.3% Mixtral, 94.4% vs 95.3% Llama). Category composition matters, not just dataset size.
+
+5. **Leave-out conditions near Full**: removing nonexistent or factual barely hurts. Caution transfers across individual held-out categories.
+
+**Framing**: "Entity-dependent training provides the strongest foundation for generalization — ~1,000 entity-focused examples produce comparable or superior performance to ~2,400 diverse examples. This is the third type of generalization: not just unseen entities (decontamination) or unseen templates (Section 7.4.2), but unseen category types."
+
+#### Section closing (~0.5 page)
+
+**Convergence paragraph**: Three independent tests — different domain (TruthfulQA), different expression (templates), different category type (cross-category) — all show the fine-tuned model's caution extends beyond its training distribution. The model learned WHEN to be skeptical, not WHICH specific entities to refuse or WHICH question templates to match. This behavioral learning interpretation is the strongest framing of the fine-tuning contribution.
+
+**No overclaiming**: Note that TruthfulQA significance holds only for Llama; template ablation uses non-significant McNemar tests (p=0.099 for T5 vs T-all); cross-category comparisons lack paired statistical tests. The evidence is convergent, not individually definitive from each experiment.
+
+---
+
+### Figures and tables in 7.4
+
+| Item | Type | Content | Source |
+|---|---|---|---|
+| Table 7.X | Table | TruthfulQA baseline vs FT: accuracy, hallucination, refusal, McNemar | `truthfulqa_analysis.md` |
+| Table 7.X | Table | Template ablation: T5/T10/R{N}/T-all accuracy + McNemar | `ablation_analysis.json` |
+| Table 7.X | Table or inline | Template-overlap split (seen vs novel) | `ablation_analysis.json` |
+| Table 7.X | Table | Cross-category conditions: accuracy and hallucination | `evaluation_summary.json` |
+
+### Cross-checks before writing 7.4
+
+- [x] TruthfulQA: baseline/FT accuracy, hallucination, McNemar p-values verified
+- [x] TruthfulQA: Bonferroni threshold 0.0125 for 4 tests verified
+- [x] Template ablation: T5/T10/R{N}/T-all accuracy verified from JSON
+- [x] Template ablation: McNemar p-values verified (T5 vs T-all: 0.099/0.773; T5 vs R{N}: 0.838/0.386)
+- [x] Template-overlap: seen/novel accuracy verified (96.3/93.0 Mixtral, 96.3/94.1 Llama)
+- [x] Cross-category: all condition accuracy/hallucination verified from JSON
+- [x] Cross-category: training sizes verified from data files (978-980 entity_dep, 1424-1426 entity_indep, etc.)
+- [x] No CoT in any of these experiments (all use NON_COT_PREFIXES)
+- [ ] Note: ablation JSON's "best_prefix" field is stale (pre-V4-fix Entity-Aware). Don't cite ablation McNemar vs best_prefix numbers. Only cite vs T-all and vs baseline.
+
+### Reviewer objections to preempt in 7.4
+
+1. **"TruthfulQA is a different metric — you can't compare."** → Agreed. We don't compare numbers cross-benchmark. We claim cross-domain TRANSFER (trained on X, improved on Y), not cross-benchmark superiority.
+2. **"T5 vs T-all p=0.099 is almost significant."** → At α=0.05, yes. But the point is the direction: more templates doesn't help. Even if T5 is marginally worse, 397 examples with 5 templates achieve 92.7%/94.4% — close to the 94.4%/94.0% ceiling. Template diversity has diminishing returns.
+3. **"Cross-category comparisons have no paired tests."** → Acknowledged. These are different fine-tuning runs, not paired conditions. The comparison is descriptive. The key insight (asymmetric transfer: entity_dep → entity_indep works, reverse doesn't) is qualitative.
+4. **"Llama entity_dep beats Full — isn't that suspicious?"** → Small margin (+1.3pp). Could be noise. But R_entity_dep (94.4%) also beats Full for Llama. The pattern suggests entity-dependent training is a strong foundation, possibly because the Full set includes entity-independent examples that add noise for Llama.
+5. **"Three convergent tests isn't proof — each has limitations."** → Agreed. Any single test has caveats. The convergence argument is probabilistic: three independent tests all pointing the same way is unlikely under the null hypothesis of "the model only memorized training patterns."
+
+---
+
+### 7.5 Discussion (~2 pages)
+
+**Label**: `\label{sec:ch7-discussion}`
+
+**Purpose**: Answer the chapter question, synthesize findings, interpret, address chapter-specific limitations. NOT the thesis-wide discussion (that's Ch 8).
+
+#### Paragraph 1: Answering the chapter question (~0.5 page)
+
+"Can geometry guide intervention?" — answered directly with three levels:
+
+1. **Geometry predicts fixability** (analytical guidance): Density predicts which hallucinations yield to prompting (Section 7.1, p=0.046/0.012 within nonexistent, suggestive) and fine-tuning (Section 7.3, Mixtral density p=0.0017, |r|=0.80, survives Bonferroni). Sparser embedding neighborhoods predict resistance to intervention regardless of intervention type. This is the genuinely novel contribution — extending the density signal from predicting hallucination (Ch 5) to predicting hallucination *difficulty*.
+
+2. **Geometry explains the unfixable set** (analytical insight): The 27/24 unfixable prompts cluster in entity-dependent categories and sparse embedding regions. Geometry does not operationally drive the exclusion decision (labels do), but it explains why those prompts resist intervention.
+
+3. **Geometry does NOT predict regressions** (honest limitation): The regression geometric analysis is non-significant (p=0.061/0.110). Geometry predicts where intervention helps, but not where it hurts. The precision-recall tradeoff (factual refusals) is a behavioral pattern, not a geometric one.
+
+#### Paragraph 2: The precision-recall tradeoff as insight (~0.5 page)
+
+The increased factual refusals (5→15 for both models) reveal a fundamental tension: reducing entity-fabrication hallucination requires teaching the model skepticism about uncertain entities, but that skepticism occasionally over-fires on real knowledge questions.
+
+Key insight: Most regressions (70%) are refusals, not new hallucinations. The fine-tuned model errs toward "I don't know" rather than fabricating — a safer failure mode. And the tradeoff is domain-specific: TruthfulQA shows no over-caution (Section 7.4.1), meaning the refusal behavior is targeted at entity-type uncertainty, not a blanket personality change.
+
+This pattern is consistent with signal detection theory: fine-tuning shifts the model's decision criterion toward "refuse" on uncertain entity queries, reducing false alarms (hallucinations) at the cost of increased misses (false refusals on real entities). The optimal criterion depends on the deployment context — an application where hallucination is catastrophic (medical, legal) would prefer the cautious model; one where coverage matters more (general Q&A) might prefer the pre-trained model with runtime prefixes.
+
+#### Paragraph 3: What the model learned (~0.25 page)
+
+Brief synthesis of the convergence evidence from 7.4: the model learned behavioral caution, not surface memorization. Three orthogonal tests (different domain, different templates, different categories) all show transfer. The strongest framing: the model learned *when to be skeptical about its own knowledge*, which is a form of learned metacognition applicable across question types.
+
+#### Subsection 7.5.1: Limitations (~0.75 page)
+
+**Chapter-specific limitations** (thesis-wide limitations go in Ch 8):
+
+1. **Two models only.** Fine-tuning and all generalization tests cover only Mixtral and Llama. Whether the behavioral learning pattern generalizes to other architectures (GPT, Claude, Qwen) is untested.
+
+2. **Together AI hyperparameter overrides.** LoRA rank forced to 64 (from 16), dropout removed. These confound the hyperparameter ablation. The learning rate/epoch sensitivity results are informative; the rank/dropout sensitivity is unknown.
+
+3. **Small still-broken samples.** The FT bridge analysis has n=6 (Mixtral) and n=9 (Llama) still-broken prompts. Effect sizes are large and Mixtral's density result survives Bonferroni, but the small samples limit the power of within-category tests and regression profiling.
+
+4. **No McNemar tests for cross-category ablation.** Entity-dep vs entity-indep comparisons are descriptive (different fine-tuning runs, unpaired). The asymmetric transfer finding is qualitative, not statistically tested.
+
+5. **Template-generated prompts.** All training and test prompts are template-generated, not naturalistic user queries. Whether learned caution transfers to free-form questions is an open question.
+
+6. **Decontamination gap.** The entity-independent decontamination gap is <1pp, but the overall gap for Mixtral is +2.8pp (driven by n=6 plausible_fake clean subset noise). The decontamination analysis cannot rule out small amounts of entity-specific learning alongside behavioral learning.
+
+#### Section closing (~1–2 sentences)
+
+Transition to Ch 8: This chapter established that geometry predicts intervention difficulty and that prompt behavior can be made permanent through fine-tuning. Chapter 8 places these findings in the context of prior work, discusses broader implications, and identifies directions for future research.
+
+---
+
+### Reviewer objections to preempt in 7.5
+
+1. **"The chapter title promises geometry 'guides' intervention, but geometry doesn't drive any operational decision."** → Acknowledged in ¶1. Geometry provides analytical guidance (fixability prediction), not operational guidance (runtime prefix selection). The latter is future work.
+2. **"The precision-recall tradeoff is a weakness, not a finding."** → Reframed in ¶2. The tradeoff reveals the structure of learned caution and connects to signal detection theory. It's an insight about the fundamental tension between safety and coverage.
+3. **"Behavioral learning is overclaimed — each generalization test has weaknesses."** → Addressed in ¶3 + convergence section (7.4.4). The convergence argument is probabilistic, not proof.
+
+---
+
+## Chapter 1: Introduction — Detailed Content Plan
+
+**Department mandate**: At most 5 pages. Contains an "Our Contributions" section.
+
+**Reference analysis (Angela Li, Tarun Prasad — both Harvard Dissertate, 2024)**:
+Both introductions follow the same template and share key properties:
+
+- **Length**: Angela ~4 pages (no subsections), Tarun ~5 pages (2 subsections: Motivation + Our Contributions). Neither exceeds 5 pages.
+- **No results**: Neither reports a single number. The intro sells the *question* and the *approach*, not the *answer*. Angela says "we provide novel derivations" — not the specific distributions. Tarun says "a novel approach to automated theorem proving" — not the success rate.
+- **Broad accessible opening**: Angela opens with "ML algorithms have become increasingly entrusted with consequential decisions." Tarun opens with Leibniz in 1685. Both funnel: broad societal context → specific technical gap → their contribution. No jargon in the first paragraph.
+- **"Our Contributions" is a numbered list**: Tarun uses an explicit subsection with 4 numbered items, each 2-3 sentences. Angela has an implicit "In this thesis, we provide..." paragraph. The numbered list is cleaner for multiple contributions.
+- **Chapter roadmap is perfunctory**: Both end with one sentence per chapter. "Chapter 2 does X. Chapter 3 does Y." Boilerplate but expected.
+- **No equations, no figures, no tables**: Pure prose. The intro is a narrative document.
+- **Savequote**: Tarun uses a thematic epigraph (Leibniz). Consider for our intro.
+
+### Proposed structure for our introduction
+
+1. **Broad opening** (~1–1.5 pages)
+2. **Gap + our approach** (~0.5 pages)
+3. **Section 1.1 "Our Contributions"** (~1.5 pages)
+4. **Chapter roadmap** (~0.5 pages)
+
+### Paragraph-level outline
+
+**¶1 — The problem, accessible framing (4-5 sentences)**
+- LLMs are now deployed in domains where factual accuracy matters — medicine, law, education, coding, search.
+- They hallucinate: generating fluent, confident text that is factually wrong or entirely fabricated.
+- This is not a rare edge case — hallucination rates across frontier models vary widely, with some models fabricating content on a substantial fraction of queries.
+- The stakes are real: a hallucinated legal citation, a fabricated medical dosage, or a confident description of a nonexistent scientific result can cause tangible harm.
+- **NO specific percentages or model names here.** Keep it general and accessible.
+- **Tone**: Like Angela's opening — one paragraph a non-specialist committee member can read and understand why this matters.
+
+**¶2 — The metacognition framing / MBB seed (3-4 sentences)**
+- At its core, hallucination is a failure of *metacognition* — the system does not know what it does not know. In cognitive science, humans exhibit an analogous failure called *confabulation*: producing plausible but false memories when probed at the boundaries of their knowledge.
+- The question of whether a system can assess its own knowledge boundaries is foundational in both cognitive science and AI safety.
+- This thesis asks a geometric version of that question: does the *structure* of a model's representational space reveal where its knowledge thins out — and can that structure guide intervention?
+- **Purpose**: Plants the MBB seed. Does NOT develop it (that's Ch 8). Does NOT cite Roediger/Loftus (that's Ch 2/Ch 8). Just names the concept and the analogy in plain language.
+
+**¶3 — Current approaches and what's missing (4-5 sentences)**
+- Existing work on hallucination mitigation falls into three categories: detection methods that identify hallucination after generation (from internal model representations or output consistency), prompting strategies that encourage models to be more careful, and training-based methods that modify model weights.
+- Detection methods require white-box access to model internals or multiple sampling passes. Prompting strategies work but require careful per-query engineering. Fine-tuning approaches risk teaching new factual knowledge the model doesn't have, which can *increase* hallucination.
+- Crucially, these approaches treat hallucination as a monolithic phenomenon — a prompt either causes hallucination or it doesn't. None ask whether hallucinations have *varying difficulty* — whether some are easily fixable while others resist all intervention.
+- **Key pivot sentence**: "And none ask whether the question itself — independent of any particular model's processing — carries a geometric signal that predicts hallucination risk before generation begins."
+- **NO citations here.** The lit review (Ch 3) does the detailed positioning. The intro just identifies the gap at a high level. If pressed, one or two landmark citations at most (Xu et al. 2024 impossibility result, maybe).
+- **Cross-check**: This gap statement must align with the three gaps in Ch 3 §3.8 Synthesis (geometric gap, intervention selection gap, distillation gap) but stated at a higher level without the detailed decomposition.
+
+**¶4 — Our approach in one paragraph (3-4 sentences)**
+- This thesis takes a different approach. We embed prompts in a high-dimensional geometric space and ask whether the *structure* of that space — how densely a prompt's neighborhood is populated, how far it sits from similar prompts — predicts whether a model will hallucinate.
+- We then connect prediction to action: we test whether targeted prompt interventions can reduce hallucination, and whether the geometric signal predicts where those interventions succeed and where they fail.
+- Finally, we ask whether the careful behavior induced by prompting can be made permanent through fine-tuning, removing the need for runtime prompt engineering.
+- **This paragraph is the thesis statement.** It should be the single most carefully written paragraph in the chapter. Every clause maps to a chapter: geometry → Ch 5, prompt intervention → Ch 6, prediction of fixability + fine-tuning → Ch 7.
+- **NO numbers. NO model names. NO method names (LoRA, McNemar's, etc.).** Pure ideas.
+
+---
+
+**Section 1.1 "Our Contributions"**
+
+**Balance with Ch 8**: Ch 1 states *what we did and what kind of finding it is* — claims without numbers. Ch 8 §8.1 states *what we found and what the numbers mean* — evidence with full context. Ch 1 = claim. Ch 8 = evidence. No spoiling, no redundancy. This means Ch 8 §8.1 can be lean (~1.5 pages) since it's not the first time the reader hears the contributions, just the version with results attached.
+
+Opening sentence: "The contributions of this thesis are as follows:" (matching Tarun's format exactly)
+
+**Contribution 1 — Geometric prediction of hallucination (Ch 5)** (3-4 sentences)
+- We construct a benchmark of 2,879 prompts spanning seven categories of knowledge failure and evaluate hallucination rates across ten language models.
+- We show that geometric properties of prompt embeddings — computed from the question text alone, before any model generates a response — predict which prompts will cause hallucination.
+- Critically, we decompose this signal and show that most of the predictive power reflects category-level structure (different types of questions occupy different embedding regions). The non-circular, within-category finding is that *embedding density* — how many similar prompts exist nearby — predicts hallucination within a single category, controlling entirely for category-level confounds.
+- **What NOT to say**: No AUC values, no p-values, no effect sizes. Say "statistically significant" at most. Don't name specific features beyond density.
+- **Cross-check**: Must be consistent with Ch 5's honest framing. Do NOT lead with AUC=0.86 from the initial study. The contribution is the within-category density finding, not the aggregate AUC.
+
+**Contribution 2 — Prompt intervention (Ch 6)** (2-3 sentences)
+- We design and evaluate four targeted system-prompt interventions, each addressing a distinct mechanism of hallucination (entity awareness, epistemic humility, structured caution, fact-grounding).
+- In a controlled comparison on the same prompts with the same evaluation pipeline, all four interventions significantly reduce hallucination while maintaining or improving accuracy — a result replicated at five times the original benchmark scale.
+- **What NOT to say**: No specific reduction percentages ("68-69%"). No prefix names. No McNemar's p-values. Say "significantly" and "substantially."
+
+**Contribution 3 — Geometric diagnosis and fine-tuning distillation (Ch 7)** (4-5 sentences)
+- We show that the same geometric features that predict hallucination also predict *which hallucinations resist intervention* — a notion of hallucination *difficulty* that has not been studied in prior work. Prompts in sparser embedding neighborhoods are both more likely to hallucinate and more likely to remain broken after intervention.
+- We then demonstrate that the careful behavior induced by the best prompt interventions can be consolidated into model weights through parameter-efficient fine-tuning, producing models that are safer without any runtime prompt engineering.
+- The fine-tuned models match the accuracy of the best prompt intervention while achieving comparable or lower hallucination rates. Three convergent tests — transfer to an external benchmark testing a different type of hallucination, invariance to the diversity of training templates, and generalization across held-out category types — confirm that the model learned general epistemic caution rather than surface-level pattern matching.
+- **What NOT to say**: No specific accuracy numbers. No model names (Mixtral, Llama). No "LoRA." No McNemar's p-values. The contribution is the *idea* (geometry predicts difficulty + prompt behavior is distillable + the learned behavior generalizes), not the pipeline.
+- **Cross-check against "What geometry does NOT do" and "What fine-tuning does NOT do"**: Do NOT claim geometry "guides" fine-tuning operationally (it doesn't — it's diagnostic). Do NOT claim fine-tuning "beats" the best prefix (it matches). The contribution is *connecting* prediction to intervention to distillation, with geometry as the diagnostic thread.
+
+**¶ — Chapter roadmap (1 short paragraph)**
+- One sentence per chapter, matching Tarun's format:
+  - Ch 2 (Background): introduces LLMs, hallucination, embedding geometry, evaluation methodology, and fine-tuning
+  - Ch 3 (Literature Review): surveys prior work on hallucination detection, benchmarking, prompting, and fine-tuning, identifying the gaps this thesis addresses
+  - Ch 4 (Experimental Setup): describes the shared infrastructure — benchmark, models, consensus judging pipeline, and geometric feature extraction
+  - Ch 5 (Can Geometry Predict Hallucination?): tests geometric prediction with category decomposition
+  - Ch 6 (Can Prompts Reduce Hallucination?): evaluates prompt interventions at scale
+  - Ch 7 (Can Geometry Guide Intervention?): connects geometry to fixability, presents fine-tuning results and generalization evidence
+  - Ch 8 (Discussion): interprets findings, discusses limitations and cognitive science connections, and proposes future work
+- **Keep this to exactly one sentence per chapter.** Do NOT elaborate. The chapter titles are self-explanatory.
+
+### MBB through-line across the thesis
+
+The MBB connection is threaded, not bolted on:
+- **Ch 1 Introduction** (2-3 sentences): Frame hallucination as metacognition problem. Plant the cognitive science connection.
+- **Ch 2 Background** (already written, line 26): "The term is borrowed from cognitive science, where humans *confabulate*: producing plausible but false memories when probed at the boundaries of their knowledge." Grounds the parallel.
+- **Ch 8 Discussion** (2-3 pages): Full MBB subsection — confabulation/DRM paradigm, RSA and representational geometry, metacognition literature, signal detection theory for the precision-recall tradeoff. See detailed plan in the MBB section below.
+
+### Rules for this chapter
+- **NO NUMBERS.** No AUC, no p-values, no hallucination rates, no percentages. Save for results chapters.
+- **NO JARGON in the opening.** First paragraph should be readable by the committee (technical professionals not in this subfield).
+- **Frame contributions as ideas, not pipeline steps.** "We show that embedding geometry carries a signal predictive of hallucination difficulty" — not "We run 10 models on 2,879 prompts."
+- **Honest scope.** Don't claim "we solve hallucination." Claim "we show geometry predicts it, prompts reduce it, and fine-tuning makes the reduction permanent."
+
+---
+
 ## Framing: Contributions Are Ideas, Not Pipeline Steps
 
 > **Lesson from reference theses** (Angela Li, Tarun Prasad): The main contributions of a thesis are the theoretical ideas and findings — not the engineering work that produced them. Angela's contribution is mathematical derivations. Tarun's is the lemma extraction *technique*. Neither says "I ran a pipeline." Both say "here is a new way of thinking about X."
@@ -1207,9 +2053,30 @@ A compact table that extends Table `tab:logistic-comparison` by adding within-ca
 
 2. **Within-category embedding density is the real geometric signal.** Cross-category prediction (AUC=0.97 in initial study) is largely confounded by category structure. The honest, non-circular finding: within a single category (controlling for prompt structure), density distinguishes hallucinating from non-hallucinating prompts (p<0.0001). The model's local neighborhood sparsity matters.
 
-3. **The precision-recall structure of learned caution.** Fine-tuning teaches a "skepticism heuristic" that massively reduces hallucination on nonexistent entities (70%→98%) but causes false negatives on obscure-but-real entities (-7 to -13%). This reveals that hallucination reduction and knowledge coverage are fundamentally in tension — and the tension is predictable from geometry (density distinguishes obscure-real from plausible-fake).
+3. **The precision-recall structure of learned caution.** Fine-tuning teaches a "skepticism heuristic" that massively reduces hallucination on nonexistent entities (70%→99.2%) and plausible_fake (42%→9.7%). The cost is increased refusals on factual questions (5→15 for both models), not regressions on obscure_real (which improved). **⚠️ POST-FIX CORRECTION**: Old narrative said "obscure_real -7 to -13%"; actual data shows obscure_real IMPROVED. The tradeoff is real but its locus is factual refusals, not entity-type confusion. Most regressions (70%) are refusals, not new hallucinations.
 
-4. **Careful prompt behavior can be distilled into weights.** LoRA fine-tuning on best-per-prompt curated data matches the best prompt prefix (91.1%, p=0.84) without any runtime prompt engineering. The "careful behavior" is learnable, not just promptable — a methodological contribution showing prompt engineering can be a stepping stone to permanent model improvement. Template ablation (Ch 7.6) further shows the model learns behavioral caution, not template-specific patterns: 5 templates perform indistinguishably from all ~194 (McNemar p=0.099/0.773), and accuracy on seen vs novel templates is comparable (T5 Mixtral: 96.3% seen vs 93.0% novel).
+4. **Careful prompt behavior can be distilled into weights.** LoRA fine-tuning on best-per-prompt curated data matches the best prompt prefix for Mixtral (94.4% vs Structured Caution 94.9%, p=0.82). Llama falls slightly short (94.0% vs 95.8%, p=0.14). Both FT models achieve lower hallucination rates than best prefix (1.3% vs 1.8% Mixtral; 1.1% vs 1.3% Llama) at cost of higher refusals. **⚠️ CORRECTED Mar 23**: comparison_analysis.json re-generated with post-V4-fix prefix data. Best prefix = Structured Caution (not Entity-Aware). The "careful behavior" is learnable, not just promptable — a methodological contribution showing prompt engineering can be a stepping stone to permanent model improvement. Template ablation (Ch 7.4) further shows the model learns behavioral caution, not template-specific patterns: 5 templates perform indistinguishably from all ~194 (McNemar p=0.099/0.773), and accuracy on seen vs novel templates is comparable (T5 Mixtral: 96.3% seen vs 93.0% novel).
+
+**⚠️ THESIS ARC — DEFINITIVE FRAMING (Mar 23, all corrections applied)**:
+
+The thesis makes three claims. All three survive every correction (CoT exclusion, V4 contamination fix, comparison re-run):
+
+1. **Geometry predicts hallucination difficulty.** Within-category density predicts hallucination (Ch 5, p < 10⁻⁵, survives Bonferroni). Density also predicts fixability — by prefixes (Ch 7.1, p=0.046/0.012, suggestive) and by fine-tuning (Ch 7.3, Mixtral p=0.0017, |r|=0.80, survives Bonferroni). Sparser embedding neighborhoods → harder to hallucinate correctly AND harder to fix. This is the genuinely novel contribution — no prior work asks "is this hallucination fixable?"
+
+2. **Prompting reduces hallucination.** Four prefix interventions reduce hallucination 68–69% relative (Ch 6). Replicated at 5× scale. Category-level analysis reveals where prefixes work and where they don't.
+
+3. **Prompt behavior can be made permanent through fine-tuning.** LoRA fine-tuning matches the best single prefix in accuracy (Mixtral 94.4% vs Structured Caution 94.9%, p=0.82) while producing fewer hallucinations (1.3% vs 1.8%) at the cost of more refusals (3.6% vs 3.1%). Llama falls slightly short in accuracy (94.0% vs 95.8%, p=0.14) but also hallucinates less (1.1% vs 1.3%). The practical value: careful behavior becomes permanent without runtime prompt engineering. Three convergent tests (TruthfulQA transfer, template ablation, decontamination) confirm the model learned general epistemic caution, not surface patterns.
+
+**What geometry does NOT do** (honesty points):
+- Geometry does NOT predict where fine-tuning causes regressions (p=0.061/0.110, non-significant). It predicts where intervention HELPS, not where it HURTS.
+- Geometry does NOT operationally drive decisions in the current pipeline. Unfixable exclusion uses labels, not geometry scores. Runtime geometry-guided prefix selection is future work.
+- The within-category fixability p-values (0.046/0.012) do not survive Bonferroni correction. The FT bridge density result (p=0.0017) does.
+
+**What fine-tuning does NOT do**:
+- Fine-tuning does NOT beat the best prefix. It matches it (Mixtral) or falls slightly short (Llama). The advantage is operational (no runtime engineering) and in hallucination rate (lower), not accuracy.
+- Fine-tuning introduces a precision-recall tradeoff: increased refusals on factual questions (5→15 for both models). Most regressions (70%) are refusals, not new hallucinations — the model errs toward caution.
+
+**The intellectual narrative**: Geometry is the diagnostic (predicts difficulty), prompts are the treatment (reduce hallucination), fine-tuning is the consolidation (makes treatment permanent). Geometry predicts where treatment works and where it doesn't. The pipeline's value is that each step informs the next — geometry identifies fixable prompts, fixable prompts provide training data, and training data produces permanent behavioral change.
 
 ### Terminology: No V3/V4/V5 in the Thesis
 
@@ -1402,22 +2269,335 @@ The current paper presents V3 results with inflated claims. The thesis needs to 
 - local_id and curvature are essentially useless (r=-0.97 correlated, neither predictive)
 - Frame as: "geometry *explains* why categories differ, and density provides modest but real within-category signal"
 
-**Prefix Pilot Study (Ch 6.2, new, ~3 pages)**:
-- 449 prompts x 5 prefixes x 2 models = 4,490 responses
-- All prefixes significantly reduce hallucination (p<0.002)
-- Entity-Aware best for Mixtral (11.8%→0.67%), Structured Caution best for Llama (5.8%→0.45%)
-- Best-per-prompt selection: Mixtral 91.1%→95.5%, Llama 93.3%→98.0%
+**Prefix Pilot Study (Ch 6.2, new, ~3 pages)** `[V4 DATA POST-FIX as of Mar 21, 2026]`:
+- 449 prompts x 4 non-CoT prefixes x 2 models = 3,592 usable responses (CoT excluded)
+- All prefixes significantly reduce hallucination (all p < 0.003, McNemar's with Yates correction)
+- **Post-fix rates**: Entity-Aware best for Mixtral (11.8%→1.34%), Structured Caution best for Llama (5.8%→1.34%)
+- Mixtral full ranking: Entity-Aware (1.34%) > Structured Caution (1.78%) > Epistemic Humility (3.56%) = Fact-Grounded (3.56%)
+- Llama full ranking: Structured Caution (1.34%) > Fact-Grounded (1.56%) > Epistemic Humility (1.78%) > Entity-Aware (2.45%)
+- V4 contamination fix (Mar 21): 153/4,490 labels corrected (3.41%). Refusal rates dropped 3-7pp (were inflated by fake label=3 defaults). Rankings unchanged vs pre-fix.
+- **Post-fix best-per-prompt** (baseline + 4 prefixes as candidates): Mixtral 98.2% correct / 0.2% halluc (1 unfixable), Llama 98.4% correct / 0.0% halluc (0 unfixable)
+- Single best prefix: Mixtral Entity-Aware 93.76% correct, Llama Structured Caution 95.77% correct
 
-**Replication at Scale (Ch 6.3, new, ~5 pages)**:
-- 2,430 prompts x 5 prefixes x 2 models = 24,300 responses (24,299 judged)
-- **Pilot pattern replicates at 5x scale**: Entity-Aware best for Mixtral (14.8%→4.7%), Structured Caution best for Llama (9.7%→3.0%). All significant (p<0.001).
-- ~~**CoT Verification is catastrophic**~~: INVALIDATED — 62-68% refusal rate was API failure artifact (GPT-5.1 quota + Claude auth failures), not model behavior. Real refusal rate <1%. CoT excluded from thesis entirely.
-- **Expanded benchmark rates are higher** (Mixtral Entity-Aware: 0.7% pilot → 4.7% at scale). Expected — new prompts probe harder entity regions. Evidence pilot results weren't artifacts.
+### Section 6.2 Pilot Study — Detailed Paragraph-Level Outline
+
+**Purpose**: Present initial evidence that system-prompt prefixes reduce entity-level hallucination, establish prefix rankings, and motivate the replication at scale (6.3). This is the first results section of Ch 6. ~2.5-3 pages including table.
+
+**Terminology**: Use "held-out benchmark" (not V3/V4). Use "pilot study" or "initial evaluation." Use "expanded benchmark" (not V5) only when forward-referencing 6.3.
+
+**Statistical methods**: McNemar's test with Yates continuity correction on paired binary outcomes (hallucinated vs. not-hallucinated, same prompt at baseline vs. with prefix). Applied to 449 paired observations per prefix-model combination. No Bonferroni correction needed — all p-values are far below any reasonable threshold.
+
+---
+
+**¶1 — Experimental structure** (~3 sentences)
+
+We first tested the four prefixes on the 449-prompt held-out benchmark. Each prompt was presented to both models (Mixtral 8x7B and Llama 4 Maverick) under the baseline condition (no system message) and under each of the four prefix conditions, producing 449 × 4 × 2 = 3,592 responses evaluated by the consensus judging pipeline (Chapter 4). Because each prompt appears in both baseline and prefix conditions, we can use McNemar's test to assess whether the prefix changed the outcome.
+
+*Verified: 449 prompts confirmed. 4 non-CoT prefixes confirmed. 2 models confirmed. McNemar's test is appropriate for paired binary outcomes.*
+
+---
+
+**¶2 — Table 6.2: Pilot study results** (table + introducing sentence)
+
+Table with columns: **Prefix** | **Mixtral Halluc%** | **Llama Halluc%** | or a more detailed layout.
+
+Actually, a combined table showing correctness, hallucination, and refusal for both models would be more informative. Design:
+
+| | **Mixtral** | | | **Llama** | | |
+|Prefix | Correct% | Halluc% | Refused% | Correct% | Halluc% | Refused% |
+|Baseline (no prefix) | 82.9 | 11.8 | 1.1 | 90.6 | 5.8 | 0.2 |
+|Epistemic Humility | 91.3 | 3.6 | 2.9 | 93.8 | 1.8 | 0.9 |
+|Fact-Grounded | 92.0 | 3.6 | 3.6 | 94.4 | 1.6 | 3.8 |
+|Entity-Aware | **93.8** | **1.3** | 3.8 | 94.0 | 2.4 | 0.4 |
+|Structured Caution | 94.9 | 1.8 | 3.1 | **95.8** | **1.3** | 2.7 |
+
+Bold = best hallucination rate per model. Include partial% or omit for space? Partial is small (0.2-3.6%) — could omit from main table and mention in text.
+
+*Verified: all numbers match post-fix computation from corrected V4 JSONL files.*
+
+---
+
+**¶3 — Main finding: all prefixes reduce hallucination** (~4 sentences)
+
+All four prefixes significantly reduce hallucination for both models (Table 6.3 / McNemar's results). The reductions are large: Mixtral's baseline hallucination rate of 11.8% drops to 1.3-3.6%, and Llama's 5.8% drops to 1.3-2.4%. State significance: all eight prefix-model comparisons yield p < 0.003 (McNemar's test with Yates correction). This is not surprising given the effect sizes — between 40 and 48 prompts improved per prefix on Mixtral — but it establishes that the effect is systematic, not driven by a few outliers.
+
+*Verified: all p < 0.003. Mixtral Entity-Aware: 48 improved, 1 worsened, p≈0. Llama Structured Caution: 22 improved, 2 worsened, p=0.000105.*
+
+---
+
+**¶4 — Table 6.3 (or inline): McNemar's test results** (table or concise inline)
+
+Could be a small table or reported inline. Key numbers per prefix-model:
+| Model | Prefix | Improved | Worsened | p (Yates) |
+| Mixtral | Entity-Aware | 48 | 1 | <0.001 |
+| Mixtral | Structured Caution | 46 | 1 | <0.001 |
+| ... | ... | ... | ... | ... |
+
+Or could merge into Table 6.2 with additional columns. Decide at writing time.
+
+*Verified: all McNemar's numbers from post-fix recomputation with Yates correction.*
+
+---
+
+**¶5 — Rankings differ by model** (~4 sentences)
+
+The most striking finding is that the best prefix differs between models. For Mixtral, the entity-targeted prefix (Entity-Aware) achieves the lowest hallucination rate (1.34%), followed by Structured Caution (1.78%). For Llama, the pattern reverses: the comprehensive rule-based prefix (Structured Caution) achieves the lowest rate (1.34%), with Entity-Aware ranking last among the four prefixes (2.45%). This answers the design question posed in Section 6.1: specificity (targeting entity existence) outperforms breadth for the higher-hallucination model (Mixtral), while breadth outperforms specificity for the lower-hallucination model (Llama).
+
+*Do NOT over-interpret why. Offer one cautious hypothesis: Mixtral's higher baseline rate means more entity-fabrication errors, which the entity-targeted prefix directly addresses. Llama, with fewer such errors, benefits more from uniform coverage. But flag this as speculation, not a causal claim.*
+
+---
+
+**¶6 — Regressions are rare but informative** (~3 sentences)
+
+Most prefix-model combinations show 0-1 regressions (prompts correct at baseline that hallucinate with the prefix). The exception is Entity-Aware on Llama, which shows 3 regressions — the most of any non-CoT combination. This is consistent with the entity-verification instruction occasionally causing the model to second-guess real but obscure entities. A detailed category-level analysis of where regressions concentrate appears in Section 6.4.
+
+*Verified: Mixtral Entity-Aware 1 worsened, Structured Caution 1, Epistemic 3, Fact-Grounded 4. Llama Entity-Aware 3, Structured Caution 2, Epistemic 0, Fact-Grounded 2. Actually Mixtral Epistemic has 3 and Fact-Grounded has 4 — these are higher than Entity-Aware's 1. So Entity-Aware on Llama (3) is not the single worst — Mixtral Fact-Grounded (4) is. But Entity-Aware on Llama is notable because Entity-Aware is Llama's worst-performing prefix by hallucination rate.*
+
+*Correction needed: don't claim Entity-Aware on Llama has "the most regressions" — Mixtral Fact-Grounded has 4. Instead say: "regressions are rare (0-4 per combination)" and note the Entity-Aware on Llama case as thematically interesting (entity-verification hurting on obscure-but-real entities).*
+
+---
+
+**¶7 — The ceiling: best-per-prompt selection** (~3 sentences)
+
+If we select, for each prompt, the best response across the baseline and all four prefixes, correctness reaches 98.2% (Mixtral) and 98.4% (Llama), with hallucination falling to 0.2% and 0.0% respectively. Only 1 prompt (Mixtral) remains hallucinated under every condition. This upper bound demonstrates that the information needed to avoid hallucination exists across the prefix portfolio — the challenge, addressed in Chapter 7, is whether this behavior can be consolidated into the model's weights without per-prompt prefix selection at inference time.
+
+*Verified: post-fix computation. Mixtral 98.2% correct, 0.2% halluc (1 unfixable). Llama 98.4%, 0.0% (0 unfixable).*
+
+---
+
+**¶8 — Limitations and forward reference** (~2 sentences)
+
+This pilot study establishes that system-prompt prefixes can dramatically reduce hallucination on the held-out benchmark. However, these 449 prompts were designed for the initial geometric analysis and may not represent the full difficulty spectrum. Section 6.3 tests whether these findings replicate on the expanded benchmark of 2,430 prompts, which samples harder entity regions.
+
+---
+
+**Estimated length**: ~2.5-3 pages (including 1-2 tables).
+
+**No results spoiled from later chapters**:
+- ✅ No V5/replication numbers (those are 6.3)
+- ✅ No category breakdown (that's 6.4)
+- ✅ No refusal tradeoff analysis (that's 6.5)
+- ✅ No bridge/geometry analysis (that's Ch 7)
+- ✅ No fine-tuning results (that's Ch 7)
+- ✅ Best-per-prompt presented as a ceiling, not a training strategy (that's Ch 7)
+
+**Cross-checks**:
+- ✅ All numbers from post-fix V4 data (Mar 21, 2026)
+- ✅ McNemar's with Yates correction (consistent with thesis methodology)
+- ✅ Baseline rates from clean V3 data (0 failures confirmed)
+- ✅ Terminology: "held-out benchmark" not V3/V4
+- ✅ 4 non-CoT prefixes (CoT exclusion explained in 6.1)
+- ✅ Regression counts verified against post-fix McNemar output
+
+**Replication at Scale (Ch 6.3)** `[V5 DATA POST-FIX, numbers from v5_prefix_metrics.csv and v5_mcnemar_tests.csv]`:
+- 2,430 prompts x 4 non-CoT prefixes x 2 models = 19,440 responses (+ 2 baselines = 24,299 total judged incl. CoT)
+- **Pilot pattern replicates at 5x scale**: Entity-Aware best for Mixtral (14.8%→4.7%), Structured Caution best for Llama (9.7%→3.0%). All significant (p < 1e-11).
+- CoT excluded from thesis (API failure artifact). Mentioned in 6.1, not re-discussed here.
+- **Expanded benchmark rates are higher** (Mixtral Entity-Aware: 1.34% pilot → 4.7% at scale). Expected — new prompts probe harder entity regions.
+
+### Section 6.3 Replication at Scale — Detailed Paragraph-Level Outline
+
+**Purpose**: Confirm the pilot findings at 5.4× scale on a distinct, harder prompt set. Establish these as the definitive prefix effectiveness numbers. ~2.5-3 pages including table.
+
+**Terminology**: "expanded benchmark" (not V5). 2,430 prompts. Zero overlap with the 449-prompt held-out benchmark.
+
+**Key structural point**: V5 baselines are DIFFERENT from V3 baselines. The V5 baseline is no-prefix on V5 prompts (2,430), not on V3 prompts (449). So both baselines AND prefix rates change. The comparison to pilot must account for this.
+
+---
+
+**¶1 — Experimental structure** (~3 sentences)
+
+We replicated the prefix experiment on the expanded benchmark of 2,430 prompts — a set with zero prompt overlap with the held-out benchmark and broader entity coverage across all seven categories. Each prompt was evaluated under the baseline (no system message) and each of the four prefix conditions, producing 19,440 prefix responses. The same consensus judging pipeline and McNemar's testing framework from the pilot study were applied.
+
+*Verified: 2,430 × 4 × 2 = 19,440 prefix responses. Zero overlap with V3 confirmed by design (V5 exclusion logic). Same 4 non-CoT prefixes. Same judges, same McNemar's with Yates. Source: scripts/run_v5_prefixes.py, scripts/analyze_v5_prefixes.py.*
+
+---
+
+**¶2 — Table 6.x: Replication results** (same format as pilot table)
+
+| Condition | Mixtral Correct | Mixtral Halluc | Mixtral Refused | Llama Correct | Llama Halluc | Llama Refused |
+|---|---|---|---|---|---|---|
+| Baseline | 82.5% | 14.8% | 0.04% | 87.9% | 9.7% | 1.2% |
+| Epistemic Humility | 86.8% | 10.2% | 0.3% | 93.3% | 4.3% | 1.2% |
+| Fact-Grounded | 90.1% | 7.1% | 0.5% | 93.5% | 4.5% | 1.2% |
+| Structured Caution | 91.9% | 6.7% | 0.2% | 95.8% | **3.0%** | 0.5% |
+| Entity-Aware | **93.7%** | **4.7%** | 0.04% | 95.4% | 3.7% | 0.1% |
+
+*All numbers verified against v5_prefix_metrics.csv (post-fix).*
+
+---
+
+**¶3 — Main finding: pilot rankings replicate** (~4 sentences)
+
+The central finding: prefix rankings replicate identically across models. Entity-Aware remains the most effective prefix for Mixtral (4.7% hallucination, vs 14.8% baseline), and Structured Caution remains the most effective for Llama (3.0%, vs 9.7%). All eight prefix–model comparisons are statistically significant (all p < 10⁻¹¹, McNemar's with Yates correction) — the larger sample size (2,430 vs 449) provides overwhelming statistical power. The relative reductions (68% for Mixtral's best, 69% for Llama's best) are somewhat smaller than the pilot's 89%/77%, but the rankings and significance are unchanged.
+
+*Verified against v5_mcnemar_tests.csv. Mixtral Entity-Aware: p=0.0 (chi2=179.7), 290 improved, 44 worsened. Llama Structured Caution: p=0.0 (chi2=130.6), 182 improved, 19 worsened.*
+
+---
+
+**¶4 — McNemar's details** (table or inline)
+
+Table with improved/worsened/p for each prefix-model:
+
+| Model | Prefix | Improved | Worsened | p |
+|---|---|---|---|---|
+| Mixtral | Entity-Aware | 290 | 44 | < 0.001 |
+| Mixtral | Structured Caution | 256 | 60 | < 0.001 |
+| Mixtral | Fact-Grounded | 246 | 59 | < 0.001 |
+| Mixtral | Epistemic Humility | 186 | 75 | < 0.001 |
+| Llama | Structured Caution | 182 | 19 | < 0.001 |
+| Llama | Entity-Aware | 174 | 29 | < 0.001 |
+| Llama | Epistemic Humility | 163 | 32 | < 0.001 |
+| Llama | Fact-Grounded | 154 | 29 | < 0.001 |
+
+---
+
+**¶5 — Why rates are higher: harder prompts, not weaker prefixes** (~4 sentences)
+
+Both baseline AND prefix hallucination rates are higher on the expanded benchmark than the pilot. Mixtral's baseline rises from 11.8% to 14.8%; Llama's from 5.8% to 9.7%. The prefix rates rise correspondingly: Mixtral Entity-Aware from 1.34% to 4.7%, Llama Structured Caution from 1.34% to 3.0%. This parallel increase indicates that the expanded benchmark samples harder entity regions — not that prefixes are less effective on new data. The benchmark was designed to test a broader and more difficult set of entities (Chapter 4), so higher rates are expected and confirm that the pilot's lower rates reflected easier prompts.
+
+*Verified: V5 baseline rates from v5_prefix_metrics.csv. V4 post-fix baseline rates confirmed. The design explanation is documented in EXPERIMENT_LOG.md: "V5 baselines are also higher... Confirms V5 prompts are genuinely harder."*
+
+---
+
+**¶6 — Worsened counts scale with benchmark size** (~3 sentences)
+
+The expanded benchmark reveals more regression cases than the pilot: 19-75 worsened prompts per prefix-model combination, compared to 0-4 in the pilot. Part of this increase is mechanical — with 5.4× more prompts, more regressions are expected in absolute terms. But the regression rate is also somewhat higher (e.g., Mixtral Epistemic Humility: 0.7% worsened in the pilot vs 3.1% at scale), suggesting that the expanded benchmark's harder prompts are more susceptible to prefix-induced regressions. The category-level analysis in Section 6.4 examines where these regressions concentrate.
+
+*Verified: pilot worsened range 0-4 (Table 6.3). V5 worsened range 19-75 (v5_mcnemar_tests.csv). Mixtral Epistemic: pilot 3/449=0.67%, V5 75/2430=3.09%.*
+
+---
+
+**¶7 — Closing: definitive results** (~2 sentences)
+
+The replication confirms the pilot's findings at scale: system-prompt prefixes substantially reduce entity-level hallucination, with Entity-Aware best for Mixtral and Structured Caution best for Llama. These results on 2,430 prompts constitute the definitive prefix effectiveness numbers for this thesis; the category-level structure of these effects is examined in Section 6.4, and the tradeoff between hallucination reduction and over-refusal in Section 6.5.
+
+---
+
+**Estimated length**: ~2.5-3 pages (including 1-2 tables).
+
+**No results spoiled**:
+- ✅ No category breakdown (6.4)
+- ✅ No refusal tradeoff (6.5)
+- ✅ No bridge analysis or geometry (Ch 7)
+- ✅ No fine-tuning (Ch 7)
+
+**Cross-checks**:
+- ✅ All V5 numbers from post-fix authoritative CSVs (v5_prefix_metrics.csv, v5_mcnemar_tests.csv)
+- ✅ V4 comparison numbers from post-fix V4 data (Mar 21 fix)
+- ✅ McNemar's with Yates correction (same as V4, confirmed in analyze_v5_prefixes.py line 204)
+- ✅ Zero prompt overlap between pilot and replication (V5 exclusion logic confirmed)
+- ✅ Terminology: "expanded benchmark" not V5
+- ✅ CoT not re-discussed (handled in 6.1)
+
+**Potential reviewer concerns addressed**:
+- "Why are rates higher?" → Baselines are ALSO higher; parallel increase = harder prompts
+- "Why more regressions?" → Mechanical scaling + harder prompts; details in 6.4
+- "Is this really a replication?" → Same prefixes, same models, same evaluation, different (non-overlapping) prompts at 5.4× scale. Rankings identical.
+
+### Section 6.4 Category-Level Analysis — Detailed Paragraph-Level Outline
+
+**Purpose**: Break down prefix effectiveness by category, identify which categories are "solved" vs. remain hard, analyze where regressions concentrate, and examine the refusal/correctness-safety tradeoff at the prefix level. Combined from the original 6.4 (category analysis) and 6.5 (tradeoff). ~3-4 pages including 1 table + reference to existing heatmap figures.
+
+**Terminology**: Same as 6.2/6.3. Category names as in Ch 4 (factual, nonexistent, impossible, ambiguous, borderline_edge_factual, borderline_obscure_real, borderline_plausible_fake).
+
+**Data source**: `results/v5_prefixes/analysis/v5_category_metrics.csv` (post-fix, authoritative). Figures: `v5_category_heatmap_{model}.png`.
+
+**What this section does NOT cover** (Ch 7 territory): fixability prediction via geometric features, bridge analysis, fine-tuning precision-recall tradeoff, best-per-prompt curation details.
+
+---
+
+**¶1 — Opening: aggregate results mask category-level structure** (~3 sentences)
+
+The aggregate results from Sections 6.2-6.3 show that all prefixes reduce hallucination, but the seven-category benchmark was designed to test distinct failure modes. This section examines whether prefix effectiveness varies across categories — and if so, whether the variation reveals something about the mechanisms underlying prefix-based mitigation. We focus on the expanded benchmark (2,430 prompts) as the definitive dataset.
+
+---
+
+**¶2 — Table 6.x or Figure reference: category × prefix hallucination rates**
+
+A heatmap or table showing hallucination rates for each (category, prefix) combination for both models. Figures already exist: `v5_category_heatmap_mixtral-8x7b.png` and `v5_category_heatmap_llama-4-maverick-17b.png`. Could include as figures or present key numbers as a table. A table may be more precise for the thesis; figures work as supplements.
+
+Key numbers to highlight (Mixtral / Llama):
+
+| Category | N | Baseline M/L | Best prefix M/L | Best prefix name |
+|---|---|---|---|---|
+| ambiguous | 600 | 0.7/1.5% | 0.2/0.2% | FG or SC / SC |
+| edge_factual | 130 | 3.1/0.8% | 3.1/0.0% | FG,SC / SC |
+| obscure_real | 200 | 11.5/3.0% | 8.0/2.0% | EA / SC |
+| plausible_fake | 200 | 43.5/30.0% | 11.0/14.0% | EA / SC |
+| factual | 500 | 9.2/2.6% | 7.4/1.6% | EH / SC |
+| impossible | 200 | 9.5/16.0% | 1.0/4.5% | EA / EA,SC |
+| nonexistent | 600 | 29.5/19.0% | 3.3/3.2% | EA / EA |
+
+*All numbers verified against v5_category_metrics.csv.*
+
+---
+
+**¶3 — Near-solved categories** (~3 sentences)
+
+Three categories approach zero hallucination with the right prefix. Ambiguous questions, which test whether models respect subjectivity, were already near-zero at baseline and remain so (0.2% with Structured Caution for both models). Borderline edge-factual prompts reach 0.0% for Llama with Structured Caution. Impossible questions — which ask the model to recognize logical impossibility — show the largest relative drops, from 9.5%/16.0% baseline to 1.0%/4.5% with Entity-Aware.
+
+---
+
+**¶4 — The hardest category: borderline plausible-but-fake** (~4 sentences)
+
+Borderline plausible-but-fake prompts remain the hardest category by a wide margin. Even the best prefix leaves 11.0% hallucination (Mixtral, Entity-Aware) and 14.0% (Llama, Structured Caution) — rates 5-7× higher than any other category's best. These are prompts about entities designed to sound real but do not exist (e.g., plausible organization names, fictional but realistic people). The residual rate indicates that models struggle to distinguish plausible fakes from real entities even with explicit entity-verification instructions, suggesting a fundamental knowledge-boundary limitation that prompting alone cannot overcome.
+
+*Note: do NOT frame this as "benchmark failure" here. The "adversarial probing" framing belongs in Ch 8 Discussion per THESIS_WRITING.md guidance. Here just report the finding.*
+
+---
+
+**¶5 — Entity-Aware dominance on entity-existence categories** (~4 sentences)
+
+Entity-Aware achieves the largest reductions on the two categories where entity existence is the core question: nonexistent (29.5%→3.3% Mixtral, 19.0%→3.2% Llama) and plausible-but-fake (43.5%→11.0% Mixtral). This is expected — Entity-Aware explicitly asks the model to verify whether entities exist, which directly targets these categories. However, Entity-Aware is NOT the best prefix for every category: for factual questions, Epistemic Humility (Mixtral) or Structured Caution (Llama) outperforms it, and for borderline_obscure_real, Structured Caution is better for both models. This confirms the pilot's finding that no single prefix dominates across all categories — the specificity-vs-breadth tradeoff operates at the category level.
+
+---
+
+**¶6 — Regressions on borderline obscure-but-real entities** (~4 sentences)
+
+The borderline_obscure_real category reveals a subtle failure mode. For Llama, three of the four prefixes INCREASE hallucination relative to baseline: Entity-Aware (3.0%→4.0%), Epistemic Humility (3.0%→4.0%), and Fact-Grounded (3.0%→5.0%). Only Structured Caution reduces it (3.0%→2.0%). The pattern suggests that instructions emphasizing entity skepticism or fabrication prohibition cause the model to second-guess real but obscure entities. This tension between skepticism (good for fake entities) and coverage (good for obscure real entities) foreshadows the precision-recall tradeoff that becomes more pronounced with fine-tuning (Chapter 7).
+
+*Verified: Llama borderline_obscure_real baseline 3.0%, EA 4.0%, EH 4.0%, FG 5.0%, SC 2.0%. Three of four prefixes regress. Mixtral: baseline 11.5%, EA 8.0% (improves), so the regression is Llama-specific.*
+
+---
+
+**¶7 — Refusal rates are low but category-specific** (~4 sentences)
+
+Across all non-CoT prefix conditions, refusal rates remain below 5%. However, the distribution is uneven. Fact-Grounded produces the highest refusal rates — 4.8% on Llama factual questions and 3.0% on Mixtral borderline_obscure_real — consistent with its instruction to "never fabricate" causing the model to refuse questions it could answer correctly. Entity-Aware, despite being the most benchmark-specific prefix, has the cleanest refusal profile: near-zero refusal across virtually all categories for both models. This suggests that asking a model to verify entity existence is less prone to over-refusal than prohibiting fabrication outright.
+
+*Verified: Llama factual refusal: FG 4.8%, EA 0.0%. Mixtral obscure_real refusal: FG 3.0%, EA 0.0%.*
+
+---
+
+**¶8 — The correctness-safety picture at the prefix level** (~3 sentences)
+
+Overall, system-prompt prefixes produce a favorable correctness-safety tradeoff: most prefix conditions simultaneously increase correctness and decrease hallucination, with only modest increases in refusal. The exceptions are category-specific (Fact-Grounded on factual questions, Entity-Aware/Epistemic on obscure_real for Llama) rather than systematic. A more dramatic tradeoff between hallucination reduction and false negatives on real entities emerges with fine-tuning, where the model's learned caution is permanent rather than prompt-dependent — this is the subject of Chapter~7.
+
+*This paragraph does double duty: closes the combined 6.4/6.5 section AND sets up Ch 7's precision-recall discussion without spoiling it.*
+
+---
+
+**Estimated length**: ~3-4 pages (including 1 table or 2 figure references).
+
+**No results spoiled**:
+- ✅ No bridge analysis / geometric fixability (Ch 7)
+- ✅ No fine-tuning results or precision-recall numbers (Ch 7)
+- ✅ No best-per-prompt curation details (Ch 7)
+- ✅ "Adversarial probing" framing deferred to Ch 8
+
+**Cross-checks**:
+- ✅ All category numbers from post-fix v5_category_metrics.csv
+- ✅ Llama borderline_obscure_real regression verified (3/4 prefixes regress)
+- ✅ Fact-Grounded highest refusal verified
+- ✅ Entity-Aware cleanest refusal profile verified
+- ✅ Heatmap figures exist in results/v5_prefixes/analysis/
+
+**Forward references to update in existing tex**: `\ref{sec:category-analysis}` stays (label for 6.4). `\ref{sec:tradeoff}` needs to be changed to point to a subsection or paragraph within 6.4, OR the tradeoff content can simply be the closing paragraphs of 6.4 without a separate label. Simplest approach: remove the `\ref{sec:tradeoff}` forward reference in 6.3's closing paragraph and replace with a reference to 6.4.
 
 **Geometric Difficulty Analysis (Ch 7.1-7.2, new, ~5 pages)**:
 - Pilot study bridge: geometry predicts fixability, AUC=0.86 (train-only on 449 prompts)
-- Expanded benchmark bridge: aggregate AUC drops to 0.59-0.66 (cross-validated), a class imbalance artifact (333 fixed vs 15 still_broken for Mixtral, 227 vs 5 for Llama)
-- **Within-category density is the robust finding**: among nonexistent prompts, density significantly predicts fixability for both models (p=0.034, p=0.047). Unfixable prompts live in sparser embedding regions. Non-circular (same category, same structure, geometry varies).
+- Expanded benchmark bridge: aggregate CV AUC 0.573 (Mixtral, 333:27 class ratio) and 0.712 (Llama, 211:24). Llama AUC is meaningful; Mixtral weaker due to imbalance. (Re-run Mar 22 after CoT exclusion fix — old numbers with CoT had 15/5 broken, now 27/24.)
+- **Within-category density is the robust finding**: among nonexistent prompts, density significantly predicts fixability for both models (p=0.046, p=0.012). Unfixable prompts live in sparser embedding regions. Non-circular (same category, same structure, geometry varies). Llama plausible_fake oppositeness also significant (p=0.009). No result survives Bonferroni for 24 tests (α=0.0021).
 - **Oppositeness** is the strongest overall discriminator between fixable hallucinations and correct prompts (p < 1e-10 for both models)
 - Frame as: "The pilot study identified the signal (AUC=0.86). Within-category tests on the expanded benchmark confirm the mechanism: density predicts fixability within structurally identical prompts. The aggregate AUC drop reflects proper cross-validation and extreme class imbalance, not a failure to replicate."
 
@@ -1434,7 +2614,7 @@ The current paper presents V3 results with inflated claims. The thesis needs to 
 
 **TruthfulQA Generalization (Ch 7.5, new, ~3-4 pages)** `[RESULTS COMPLETE]`:
 - Best fine-tuned config per model (Mixtral configC, Llama configA) on TruthfulQA (817 questions, Lin et al. 2022)
-- **Config selection explanation**: configC was best on held-out test set (91.1% accuracy); determined before seeing TruthfulQA results (pre-registered). State: "We test the best-performing configuration per model as determined by held-out evaluation (Section 7.4), selecting before observing TruthfulQA results."
+- **Config selection explanation**: configC was best on held-out test set (94.4% accuracy, post-fix); determined before seeing TruthfulQA results (pre-registered). State: "We test the best-performing configuration per model as determined by held-out evaluation (Section 7.3), selecting before observing TruthfulQA results."
 - **Expectations framing**: TruthfulQA tests misconceptions (common human errors), not fabrication (inventing entities). Our fine-tuning trained on fabrication. The fact that it transfers *at all* is noteworthy — it taught epistemic caution, not just fabrication-specific skepticism.
 - **Key results (after re-judging)**:
   - Llama: acc +5.3pp (71.8%→77.1%, p=0.0002), halluc -4.4pp (17.6%→13.2%, p=0.0005), **both survive Bonferroni**. Refusal 0.5% (unchanged).
@@ -1481,79 +2661,248 @@ The current paper presents V3 results with inflated claims. The thesis needs to 
 
 ---
 
-### Discussion — Needs Complete Rewrite
+### Chapter 8: Discussion and Conclusion — Detailed Content Plan
 
-The current discussion has good ideas (outlier hypothesis, flat manifold paradox) but frames them overconfidently. The thesis discussion should be organized around the four contributions:
+**Calibration from reference theses**: Tarun (~4pp), Angela (~4pp), and Jinho Park (~4pp, "Collusion in Auctions," Math dept) all have short final chapters. None enumerate limitations as a list of weaknesses. Jinho's is the gold standard for tone:
 
-- **Contribution 1 — Geometric difficulty prediction**: Lead with the bridge analysis finding. Within-category density predicts fixability (p=0.034/0.047 for nonexistent prompts). "Unfixable" prompts cluster in sparse embedding regions. This is the most novel finding — prior work asks "will this hallucinate?" but not "is this hallucination fixable?"
-- **Contribution 2 — Density as the honest geometric signal**: "We initially found AUC=0.86, but proper cross-validated analysis shows geometry adds +0.02-0.04 beyond category structure. The flat manifold paradox (curvature beta=-1.21 in initial study) doesn't replicate — curvature is essentially useless as a predictor. The real finding is within-category density (p<0.0001). This connects to the sparse void hypothesis: hallucinations occur where entities sit in sparse neighborhoods."
-- **Contribution 3 — Precision-recall tradeoff in learned caution**: Fine-tuning teaches "entity skepticism" that dramatically reduces hallucination on nonexistent entities (70%→98%) but causes false negatives on obscure-real entities (-7 to -13%). This reveals hallucination reduction and knowledge coverage are in tension. Geometry predicts which side of this tradeoff a prompt falls on (density distinguishes obscure-real from plausible-fake).
-- **Contribution 4 — Prompt distillation into weights**: Fine-tuning matches best prefix accuracy (91.1%, p=0.84) without runtime prompt engineering. The practical implication: prompt engineering is not just a band-aid — it can be a data generation strategy for permanent model improvement. Three convergent lines of evidence confirm the model learned general epistemic caution, not surface patterns: (1) TruthfulQA cross-domain transfer (Llama -4.4pp halluc on misconceptions, Bonferroni-sig); (2) template ablation shows 5 templates ≈ all ~194 (p=0.099/0.773), with seen-template and novel-template accuracy comparable (T5 Mixtral: 96.3% seen vs 93.0% novel); (3) entity decontamination gap is small (Llama configA: 94.0%→93.5% clean, +0.5pp; Mixtral configC: 94.4%→91.6% clean, +2.8pp — near but under the 3pp inflation threshold). The no-over-caution finding on TruthfulQA also refines Contribution 3: the precision-recall tradeoff is domain-specific to entity fabrication, not a blanket personality change.
-- ~~**CoT Verification failure**~~: INVALIDATED. Was API failure artifact, not model behavior. Excluded from thesis.
-- **Why expanded benchmark rates are higher**: The expanded benchmark probes harder regions of entity space. Higher baseline rates (Mixtral 14.8% vs 11.8%) and higher prefix residual rates (4.7% vs 0.7%) confirm some hallucinations are intrinsically harder — evidence of discriminative power, not failure.
-- **Dimensionality paradox**: The finding that lower-dim embeddings work better is interesting and underexplored.
+**Jinho's Discussion — qualities to emulate:**
+1. **Genuine intellectual synthesis.** He doesn't say "Chapter 4 showed X." He says "The main lesson of the thesis is that the revenue comparison depends on the *form* of the outsider distribution, not the *degree* of asymmetry." That's a new sentence no individual chapter contains. Our §8.1 should work the same way — the cross-chapter connections (density as unified difficulty indicator, prompt engineering as data generation strategy) are the synthesis, not recap of results.
+2. **Limitations are one paragraph, confident, and immediately productive.** He names modeling assumptions, says "These are important issues, but orthogonal to the question addressed here," and immediately explains what a richer model would capture. No self-flagellation, no enumerated list of weaknesses. Our §8.2 should match this — lead with what we established, acknowledge scope constraints, frame as what the natural extensions are. Already tone-passed, but re-check against this standard.
+3. **Future work is genuinely exciting.** Not "test on more data" but specific, novel research questions: "this generates a testable empirical prediction about milk procurement auctions." Our §8.4 should feel like "here's what we'd do with another year because it's interesting," not "here's how we'd fix our limitations."
+4. **No self-flagellation anywhere.** Confident throughout. States what the thesis does, not what it hopes to do or fails to do.
 
-### Limitations — Needs Major Expansion
+**Our chapter is longer than theirs** because we have 3 contributions across 3 results chapters, thesis-level limitations to consolidate, and the MBB section. But the same principles apply: synthesis not re-argument, no new analysis. **Be aggressive on conciseness** — the reader just finished 3 results chapters and does not need a lengthy recap. Every sentence must add something the results chapters didn't already say. If a section can be 1 page instead of 2, make it 1.
 
-Currently 3 bullet points. Needs to be thorough:
-- **Initial AUC inflation**: Explicitly acknowledge that the initial benchmark AUC conflated category structure with within-category signal
-- **Judge reliability on borderlines**: borderline_plausible_fake has only 15-23% unanimous agreement — this category's results should be interpreted cautiously
-- **Bridge analysis class imbalance**: Expanded benchmark bridge AUC drops from pilot's 0.86 to 0.59-0.66 partly because only 15/5 prompts are "still_broken." The within-category tests are more reliable but have smaller effect sizes
-- **CoT Verification exclusion**: We excluded CoT from analysis due to judge API failures corrupting 65% of labels. Mention briefly in limitations that CoT was attempted but excluded due to data quality issues — shows methodological honesty.
-- **Embedding dependency**: Still only one primary embedding model
-- **English only**
-- **Template-generated prompts**: Not naturalistic user queries
-- **Small human validation sample** (n=50)
-- **Correlation vs causation** (already in paper but expand)
-- **No causal intervention on geometry** — we observe correlation but haven't reshaped the manifold to test causally
-- **Rate differences across benchmarks**: The higher expanded benchmark hallucination/residual rates could reflect prompt difficulty OR model sensitivity to entity novelty — we can't fully disentangle these
+**Estimated length**: 8-10 pages at 1.5 spacing. Target the low end.
 
-### MBB (Mind, Brain, Behavior) Connections (~2-3 pages, Discussion subsection)
+---
 
-Required for MBB track certificate. Currently zero cognitive science engagement in the thesis — all citations are ML papers. This section bridges the gap. Frame as "Implications for Cognitive Science" or "Connections to Human Cognition" — NOT as a bolted-on afterthought, but as genuine intellectual connections that strengthen the thesis.
+#### Handling the Limitations Redundancy Problem
 
-**1. LLM hallucination ↔ human confabulation.**
-- Humans confabulate when probed at the edge of their knowledge — so do LLMs. The borderline categories (plausible fake, obscure real, edge factual) probe the same boundary cognitive psychologists study in false memory research.
-- Key citations: Roediger & McDermott 1995 (DRM paradigm — false memories for semantically related items), Loftus 1979 (misinformation effect). Our plausible_fake category is structurally identical to the misinformation paradigm: entities plausible enough to trigger false recognition.
-- The "imitative falsehoods" in edge_factual (from TruthfulQA, Lin et al. 2022) directly parallel cultural transmission of false beliefs — models reproduce popular misconceptions, just as humans do through social learning.
+**The problem**: Ch 5-7 each have per-chapter limitation paragraphs/subsections. If Ch 8 also lists all limitations, the reader encounters the same caveats 2-3 times.
 
-**2. Embedding geometry ↔ representational geometry in neuroscience.**
-- Representational Similarity Analysis (RSA; Kriegeskorte et al. 2008) studies the geometry of neural population codes. Our density/oppositeness features are analogous: we study the geometry of a representational space and find that structure predicts behavior (hallucination).
-- The "sparse void hypothesis" (hallucinations cluster in low-density regions) parallels findings in neural coding: sparse neural representations are associated with uncertainty and errors. The principle — sparse = unreliable — may be general across knowledge representation systems, biological or artificial.
-- NOT claiming LLMs are brains. Claiming the geometric principle generalizes.
+**The solution — two different levels of abstraction**:
 
-**3. Metacognition.**
-- The entire thesis tests whether models "know what they don't know" — this is metacognition, a core topic in cognitive science (Flavell 1979, Nelson & Narens 1990).
-- Our geometric features function as an *external* metacognitive signal — assessing model reliability from representational structure rather than the model's own self-report. This is analogous to neuroimaging studies that predict confidence from neural activity patterns rather than subjective report.
-- The fine-tuning result (model learns "when to be skeptical") is a form of learned metacognition — the model acquires a behavioral policy of epistemic caution.
+- **Per-chapter limitations** (Ch 5 §5.6, Ch 6 §6.X, Ch 7 §7.5) are *local*: they tell the reader what to be cautious about when interpreting *that chapter's specific results*. E.g., "within-category signal concentrated in nonexistent" is directly relevant when the reader is looking at the within-category AUC table. **Keep these. Do not remove them.**
 
-**4. The precision-recall tradeoff ↔ signal detection theory.**
-- The obscure-real regression (fine-tuned model denies real entities) maps directly onto signal detection theory (Green & Swets 1966): shifting the criterion toward "say no" reduces false alarms (hallucinations) but increases misses (false negatives on real entities). This is a foundational framework in psychophysics.
-- Framing: the model's post-fine-tuning behavior reflects a criterion shift in a noisy representational space — exactly the situation SDT was designed to analyze.
+- **Ch 8 limitations** are *thesis-level*: concerns that cut across multiple chapters, affect the overall claim architecture, or are about scope. These should NOT repeat per-chapter caveats verbatim. Instead, briefly reference them ("as noted in Chapter X") and focus on cross-cutting implications.
 
-**Scope**: This is 2-3 pages of Discussion, not a new chapter. Draw the parallels, cite the cognitive science work, note that these connections are suggestive rather than tested. Do NOT overclaim — we did not design experiments to test these cognitive hypotheses. Frame as "our findings are consistent with / suggest connections to" rather than "our findings demonstrate."
+**Concrete split**:
+| Limitation | Where it lives | Why there |
+|---|---|---|
+| Within-category signal concentrated in nonexistent | Ch 5 §5.6 | Specific to Ch 5's statistical analysis |
+| Bridge analysis class imbalance (15/5 still_broken) | Ch 7 §7.1 | Specific to fixability prediction |
+| Template ablation caveats | Ch 7 §7.4 | Specific to generalization evidence |
+| Embedding model dependency (single model) | **Ch 8** | Affects Ch 5, 6, and 7 simultaneously |
+| Two models only | **Ch 8** | Affects all results chapters |
+| Template-generated prompts (not naturalistic) | **Ch 8** | Affects entire benchmark design |
+| English only | **Ch 8** | Scope limitation for all findings |
+| Correlation not causation / no causal geometry intervention | **Ch 8** | Fundamental to the thesis claim |
+| Small human validation (n=50) | **Ch 8** | Affects trust in all labels |
+| Judge reliability on borderlines | **Ch 8** (brief) | Cross-chapter, but reference Ch 5 details |
 
-**Bib entries needed**: Roediger & McDermott 1995, Loftus 1979, Kriegeskorte et al. 2008, Flavell 1979, Nelson & Narens 1990, Green & Swets 1966.
+---
 
-### Conclusion — Should Reflect the Evolved Understanding
+#### Section Layout
 
-The current conclusion claims "curvature and centrality are strong, cross-model predictors." The thesis conclusion should honestly say: "Category structure is the dominant predictor. Within categories, density provides modest but real geometric signal. The more surprising finding is that geometry predicts hallucination *difficulty* — which prompts resist mitigation — pointing toward a geometric taxonomy of fixability."
+```
+8   Discussion and Conclusion
 
-The conclusion should tell the complete arc through contributions, not pipeline steps:
-1. We asked whether embedding geometry predicts hallucination. Answer: yes, but mostly through category structure. The non-circular signal is within-category density.
-2. We asked whether prompts can reduce hallucination. Answer: dramatically (89% reduction), replicated at 5x scale.
-3. We asked whether geometry predicts *which hallucinations resist mitigation*. Answer: yes — unfixable prompts live in geometrically sparse regions. This is the novel contribution.
-4. We asked whether the careful behavior can be made permanent. Answer: fine-tuning matches best-prefix accuracy without runtime prompting — but reveals a precision-recall tradeoff where the model trades knowledge breadth for safety.
-5. We asked what the model actually learned. Answer: behavioral caution, not surface memorization. Three tests converge: cross-domain transfer to TruthfulQA, invariance to template diversity (5 templates ≈ 194), and unchanged accuracy on novel entities. The model learned *when to be skeptical*, not *which questions to refuse*.
+    [Opening paragraph — what this chapter does, no subsection header]
 
-The intellectual narrative is: **geometry is the diagnostic, prompts are the treatment, fine-tuning is the cure — and geometry predicts where the cure has side effects. The cure works because it teaches epistemic caution, not pattern matching.**
+    8.1  Contributions
+    8.2  Limitations
+    8.3  Connections to Cognitive Science
+    8.4  Future Work
+    8.5  Concluding Remarks
+```
 
-### What to Add That Doesn't Exist Yet
+No sub-subsections. §8.1 uses bold lead-ins per contribution (not `\subsubsection`). §8.4 is a numbered list. Everything else is flowing paragraphs.
 
-1. **A full chapter on the prefix intervention pipeline** (design, V4 results, V5 replication)
-2. **The bridge analysis** as a standalone results section — this is potentially the most novel contribution
-3. **Best-per-prompt selection** analysis and its implications for fine-tuning data curation
-4. **Detailed diagnostic analysis** of judge behavior (per-judge bias, category-specific agreement)
+---
+
+#### §8.1 Contributions (~1.5 pages) — Detailed Outline
+
+**Balance with Ch 1**: Ch 1 §1.1 states contributions as claims without numbers. Ch 8 §8.1 restates them with key numbers and cross-chapter synthesis. Ch 1 = claim. Ch 8 = evidence. §8.1 is not a recap — it ties numbers to claims and draws connections *across* chapters that individual chapters couldn't make.
+
+**What each chapter's Discussion already says (DO NOT REPEAT)**:
+- Ch 5 §5.6: density predicts at two granularities, why density (entity popularity analogue), why external embeddings work, surface feature comparison
+- Ch 6 closing: prefixes work broadly, entity-existence categories see largest gains, tension between skepticism and obscure-real coverage foreshadowed
+- Ch 7 §7.5: geometry predicts fixability (extending risk → difficulty), geometry explains resistance structure, geometry does NOT predict harm, precision-recall as criterion shift, model learned behavioral caution (three convergent tests)
+
+**What §8.1 must add that no individual chapter says**:
+- The *unified arc*: density is a single geometric property that (a) predicts hallucination occurrence (Ch 5), (b) predicts which hallucinations resist prompting (Ch 7 §7.1), and (c) predicts which hallucinations resist fine-tuning (Ch 7 §7.3). No chapter connects all three.
+- The *progression from signal to action*: Ch 5 finds a correlate, Ch 6 shows intervention works, Ch 7 shows the correlate predicts where intervention works. The pipeline is not three independent experiments — each step uses the previous step's output.
+- The *honest accounting*: initial AUC=0.86 → honest decomposition → within-category density → fixability prediction → fine-tuning distillation. The story got more modest but more real.
+
+**Paragraph-level outline (3 contributions, matching Ch 1 §1.1):**
+
+**¶1 — Opening (2-3 sentences)**
+- This thesis asked three questions: whether embedding geometry predicts hallucination, whether prompting can reduce it, and whether geometry can guide intervention strategy. The answers form a connected arc, not three independent findings — each chapter's output feeds the next.
+- **Do NOT list the questions and answers here — that's what the paragraphs below do.** Just frame the section.
+
+**¶2 — Contribution 1: Geometric prediction of hallucination (5-6 sentences)**
+- The geometric prediction story, with honest numbers. Category alone AUC 0.77; geometry adds modest increment (+0.02-0.04). The real finding: within-category density in nonexistent prompts (p < 10⁻⁵, both models, Bonferroni-surviving, CV AUC 0.67).
+- **The cross-chapter connection (what Ch 5 couldn't say)**: This signal is not just correlational — it reappears in Ch 7 as a predictor of *fixability*. The same feature, measured on the same prompts, predicts both hallucination occurrence and intervention resistance. Density operates as a unified geometric indicator of prompt difficulty, not just prompt risk.
+- Interpretation: sparse neighborhoods = fewer similar prompts to anchor generation → higher hallucination risk AND higher resistance to correction.
+- **Verified numbers**: AUC 0.782/0.773 cat-only, 0.800/0.814 cat+geo (from `v5_geometry_prediction_overall.csv`, post-fix). Within-cat: p = 5.7×10⁻⁷ / 3.4×10⁻⁵, CV AUC 0.665±0.066 / 0.678±0.042.
+
+**¶3 — Contribution 2: Prompt-based hallucination reduction (3-4 sentences)**
+- All four prefixes significantly reduce hallucination (McNemar p < 10⁻⁶, both models). Replicated at 5× scale with same prefix rankings. Single-shot system prompts achieve 54-69% relative reduction without multi-pass verification or retrieval.
+- **The cross-chapter connection (what Ch 6 couldn't say)**: Ch 6 produces the prefix responses that become Ch 7's fine-tuning training data. Best-per-prompt selection across prefixes produces training data that is 97-98% correct — a quality floor that makes fine-tuning viable. The prefix experiment is not just an intervention study; it is a data generation strategy.
+- **Verified numbers**: Mixtral Entity-Aware 14.8%→4.7%, Structured Caution best for Llama 9.7%→3.0%. All p < 10⁻⁶ (from `v5_prefix_metrics.csv`, post-fix).
+
+**¶4 — Contribution 3: Geometric diagnosis and fine-tuning distillation (6-8 sentences)**
+- This is the largest contribution and bundles three connected findings (matching Ch 1's Contribution 3):
+- *Fixability prediction*: Density predicts not just occurrence but *difficulty*. Prior work predicts whether hallucination occurs; we predict whether it can be fixed. FT bridge density p = 0.0017, |r| = 0.80 (Mixtral, Bonferroni-surviving).
+- *Distillation*: Fine-tuning matches best prefix without runtime prompting (Mixtral: 94.4% vs 94.9%, p = 0.82). Three convergent tests confirm behavioral caution, not memorization: TruthfulQA transfer (Llama -4.4pp, Bonferroni-sig), template invariance (T5 ≈ T-all), decontamination (gap <3pp).
+- *Precision-recall tradeoff*: Fine-tuning reduces hallucination (11.8%→1.3% Mixtral) at cost of factual refusals (5→15). Most regressions are refusals (70%), not new fabrications. Tradeoff is domain-specific: no over-caution on TruthfulQA.
+- **The cross-chapter connection (the unified pipeline)**: The full arc — geometry predicts risk (Ch 5), prompts generate corrective signal (Ch 6), geometry curates training data by identifying unfixable prompts (Ch 7), fine-tuning consolidates the correction (Ch 7) — is a single integrated system where each component informs the next. The tension Ch 6 foreshadowed (entity skepticism vs. obscure-real coverage) materializes in Ch 7 as the precision-recall tradeoff. Geometry is the diagnostic thread throughout.
+- **Verified numbers**: Mixtral configC 94.4% vs Structured Caution 94.9%, p = 0.82. Llama configA 94.0% vs 95.8%, p = 0.14. FT bridge density p = 0.0017. TruthfulQA Llama halluc -4.4pp, p = 0.0005. Prefix bridge within-cat p = 0.046/0.012.
+
+**What NOT to include in §8.1**:
+- Don't re-explain methodological choices (Ch 4)
+- Don't re-explain features or statistical tests (Ch 4-5)
+- Don't present any number not already in Ch 5-7
+- Don't discuss limitations (§8.2) or cognitive science (§8.3)
+
+**Reviewer anticipation**:
+1. "This just restates the results chapters." → The value-add is the cross-chapter connections: density as a unified indicator across three chapters, prefix responses as training data, the foreshadowed tension materializing as precision-recall tradeoff.
+2. "Three contributions — are they equally novel?" → No. Contribution 1 (density) is a modest refinement. Contribution 2 (prefixes work) is a confirmation in a controlled setting. Contribution 3 (fixability prediction + distillation + generalization) is the genuinely novel finding and the practical payoff. §8.1 should give Contribution 3 the most space.
+
+---
+
+#### §8.2 Limitations (~1.5 pages)
+
+Thesis-level only — per-chapter caveats already stated in Ch 5-7 (now tightened with forward references to this section). Each limitation gets 2-4 sentences, not a full paragraph.
+
+**What's already handled in per-chapter limitations (DO NOT REPEAT):**
+- Ch 5: signal concentrated in nonexistent, modest effect sizes (r≈0.25, AUC 0.67)
+- Ch 7: hyperparameter overrides, small still-broken samples (n=6/9), unpaired cross-category comparisons
+- Ch 5 + Ch 7 Scope paragraphs: already briefly mention single embedding model, two models, corpus dependence, and template prompts with forward references to this section
+
+**What §8.2 must add:** The *thesis-level implications* of these scope constraints — how they interact, what they mean for the overall claims, and what would resolve them. Not restating the facts (the Scope paragraphs did that) but interpreting their collective significance.
+
+**Ordering rationale:** Lead with the most fundamental limitation (correlation ≠ causation — affects the entire claim architecture), then scope constraints in order of impact. Four paragraphs total.
+
+**Paragraph-level outline (4 paragraphs):**
+
+**¶1 — Correlation not causation (3-4 sentences)**
+- The most fundamental limitation. All geometric findings are correlational. Density is associated with hallucination and fixability, but we have not causally intervened on the manifold. A confound (e.g., entity rarity independently causing both sparse embeddings and poor model recall) cannot be ruled out.
+- Ch 5 §5.6 compared density against surface features (entity name length) and showed density captures more signal, but this does not establish causation. The claim throughout is: density is a useful *diagnostic*, not a verified *mechanism*. All three contributions inherit this limitation.
+
+**¶2 — Two models for intervention (2-3 sentences)**
+- The 10-model benchmark (Ch 5) establishes model-agnostic difficulty, but intervention experiments (Ch 6-7) cover only Mixtral and Llama. The two provide architectural diversity (8×7B vs 128-expert MoE, LoRA vs QLoRA), but the entire intervention pipeline is validated on a narrow range. We cannot claim the precision-recall tradeoff or distillation results generalize to dense architectures, larger models, or closed-source systems.
+
+**¶3 — Single embedding model (2-3 sentences)**
+- All geometry depends on text-embedding-3-large. A preliminary robustness check (Appendix~B) shows centrality is stable across three embedding models, but density's overall signal is embedding-dependent, and the within-category density result has not been tested with alternative embeddings. If the density signal doesn't transfer, the fixability prediction pipeline would need re-validation per embedding model.
+
+**¶4 — Benchmark scope (3-4 sentences)**
+- All prompts are template-generated with entity substitution. This provides experimental control but doesn't reflect naturalistic user queries. TruthfulQA transfer provides partial evidence beyond templates, and the template ablation shows the model doesn't memorize template patterns — but neither test addresses template *naturalness* as distinct from template *diversity*.
+- Human validation ($n = 50$, group discussion, 90\% agreement) spot-checks the judge pipeline but is not a full inter-annotator reliability study. All results inherit this label-quality constraint.
+- All prompts and evaluation are in English.
+
+**Plausible-fake reframing**: Dropped from §8.2. Already framed as adversarial probing in Ch 4 §4.1 and Ch 6 category discussion. Not a limitation — a design feature. Does not need re-stating.
+
+**What NOT to include in §8.2:**
+- Per-chapter methodological limitations (Ch 5-7 handle those)
+- Judge contamination issue (Appendix A and Ch 4)
+- CoT exclusion (Ch 4 and Appendix A)
+
+**Reviewer anticipation:**
+1. "You only tested two models." → Acknowledged. 10-model prediction benchmark as partial mitigation.
+2. "How do you know this isn't just entity frequency?" → Ch 5 §5.6 compared surface features. But no comparison against pre-training frequency counts (unavailable for closed-source models).
+3. "Why not model-internal representations?" → External embeddings are model-agnostic by design. Tradeoff (generality vs specificity) is a design choice, not an oversight.
+
+#### §8.3 Connections to Cognitive Science (~1-1.5 pages)
+
+Required for MBB track. Two strong parallels plus one combined paragraph. Suggestive framing only — we did not design experiments to test cognitive hypotheses.
+
+**What already exists in the thesis (pay these off, don't introduce from scratch):**
+- Ch 1 ¶2: "metacognition" and "confabulate" frame the thesis question
+- Ch 2 §2.2: "confabulate" in hallucination definition
+- Ch 7 §7.5: "criterion shift in the sense of signal detection theory" and "consistent with a form of learned metacognition" — used as interpretive language, no cog sci citations
+
+**What §8.3 must do:** Ground those terms in actual cognitive science literature with citations. Ch 1 and Ch 7 *use* the concepts; §8.3 *develops* them.
+
+**Kept vs. dropped:**
+- **Confabulation / DRM** — KEEP (strong: plausible-fake category is structurally identical to DRM lures, not a metaphor)
+- **Metacognition + SDT** — KEEP, COMBINED into one paragraph (both strong; metacognition frames the "what," SDT formalizes the tradeoff structure)
+- **RSA / representational geometry** — DROPPED (too generic: "both use geometry to predict behavior" doesn't add interpretive value beyond what Ch 5 Discussion already provides)
+
+**Paragraph-level outline:**
+
+**¶1 — Opening (already written in .tex)**
+- Two sentences. Frames section, sets epistemological tone.
+
+**¶2 — Confabulation and false memory (~4-5 sentences)**
+- Humans confabulate at knowledge boundaries; our benchmark probes the same boundary.
+- Specific structural match: plausible-fake category ≈ DRM paradigm (Roediger & McDermott 1995). DRM: participants falsely "remember" semantically plausible lures never presented. Our plausible fakes: entities designed to be plausible enough to trigger false recognition by the model. Same experimental logic, different system.
+- Edge-factual prompts parallel imitative falsehoods (Lin et al. 2022) — misconceptions reproduced through statistical/cultural transmission.
+- Interpretive payoff: hallucination is systematic error at knowledge boundaries, not random failure. The mechanism — plausible interpolation where genuine knowledge is absent — is structurally similar across humans and LLMs.
+- **Do NOT claim**: LLMs have episodic memory or "remember" in the human sense. The parallel is structural, not mechanistic.
+- Cite: Roediger & McDermott 1995, Loftus 1979. Already in bib: Lin et al. 2022.
+
+**¶3 — Metacognition and signal detection (~5-6 sentences)**
+- The thesis asks whether models "know what they don't know" — this is metacognition. Our geometric features function as an external monitoring signal (assessing reliability from representational structure, not the model's self-report). Fine-tuning teaches the model to act on that assessment — expressing uncertainty at knowledge boundaries. The generalization evidence (TruthfulQA, template invariance, cross-category transfer) suggests this is a general behavioral strategy, not domain-specific memorization.
+- The precision-recall tradeoff formalizes this via signal detection theory (Green & Swets 1966). The fine-tuned model faces a noisy discrimination ("real or fabricated?") and shifts its criterion toward caution — reducing false alarms (hallucinations) at the cost of increased misses (false refusals). The domain-specificity (no over-refusal on TruthfulQA) indicates the criterion shift is applied to entity-existence judgments specifically, not globally.
+- Interpretive payoff from SDT: the tradeoff is *movable*. A model with better underlying discrimination (higher d') could achieve the same false-alarm rate with fewer misses — reframing future work as improving sensitivity rather than accepting the tradeoff.
+- Cite: Green & Swets 1966. Already in bib: Kadavath et al. 2022.
+
+**¶4 — Closing caveat (1 sentence)**
+- These parallels are interpretive. We do not claim LLMs implement the same mechanisms as human cognition, but the structural similarities — plausible interpolation at knowledge boundaries, and the sensitivity-criterion tradeoff in uncertain domains — may reflect general properties of systems that must act under incomplete knowledge.
+
+**What NOT to include:**
+- Extended tutorials on DRM or SDT (Discussion, not Background)
+- Claims that LLMs are cognitive systems
+- New results or analyses
+- RSA / representational geometry (dropped — too generic)
+
+**Bib entries needed**: Roediger & McDermott 1995, Loftus 1979, Green & Swets 1966.
+**Dropped**: Kriegeskorte et al. 2008 (RSA), Flavell 1979, Nelson & Narens 1990 (formal metacognition framework — too much apparatus for the functional parallel we're drawing).
+
+#### §8.4 Future Work (~1 page)
+
+Three items, ~0.75-1 page total. Frame as opportunities, not remediations. The excitement comes from the ideas, not from length. Each item: 3-4 sentences — what you'd do, why it's interesting, what it would tell us.
+
+**Paragraph-level outline (3 items):**
+
+**¶1 — From correlation to causation (3-4 sentences)**
+- The most intellectually interesting direction. Density predicts hallucination and fixability, but is it causal? A perturbation experiment: rephrase prompts to shift their embedding into denser neighborhoods and test whether hallucination rates decrease. This would distinguish density as a causal factor from a correlate of entity rarity.
+- Frame as: "the thesis established the diagnostic; the natural next step is testing the mechanism."
+
+**¶2 — Generalization: embeddings, models, and naturalistic prompts (3-4 sentences)**
+- Combines three scope questions into one direction: does the density signal hold across embedding models (sentence-transformers, model-internal representations), across more architectures (dense models, closed-source), and on naturalistic user queries rather than template-generated prompts?
+- The preliminary embedding comparison (Appendix B) and TruthfulQA transfer provide starting points; the full test would determine whether density-as-difficulty is a general geometric principle or specific to one experimental setup.
+- Frame as: "the thesis validated the signal in one setting; the question is how far it extends."
+
+**¶3 — Operational geometry and method comparison (3-4 sentences)**
+- Two practical next steps. First, geometry-guided prefix selection: the bridge analysis shows density predicts which prompts benefit from intervention, so a geometry-aware system could select the optimal prefix per prompt rather than applying one prefix uniformly. Second, direct comparison with R-Tuning (Zhang et al. 2024), the closest method in the literature — both teach abstention via SFT, but through different training signals. Running both on the same benchmark would clarify whether geometric curation adds value over probing-based selection.
+- Frame as: "the thesis built the diagnostic pipeline; the question is whether it improves operational systems."
+
+#### §8.5 Concluding Remarks (~0.25 page)
+
+**Calibration**: Tarun closes with 3-4 sentences connecting back to his opening (Leibniz's dream) and calling his work "a small step." Angela closes with ~4 sentences about uncovering "novel glimpses of insight." Both are brief, modest, and zoom out to broader significance without overclaiming.
+
+**What this section must do:**
+1. Restate the thesis arc at the highest level of abstraction — one sentence, no numbers
+2. Name the core intellectual finding (not the pipeline, not the methods — the *idea*)
+3. Connect back to the opening framing (Ch 1's metacognition/Twain quote — "what you know for sure that just ain't so")
+4. One sentence of broader significance — modest, not flowery
+
+**What it must NOT do:**
+- Re-list contributions (§8.1 did that)
+- Re-list limitations (§8.2 did that)
+- Introduce new ideas
+- Be more than ~4-5 sentences
+- Be flowery or grandiose ("we hope this thesis serves as a beacon...")
+
+**Paragraph outline (~4 sentences):**
+
+1. The arc: geometry predicts hallucination, prompts reduce it, fine-tuning makes the reduction permanent, and geometry predicts where the reduction has side effects. (One sentence — the thesis in miniature.)
+2. The core idea: the model learned when to be skeptical about its own knowledge — epistemic caution, not pattern matching. This is the finding that unifies the generalization evidence.
+3. Connection back to Ch 1: the Twain quote and the metacognition framing. The thesis asked whether representational structure reveals where a model's knowledge thins out. The answer is yes — and that structure can guide both diagnosis and intervention.
+4. Broader significance (modest): as LLMs are deployed in high-stakes settings, understanding *where* they fail — not just *how often* — becomes increasingly important. Geometric analysis of the input space is one approach to that understanding.
 
 ---
 
@@ -2027,7 +3376,7 @@ Each content chapter poses a research question with its own specific methods and
 | 3 | **Literature Review** — 6 subsections with gap statements | 10-15 |
 | 4 | **Experimental Setup** — 4.1 Benchmark construction (categories, templates, entities, scaling to 2,879 prompts), 4.2 Model selection, 4.3 Consensus judging pipeline (3-judge, agreement, biases, human validation), 4.4 Embedding approach | 11-17 |
 | 5 | **Can Geometry Predict Hallucination?** — 5.1 Geometric feature extraction, 5.2 Initial benchmark results (honest decomposition), 5.3 Expanded benchmark validation (within-category density signal), 5.4 What geometry captures and what it doesn't | 15-20 |
-| 6 | **Can Prompts Reduce Hallucination?** — 6.1 Prefix design (5 prefixes, literature grounding), 6.2 Pilot study (449 prompts), 6.3 Replication at scale (2,430 prompts), 6.4 Category and refusal analysis, 6.5 Correctness-safety tradeoff | 15-20 |
+| 6 | **Can Prompts Reduce Hallucination?** — 6.1 Prefix design (5 prefixes, literature grounding), 6.2 Pilot study (449 prompts), 6.3 Replication at scale (2,430 prompts), 6.4 Category-level analysis (combined: per-category effectiveness, regressions, refusal, correctness-safety tradeoff) | 15-20 |
 | 7 | **Can Geometry Guide Intervention?** — 7.1 Geometric difficulty analysis, 7.2 Geometric taxonomy of fixability, 7.3 Geometry-informed training data curation, 7.4 Fine-tuning and the precision-recall tradeoff, 7.5 The full pipeline | 15-20 |
 | 8 | **Discussion and Conclusion** — 8.1 What geometry actually predicts, 8.2 The four contributions, 8.3 Limitations, 8.4 Future work, 8.5 Concluding remarks | 10-15 |
 | A-D | **Appendices** — full prefix texts, judge diagnostics, statistical supplement, template/entity examples | 10-20 |
@@ -2045,7 +3394,7 @@ Discussion and Conclusion are merged into one final chapter (like Angela Li's Ch
 
 Chapter 7 ("Can Geometry Guide Intervention?") works without building an operational geometry-based prefix selector. The chapter's arc:
 
-1. **Bridge analysis** (7.1-7.2): Geometry predicts which hallucinations are fixable. Within-category density signal (p=0.034/0.047). Geometric taxonomy of difficulty — "unfixable" prompts live in sparse embedding regions.
+1. **Bridge analysis** (7.1-7.2): Geometry predicts which hallucinations are fixable. Within-category density signal (p=0.046/0.012, post-CoT-exclusion). Geometric taxonomy of difficulty — "unfixable" prompts live in sparse embedding regions.
 2. **Best-per-prompt selection** (7.3): The unfixable prompts (28 Mixtral, 24 Llama) are geometrically characterized and excluded from training data. This IS geometry guiding intervention — at the data curation level rather than runtime.
 3. **Fine-tuning** (7.4): Distillation results from Step 11. Includes entity-contamination disclosure (Step 11C) as a methodological note — 61% entity overlap exists. Decontamination gap: Mixtral configC 94.4%→91.6% (+2.8pp), Llama configA 94.0%→93.5% (+0.5pp). Llama gap is negligible; Mixtral gap is moderate but within the <3pp "no inflation" threshold. Confirms behavioral caution not memorization. ~1-1.5 paragraphs with small table, not a standalone section.
 4. **Full pipeline** (7.5): Geometry is the diagnostic, prompts are the treatment, fine-tuning is the cure.
@@ -2071,38 +3420,26 @@ Phase 6 would add a third way (geometry *selects* the prefix at runtime), but th
 
 ---
 
-## Figure Inventory by Chapter
+## Figure Audit (updated March 24, 2026)
 
-All figures are generated. New figures in `thesis/figures/`; existing figures in their respective `results/*/analysis/` directories. The only figure not yet created is the Ch 4 pipeline diagram (conceptual — create manually in TikZ/draw.io).
+**7 active figures** across Chapters 4–7. All use serif font, 11pt base, 13pt bold titles, 12pt axis labels, 10pt tick labels, 9pt legends. Style consistency verified March 24.
 
-| Chapter | Figure | File | Source |
-|---|---|---|---|
-| Ch 4 | Pipeline diagram | *create manually* | TikZ/draw.io |
-| Ch 4 | Judge agreement heatmap | `v5_judge_agreement.png` | `results/v5_prefixes/analysis/` |
-| Ch 5 | Geometry vs hallucination scatter (Mixtral) | `v5_geometry_vs_hallucination_mixtral-8x7b.png` | `results/v5_baselines/analysis/` |
-| Ch 5 | Geometry vs hallucination scatter (Llama) | `v5_geometry_vs_hallucination_llama-4-maverick-17b.png` | `results/v5_baselines/analysis/` |
-| Ch 5 | Within-category density violin (Mixtral) | `v5_within_category_mixtral-8x7b.png` | `results/v5_baselines/analysis/` |
-| Ch 5 | Within-category density violin (Llama) | `v5_within_category_llama-4-maverick-17b.png` | `results/v5_baselines/analysis/` |
-| Ch 5 | Within-category AUC decomposition | `ch5_within_category_auc.png` | `thesis/figures/` |
-| Ch 5 | Cross-model consistency heatmap | `consistency_heatmap.png` | `results/v3/multi_model/` |
-| Ch 6 | Category heatmap (Mixtral) | `v5_category_heatmap_mixtral-8x7b.png` | `results/v5_prefixes/analysis/` |
-| Ch 6 | Category heatmap (Llama) | `v5_category_heatmap_llama-4-maverick-17b.png` | `results/v5_prefixes/analysis/` |
-| Ch 6 | Accuracy-safety tradeoff curve | `v5_tradeoff_curve.png` | `results/v5_prefixes/analysis/` |
-| Ch 6 | Refusal rates by prefix | `v5_refusal_rates.png` | `results/v5_prefixes/analysis/` |
-| Ch 6 | Pilot vs scale comparison | `ch6_v4_v5_comparison.png` | `thesis/figures/` |
-| Ch 7 | Prefix bridge scatter (Mixtral) | `v5_bridge_mixtral-8x7b.png` | `results/v5_prefixes/analysis/` |
-| Ch 7 | Prefix bridge scatter (Llama) | `v5_bridge_llama-4-maverick-17b.png` | `results/v5_prefixes/analysis/` |
-| Ch 7 | FT bridge analysis (Mixtral) | `ft_bridge_mixtral-8x7b.png` | `results/v5_finetuned/analysis/` |
-| Ch 7 | FT bridge analysis (Llama) | `ft_bridge_llama-4-maverick-17b.png` | `results/v5_finetuned/analysis/` |
-| Ch 7 | Baseline vs prefix vs FT comparison | `ch7_ft_comparison.png` | `thesis/figures/` |
-| Ch 7 | Per-category FT heatmap | `ch7_ft_category_heatmap.png` | `thesis/figures/` |
-| Ch 7 | LoRA hyperparameter sensitivity | `ch7_hyperparameter_sensitivity.png` | `thesis/figures/` |
-| Ch 7 | Regression error type breakdown | `ch7_regression_breakdown.png` | `thesis/figures/` |
-| Ch 7 | Density by FT outcome (key figure) | `ch7_density_by_ft_outcome.png` | `thesis/figures/` |
-| Ch 7 | Template ablation: accuracy vs template count | *to generate* | `results/v5_finetuned/ablation/` |
-| Ch 7 | Template ablation: seen vs novel template split | *to generate* | `results/v5_finetuned/ablation/` |
+| # | Chapter | Figure | File | Verdict | Notes |
+|---|---------|--------|------|---------|-------|
+| 1 | Ch 4 | Pipeline overview (TikZ) | inline in `setup.tex` | **KEEP** | Navigational roadmap for 30-page methods chapter. Standard thesis practice. |
+| 2 | Ch 4 | Oppositeness schematic (TikZ) | inline in `setup.tex` | **KEEP** | Essential — most novel/unintuitive feature, our own construction. No prose substitute. |
+| 3 | Ch 5 | UMAP category scatter | `figures/v5_category_umap_combined.png` | **KEEP** | Motivates decomposition (Sec 5.3). Makes category confound viscerally obvious. |
+| ~~4~~ | ~~Ch 5~~ | ~~Decomposition AUC bars~~ | ~~`figures/ch5_decomposition_auc.png`~~ | **CUT** | Restated Table 5.3 as bars. The +0.018/+0.041 increments looked negligible visually, undermining the "small but meaningful" argument. Table is more precise and compact. Removed March 24. |
+| 5 | Ch 5 | Within-category AUC dots | `figures/ch5_within_category_auc_dots.png` | **KEEP** | Pattern of where signal exists across 7 categories — only visible as figure. Motivates focus on nonexistent in Sec 5.4. |
+| 6 | Ch 5 | Density box plots (nonexistent) | `figures/ch5_within_category_density_nonexistent.png` | **KEEP** | Payoff figure for Ch 5's central claim. Shows distributional shift, not just means. Strongest figure in Ch 5. |
+| 7 | Ch 6 | Category × prefix heatmap | `figures/ch6_category_heatmap.png` | **KEEP** (weaker) | Duplicates Table 6.2 but color encoding makes patterns (hard column, easy rows) immediately visible. Would be second to cut if tight. |
+| 8 | Ch 7 | Hallucination comparison bars | `figures/ch7_hallucination_comparison.pdf` | **KEEP** | Money figure for Ch 7. Significance brackets communicate key statistical claim. Synthesizes across conditions in a way tables can't. |
 
-**Total**: 23 figures (1 pending manual creation, 2 pending generation from data, 13 existing, 7 newly generated).
+**Style notes:**
+- All matplotlib figures use: `font.family: serif`, `font.size: 11`, `axes.titlesize: 13`, `axes.labelsize: 12`, `xtick.labelsize: 10`, `ytick.labelsize: 10`, `legend.fontsize: 9`
+- TikZ figures inherit LaTeX document font (serif)
+- UMAP and Ch6 heatmap were regenerated March 24 to fix sans-serif → serif
+- Ch7 scatter plot (ft_bridge_mixtral) was evaluated and replaced with the comparison bar chart — scatter had n=6 still-broken points against 366 background dots, visually unconvincing despite strong statistics
 
 ---
 

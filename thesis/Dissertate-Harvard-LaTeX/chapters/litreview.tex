@@ -7,7 +7,7 @@ Geometry is not true, it is advantageous.
 \chapter{Literature Review}
 \label{ch:litreview}
 
-This chapter surveys prior work across four areas that converge in this thesis: hallucination taxonomy, benchmarking, and evaluation methodology; representation-based approaches to truthfulness; entity knowledge and its limits; and intervention via prompting and fine-tuning. Each section identifies a specific gap that motivates the research questions addressed in later chapters. A concluding synthesis distills these gaps into the three questions that structure the remainder of the thesis.
+Research on hallucination has progressed along several parallel tracks: detecting it, measuring it, probing for it in model internals, and trying to fix it through prompting or fine-tuning. However, these tracks have remained largely disconnected. Detection work asks whether a model hallucinated; benchmarking work asks how often; representation work asks where in the model's internals the signal lives; and intervention work asks what to do about it. No existing framework connects prediction to intervention---knowing that a prompt is risky does not yet inform how to make it safer. This chapter traces these lines of work and identifies the gaps between them.
 
 
 %% ═══════════════════════════════════════════════════════════════════════════

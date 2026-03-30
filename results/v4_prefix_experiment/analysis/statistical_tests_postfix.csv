@@ -1,0 +1,9 @@
+model,prefix,baseline_halluc_pct,prefix_halluc_pct,reduction_pp,improved,worsened,chi2,p_value
+mixtral-8x7b,entity_aware,11.80,1.34,10.47,48,1,43.18,0.000000
+mixtral-8x7b,structured_caution,11.80,1.78,10.02,46,1,41.19,0.000000
+mixtral-8x7b,epistemic_humility,11.80,3.56,8.24,40,3,30.14,0.000000
+mixtral-8x7b,fact_grounded,11.80,3.56,8.24,41,4,28.80,0.000000
+llama-4-maverick-17b,entity_aware,5.79,2.45,3.34,18,3,9.33,0.002250
+llama-4-maverick-17b,structured_caution,5.79,1.34,4.45,22,2,15.04,0.000105
+llama-4-maverick-17b,epistemic_humility,5.79,1.78,4.01,18,0,16.06,0.000062
+llama-4-maverick-17b,fact_grounded,5.79,1.56,4.23,21,2,14.09,0.000175

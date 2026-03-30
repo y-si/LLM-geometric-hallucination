@@ -1,147 +1,171 @@
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
-\contentsline {chapter}{\numberline {2}Background}{2}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Large Language Models}{2}{section.2.1}%
-\contentsline {paragraph}{Inference.}{3}{section.2.1}%
-\contentsline {paragraph}{Instruction tuning and system prompts.}{3}{section.2.1}%
-\contentsline {paragraph}{Open-weight vs.\ closed models.}{3}{section.2.1}%
-\contentsline {paragraph}{Mixture-of-Experts architectures.}{4}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Hallucination in Large Language Models}{4}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Taxonomy}{4}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}Causes}{5}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Consequences and Detection Challenges}{6}{subsection.2.2.3}%
-\contentsline {section}{\numberline {2.3}Text Embeddings and Embedding Geometry}{6}{section.2.3}%
-\contentsline {subsection}{\numberline {2.3.1}Text Embeddings}{7}{subsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.3.2}Cosine Distance}{7}{subsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.3.3}High-Dimensional Geometry}{7}{subsection.2.3.3}%
-\contentsline {subsection}{\numberline {2.3.4}The Manifold Hypothesis}{8}{subsection.2.3.4}%
-\contentsline {subsection}{\numberline {2.3.5}Geometric Concepts}{8}{subsection.2.3.5}%
-\contentsline {paragraph}{$k$-nearest neighbors.}{8}{subsection.2.3.5}%
-\contentsline {paragraph}{Principal Component Analysis.}{8}{subsection.2.3.5}%
-\contentsline {paragraph}{Intrinsic dimensionality.}{9}{equation.2.2}%
-\contentsline {paragraph}{Local density.}{9}{equation.2.2}%
-\contentsline {paragraph}{Curvature.}{9}{equation.2.2}%
-\contentsline {paragraph}{Centrality.}{10}{equation.2.2}%
-\contentsline {paragraph}{Oppositeness.}{10}{equation.2.2}%
-\contentsline {section}{\numberline {2.4}Evaluating Language Model Outputs}{10}{section.2.4}%
-\contentsline {subsection}{\numberline {2.4.1}The Evaluation Bottleneck}{10}{subsection.2.4.1}%
-\contentsline {subsection}{\numberline {2.4.2}LLM-as-Judge}{10}{subsection.2.4.2}%
-\contentsline {subsection}{\numberline {2.4.3}Known Biases}{11}{subsection.2.4.3}%
-\contentsline {subsection}{\numberline {2.4.4}Rubric Design}{11}{subsection.2.4.4}%
-\contentsline {section}{\numberline {2.5}Fine-Tuning and Parameter-Efficient Adaptation}{12}{section.2.5}%
-\contentsline {subsection}{\numberline {2.5.1}Supervised Fine-Tuning}{12}{subsection.2.5.1}%
-\contentsline {subsection}{\numberline {2.5.2}LoRA: Low-Rank Adaptation}{12}{subsection.2.5.2}%
-\contentsline {subsection}{\numberline {2.5.3}Self-Distillation}{13}{subsection.2.5.3}%
-\contentsline {chapter}{\numberline {3}Literature Review}{14}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Hallucination: Taxonomy and Theoretical Limits}{14}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Benchmarks for Factuality Evaluation}{15}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Automated Evaluation and the LLM-as-Judge Paradigm}{16}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Detecting Hallucination from Internal Representations}{17}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}Probing for Truthfulness}{17}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}Geometric and Spectral Methods}{17}{subsection.3.4.2}%
-\contentsline {subsection}{\numberline {3.4.3}Uncertainty-Based and Inference-Time Methods}{18}{subsection.3.4.3}%
-\contentsline {section}{\numberline {3.5}Entity Knowledge and Knowledge Boundaries}{19}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Prompt Engineering for Factuality}{20}{section.3.6}%
-\contentsline {section}{\numberline {3.7}Fine-Tuning for Truthfulness}{21}{section.3.7}%
-\contentsline {subsection}{\numberline {3.7.1}Alignment and Its Costs}{21}{subsection.3.7.1}%
-\contentsline {subsection}{\numberline {3.7.2}Factuality-Targeted Fine-Tuning}{21}{subsection.3.7.2}%
-\contentsline {subsection}{\numberline {3.7.3}Data Selection}{21}{subsection.3.7.3}%
-\contentsline {section}{\numberline {3.8}Synthesis and Research Questions}{22}{section.3.8}%
-\contentsline {chapter}{\numberline {4}Experimental Setup}{24}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Benchmark Construction}{25}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}Category Design}{25}{subsection.4.1.1}%
-\contentsline {paragraph}{Factual.}{26}{subsection.4.1.1}%
-\contentsline {paragraph}{Nonexistent.}{26}{subsection.4.1.1}%
-\contentsline {paragraph}{Impossible.}{26}{subsection.4.1.1}%
-\contentsline {paragraph}{Ambiguous.}{27}{subsection.4.1.1}%
-\contentsline {paragraph}{Borderline: Plausible Fake.}{27}{subsection.4.1.1}%
-\contentsline {paragraph}{Borderline: Obscure Real.}{27}{subsection.4.1.1}%
-\contentsline {paragraph}{Borderline: Edge Factual.}{27}{subsection.4.1.1}%
-\contentsline {paragraph}{Why seven categories.}{28}{table.caption.5}%
-\contentsline {subsection}{\numberline {4.1.2}Template Design}{29}{subsection.4.1.2}%
-\contentsline {paragraph}{Template diversity.}{29}{subsection.4.1.2}%
-\contentsline {paragraph}{Template coverage.}{29}{subsection.4.1.2}%
-\contentsline {paragraph}{Entity filling.}{30}{subsection.4.1.2}%
-\contentsline {paragraph}{Placeholder validation.}{30}{subsection.4.1.2}%
-\contentsline {subsection}{\numberline {4.1.3}Entity Pools and Validation}{30}{subsection.4.1.3}%
-\contentsline {paragraph}{Sourcing.}{30}{subsection.4.1.3}%
-\contentsline {paragraph}{Entity diversity caps.}{31}{subsection.4.1.3}%
-\contentsline {paragraph}{Fake entity validation.}{31}{subsection.4.1.3}%
-\contentsline {paragraph}{Obscure real entity verification.}{32}{subsection.4.1.3}%
-\contentsline {subsection}{\numberline {4.1.4}Benchmark Scaling}{32}{subsection.4.1.4}%
-\contentsline {paragraph}{Design constraints.}{32}{subsection.4.1.4}%
-\contentsline {paragraph}{Scaling rationale.}{33}{Item.8}%
-\contentsline {paragraph}{Validation.}{33}{table.caption.6}%
-\contentsline {section}{\numberline {4.2}Model Selection}{34}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Cross-Model Benchmark Suite}{35}{subsection.4.2.1}%
-\contentsline {paragraph}{Selection rationale.}{35}{table.caption.7}%
-\contentsline {paragraph}{Limitations of model selection.}{36}{table.caption.7}%
-\contentsline {subsection}{\numberline {4.2.2}Intervention Target Models}{36}{subsection.4.2.2}%
-\contentsline {paragraph}{Why two models.}{37}{subsection.4.2.2}%
-\contentsline {paragraph}{Architectural contrast.}{37}{subsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.2.3}Generation Parameters}{38}{subsection.4.2.3}%
-\contentsline {paragraph}{Infrastructure.}{38}{subsection.4.2.3}%
-\contentsline {paragraph}{Single-sample design.}{38}{subsection.4.2.3}%
-\contentsline {section}{\numberline {4.3}Consensus Judging Pipeline}{39}{section.4.3}%
-\contentsline {subsection}{\numberline {4.3.1}Why LLM Judges}{39}{subsection.4.3.1}%
-\contentsline {subsection}{\numberline {4.3.2}Panel Design}{40}{subsection.4.3.2}%
-\contentsline {paragraph}{Why three judges.}{40}{Item.11}%
-\contentsline {paragraph}{Why these three.}{41}{Item.11}%
-\contentsline {paragraph}{Judge--evaluatee overlap.}{41}{Item.11}%
-\contentsline {paragraph}{Judge temperature.}{41}{Item.11}%
-\contentsline {subsection}{\numberline {4.3.3}Evaluation Rubric}{41}{subsection.4.3.3}%
-\contentsline {paragraph}{Why four labels, not binary.}{42}{table.caption.8}%
-\contentsline {paragraph}{Category-specific evaluation rules.}{42}{table.caption.8}%
-\contentsline {subsection}{\numberline {4.3.4}Judge Prompt Design}{43}{subsection.4.3.4}%
-\contentsline {paragraph}{Ground truth provision.}{44}{subsection.4.3.4}%
-\contentsline {paragraph}{No few-shot examples.}{44}{subsection.4.3.4}%
-\contentsline {paragraph}{Structured output.}{44}{subsection.4.3.4}%
-\contentsline {subsection}{\numberline {4.3.5}Majority Vote and Consensus}{45}{subsection.4.3.5}%
+\contentsline {section}{\numberline {1.1}Our Contributions}{2}{section.1.1}%
+\contentsline {chapter}{\numberline {2}Background}{6}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Large Language Models}{6}{section.2.1}%
+\contentsline {paragraph}{Inference.}{7}{section.2.1}%
+\contentsline {paragraph}{Instruction tuning and system prompts.}{7}{section.2.1}%
+\contentsline {paragraph}{Open-weight vs.\ closed models.}{7}{section.2.1}%
+\contentsline {paragraph}{Mixture-of-Experts architectures.}{8}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Hallucination in Large Language Models}{8}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Taxonomy}{8}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Causes}{9}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Consequences and Detection Challenges}{10}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}Text Embeddings and Embedding Geometry}{10}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Text Embeddings}{10}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Cosine Distance}{11}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}High-Dimensional Geometry}{11}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}The Manifold Hypothesis}{11}{subsection.2.3.4}%
+\contentsline {subsection}{\numberline {2.3.5}Geometric Concepts}{12}{subsection.2.3.5}%
+\contentsline {section}{\numberline {2.4}Evaluating Language Model Outputs}{13}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}The Evaluation Bottleneck}{13}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}LLM-as-Judge}{13}{subsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.4.3}Known Biases}{14}{subsection.2.4.3}%
+\contentsline {subsection}{\numberline {2.4.4}Rubric Design}{14}{subsection.2.4.4}%
+\contentsline {section}{\numberline {2.5}Fine-Tuning and Parameter-Efficient Adaptation}{15}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Supervised Fine-Tuning}{15}{subsection.2.5.1}%
+\contentsline {subsection}{\numberline {2.5.2}LoRA: Low-Rank Adaptation}{15}{subsection.2.5.2}%
+\contentsline {subsection}{\numberline {2.5.3}Self-Distillation}{16}{subsection.2.5.3}%
+\contentsline {chapter}{\numberline {3}Literature Review}{17}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Hallucination: Taxonomy and Theoretical Limits}{17}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Benchmarks for Factuality Evaluation}{18}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Automated Evaluation and the LLM-as-Judge Paradigm}{19}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Detecting Hallucination from Internal Representations}{20}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Probing for Truthfulness}{20}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Geometric and Spectral Methods}{20}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Uncertainty-Based and Inference-Time Methods}{21}{subsection.3.4.3}%
+\contentsline {section}{\numberline {3.5}Entity Knowledge and Knowledge Boundaries}{22}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Prompt Engineering for Factuality}{23}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Fine-Tuning for Truthfulness}{24}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}Alignment and Its Costs}{24}{subsection.3.7.1}%
+\contentsline {subsection}{\numberline {3.7.2}Factuality-Targeted Fine-Tuning}{24}{subsection.3.7.2}%
+\contentsline {subsection}{\numberline {3.7.3}Data Selection}{24}{subsection.3.7.3}%
+\contentsline {section}{\numberline {3.8}Synthesis and Research Questions}{25}{section.3.8}%
+\contentsline {chapter}{\numberline {4}Experimental Setup}{27}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Benchmark Construction}{28}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Category Design}{28}{subsection.4.1.1}%
+\contentsline {paragraph}{Factual.}{29}{subsection.4.1.1}%
+\contentsline {paragraph}{Nonexistent.}{29}{subsection.4.1.1}%
+\contentsline {paragraph}{Impossible.}{29}{subsection.4.1.1}%
+\contentsline {paragraph}{Ambiguous.}{30}{subsection.4.1.1}%
+\contentsline {paragraph}{Borderline: Plausible Fake.}{30}{subsection.4.1.1}%
+\contentsline {paragraph}{Borderline: Obscure Real.}{30}{subsection.4.1.1}%
+\contentsline {paragraph}{Borderline: Edge Factual.}{30}{subsection.4.1.1}%
+\contentsline {paragraph}{Why seven categories.}{31}{table.caption.7}%
+\contentsline {subsection}{\numberline {4.1.2}Template Design}{32}{subsection.4.1.2}%
+\contentsline {paragraph}{Template diversity.}{32}{subsection.4.1.2}%
+\contentsline {paragraph}{Template coverage.}{32}{subsection.4.1.2}%
+\contentsline {paragraph}{Entity filling.}{33}{subsection.4.1.2}%
+\contentsline {paragraph}{Placeholder validation.}{33}{subsection.4.1.2}%
+\contentsline {subsection}{\numberline {4.1.3}Entity Pools and Validation}{33}{subsection.4.1.3}%
+\contentsline {paragraph}{Sourcing.}{33}{subsection.4.1.3}%
+\contentsline {paragraph}{Entity diversity caps.}{34}{subsection.4.1.3}%
+\contentsline {paragraph}{Fake entity validation.}{34}{subsection.4.1.3}%
+\contentsline {paragraph}{Obscure real entity verification.}{35}{subsection.4.1.3}%
+\contentsline {subsection}{\numberline {4.1.4}Benchmark Scaling}{35}{subsection.4.1.4}%
+\contentsline {paragraph}{Design constraints.}{35}{subsection.4.1.4}%
+\contentsline {paragraph}{Scaling rationale.}{36}{Item.11}%
+\contentsline {paragraph}{Validation.}{36}{table.caption.8}%
+\contentsline {section}{\numberline {4.2}Model Selection}{37}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Cross-Model Benchmark Suite}{37}{subsection.4.2.1}%
+\contentsline {paragraph}{Selection rationale.}{38}{table.caption.9}%
+\contentsline {paragraph}{Limitations of model selection.}{39}{table.caption.9}%
+\contentsline {subsection}{\numberline {4.2.2}Intervention Target Models}{39}{subsection.4.2.2}%
+\contentsline {paragraph}{Why two models.}{39}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}Generation Parameters}{39}{subsection.4.2.3}%
+\contentsline {paragraph}{Infrastructure.}{40}{subsection.4.2.3}%
+\contentsline {paragraph}{Single-sample design.}{40}{subsection.4.2.3}%
+\contentsline {section}{\numberline {4.3}Consensus Judging Pipeline}{40}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Why LLM Judges}{40}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Panel Design}{41}{subsection.4.3.2}%
+\contentsline {paragraph}{Why three judges.}{42}{Item.14}%
+\contentsline {paragraph}{Why these three.}{42}{Item.14}%
+\contentsline {paragraph}{Judge--evaluatee overlap.}{42}{Item.14}%
+\contentsline {paragraph}{Judge temperature.}{42}{Item.14}%
+\contentsline {subsection}{\numberline {4.3.3}Evaluation Rubric}{42}{subsection.4.3.3}%
+\contentsline {paragraph}{Why four labels, not binary.}{42}{table.caption.10}%
+\contentsline {paragraph}{Category-specific evaluation rules.}{43}{table.caption.10}%
+\contentsline {paragraph}{Judge prompt design.}{44}{Item.18}%
+\contentsline {paragraph}{Ground truth provision.}{45}{Item.18}%
+\contentsline {paragraph}{Structured output.}{45}{Item.18}%
+\contentsline {subsection}{\numberline {4.3.4}Majority Vote and Consensus}{45}{subsection.4.3.4}%
 \contentsline {paragraph}{Confidence score.}{45}{equation.4.1}%
-\contentsline {paragraph}{Failed judge handling.}{45}{equation.4.2}%
-\contentsline {subsection}{\numberline {4.3.6}Human Validation}{46}{subsection.4.3.6}%
-\contentsline {paragraph}{Limitations of the validation.}{46}{subsection.4.3.6}%
-\contentsline {subsection}{\numberline {4.3.7}Sensitivity Analysis and Limitations}{47}{subsection.4.3.7}%
-\contentsline {paragraph}{Known limitations.}{47}{Item.18}%
+\contentsline {paragraph}{Failed judge handling.}{46}{equation.4.2}%
+\contentsline {subsection}{\numberline {4.3.5}Human Validation}{46}{subsection.4.3.5}%
+\contentsline {paragraph}{Limitations of the validation.}{47}{subsection.4.3.5}%
+\contentsline {subsection}{\numberline {4.3.6}Sensitivity Analysis and Limitations}{47}{subsection.4.3.6}%
+\contentsline {paragraph}{Known limitations.}{48}{Item.21}%
 \contentsline {section}{\numberline {4.4}Embedding and Geometric Feature Extraction}{48}{section.4.4}%
 \contentsline {subsection}{\numberline {4.4.1}Embedding Model}{48}{subsection.4.4.1}%
 \contentsline {paragraph}{Why external embeddings.}{49}{subsection.4.4.1}%
 \contentsline {paragraph}{Normalization.}{49}{subsection.4.4.1}%
 \contentsline {subsection}{\numberline {4.4.2}Corpus Construction}{49}{subsection.4.4.2}%
-\contentsline {paragraph}{Why a single combined corpus.}{50}{subsection.4.4.2}%
-\contentsline {paragraph}{Self-reference.}{50}{subsection.4.4.2}%
-\contentsline {paragraph}{No preliminary dimensionality reduction.}{50}{subsection.4.4.2}%
 \contentsline {subsection}{\numberline {4.4.3}Geometric Features}{50}{subsection.4.4.3}%
-\contentsline {subsubsection}{Local Intrinsic Dimension}{51}{table.caption.9}%
-\contentsline {subsubsection}{Curvature Proxy}{52}{equation.4.3}%
+\contentsline {subsubsection}{Local Intrinsic Dimension}{50}{table.caption.11}%
+\contentsline {subsubsection}{Curvature Proxy}{51}{equation.4.3}%
 \contentsline {subsubsection}{Oppositeness}{52}{equation.4.4}%
-\contentsline {subsubsection}{Local Density}{54}{figure.caption.10}%
-\contentsline {subsubsection}{Centrality}{55}{equation.4.5}%
-\contentsline {subsection}{\numberline {4.4.4}Hyperparameter Choices}{55}{subsection.4.4.4}%
-\contentsline {subsection}{\numberline {4.4.5}Limitations}{56}{subsection.4.4.5}%
-\contentsline {paragraph}{Single embedding model.}{56}{subsection.4.4.5}%
-\contentsline {paragraph}{External vs.\ internal representations.}{57}{subsection.4.4.5}%
-\contentsline {paragraph}{Corpus dependence.}{57}{subsection.4.4.5}%
-\contentsline {paragraph}{Static features.}{57}{subsection.4.4.5}%
-\contentsline {section}{\numberline {4.5}Summary of Experimental Infrastructure}{57}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Statistical Methods}{58}{section.4.6}%
-\contentsline {chapter}{\numberline {5}Can Prompts Reduce Hallucinations?}{60}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Prefix Design}{60}{section.5.1}%
-\contentsline {chapter}{\numberline {6}Can Geometry Guide Intervention?}{63}{chapter.6}%
-\contentsline {chapter}{\numberline {7}Discussion}{64}{chapter.7}%
-\contentsline {chapter}{Appendix \numberline {A}Experimental Artifacts}{65}{appendix.1.A}%
-\contentsline {section}{\numberline {A.1}Judge System Prompt}{65}{section.1.A.1}%
-\contentsline {paragraph}{User prompt template.}{67}{section.1.A.1}%
-\contentsline {section}{\numberline {A.2}Prompt Prefix Texts}{67}{section.1.A.2}%
-\contentsline {paragraph}{1. Epistemic Humility.}{68}{section.1.A.2}%
-\contentsline {paragraph}{2. Fact-Grounded.}{68}{section.1.A.2}%
-\contentsline {paragraph}{3. Entity-Aware.}{68}{section.1.A.2}%
-\contentsline {paragraph}{4. Structured Caution.}{68}{section.1.A.2}%
-\contentsline {paragraph}{5. Chain-of-Thought Verification (excluded).}{69}{section.1.A.2}%
-\contentsline {section}{\numberline {A.3}Fine-Tuning Configurations}{69}{section.1.A.3}%
-\contentsline {chapter}{Appendix \numberline {B}Supplementary Analysis}{71}{appendix.1.B}%
-\contentsline {section}{\numberline {B.1}Cross-Model Correlation Matrix}{71}{section.1.B.1}%
-\contentsline {section}{\numberline {B.2}Embedding Model Robustness}{71}{section.1.B.2}%
-\contentsline {section}{\numberline {B.3}Human Validation Details}{71}{section.1.B.3}%
-\contentsline {section}{\numberline {B.4}Geometric Feature Visualizations}{71}{section.1.B.4}%
-\contentsline {chapter}{References}{78}{appendix*.14}%
-\contentsline {chapter}{References}{87}{appendix*.16}%
+\contentsline {subsubsection}{Local Density}{53}{figure.caption.12}%
+\contentsline {subsubsection}{Centrality}{54}{equation.4.5}%
+\contentsline {subsection}{\numberline {4.4.4}Hyperparameter Choices}{54}{subsection.4.4.4}%
+\contentsline {subsection}{\numberline {4.4.5}Limitations}{55}{subsection.4.4.5}%
+\contentsline {section}{\numberline {4.5}Summary of Experimental Infrastructure}{56}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Statistical Methods}{57}{section.4.6}%
+\contentsline {chapter}{\numberline {5}Can Prompts Reduce Hallucinations?}{58}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Prefix Design}{58}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Pilot Study on the Held-Out Benchmark}{60}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Replication at Scale}{62}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Category-Level Analysis}{64}{section.5.4}%
+\contentsline {chapter}{\numberline {6}Can Geometry Guide Intervention?}{67}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Geometric Prediction of Fixability}{68}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Fixability Framework}{68}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Fixed vs.\ Correct: Geometric Differences}{69}{subsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.1.3}Aggregate Fixability Prediction}{70}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}Within-Category Fixability Prediction}{71}{subsection.6.1.4}%
+\contentsline {paragraph}{Multiple comparisons.}{72}{table.caption.25}%
+\contentsline {subsection}{\numberline {6.1.5}Summary and Interpretation}{72}{subsection.6.1.5}%
+\contentsline {section}{\numberline {6.2}Training Data Curation}{73}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Best-Per-Prompt Selection}{73}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Training Data Composition}{74}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}From Selection to Fine-Tuning}{74}{subsection.6.2.3}%
+\contentsline {section}{\numberline {6.3}Fine-Tuning Results}{75}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Fine-Tuning Setup}{75}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}Aggregate Results}{75}{subsection.6.3.2}%
+\contentsline {paragraph}{Hyperparameter sensitivity.}{76}{figure.caption.29}%
+\contentsline {subsection}{\numberline {6.3.3}Per-Category Analysis: The Precision-Recall Tradeoff}{77}{subsection.6.3.3}%
+\contentsline {paragraph}{Regression analysis.}{78}{table.caption.30}%
+\contentsline {subsection}{\numberline {6.3.4}Robustness Checks}{78}{subsection.6.3.4}%
+\contentsline {paragraph}{Overfitting check.}{78}{subsection.6.3.4}%
+\contentsline {paragraph}{Entity-level decontamination.}{79}{subsection.6.3.4}%
+\contentsline {subsection}{\numberline {6.3.5}Geometric Analysis of Fine-Tuning Outcomes}{79}{subsection.6.3.5}%
+\contentsline {section}{\numberline {6.4}Generalization Evidence}{81}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Cross-Domain Transfer: TruthfulQA}{81}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}Template Invariance}{82}{subsection.6.4.2}%
+\contentsline {subsection}{\numberline {6.4.3}Cross-Category Generalization}{83}{subsection.6.4.3}%
+\contentsline {subsection}{\numberline {6.4.4}Convergence of Evidence}{85}{subsection.6.4.4}%
+\contentsline {section}{\numberline {6.5}Discussion}{85}{section.6.5}%
+\contentsline {paragraph}{The precision-recall tradeoff.}{86}{section.6.5}%
+\contentsline {paragraph}{What the model learned.}{86}{section.6.5}%
+\contentsline {paragraph}{Hyperparameter overrides.}{87}{section.6.5}%
+\contentsline {paragraph}{Scope and limitations.}{87}{section.6.5}%
+\contentsline {chapter}{\numberline {7}Discussion}{88}{chapter.7}%
+\contentsline {chapter}{Appendix \numberline {A}Experimental Artifacts}{93}{appendix.1.A}%
+\contentsline {section}{\numberline {A.1}Judge System Prompt}{93}{section.1.A.1}%
+\contentsline {paragraph}{User prompt template.}{95}{section.1.A.1}%
+\contentsline {section}{\numberline {A.2}Prompt Prefix Texts}{96}{section.1.A.2}%
+\contentsline {paragraph}{1. Epistemic Humility.}{96}{section.1.A.2}%
+\contentsline {paragraph}{2. Fact-Grounded.}{96}{section.1.A.2}%
+\contentsline {paragraph}{3. Entity-Aware.}{96}{section.1.A.2}%
+\contentsline {paragraph}{4. Structured Caution.}{97}{section.1.A.2}%
+\contentsline {paragraph}{5. Chain-of-Thought Verification (excluded).}{97}{section.1.A.2}%
+\contentsline {section}{\numberline {A.3}Judge API Failure and Contamination Fix}{98}{section.1.A.3}%
+\contentsline {paragraph}{Scope.}{98}{section.1.A.3}%
+\contentsline {paragraph}{Chain-of-Thought Verification.}{98}{section.1.A.3}%
+\contentsline {paragraph}{Resolution.}{98}{section.1.A.3}%
+\contentsline {paragraph}{Impact on conclusions.}{99}{section.1.A.3}%
+\contentsline {section}{\numberline {A.4}Fine-Tuning Configurations}{99}{section.1.A.4}%
+\contentsline {section}{\numberline {A.5}Example Benchmark Prompts}{99}{section.1.A.5}%
+\contentsline {section}{\numberline {A.6}Training Data Format}{100}{section.1.A.6}%
+\contentsline {chapter}{Appendix \numberline {B}Supplementary Analysis}{102}{appendix.1.B}%
+\contentsline {section}{\numberline {B.1}Cross-Model Correlation Matrix}{102}{section.1.B.1}%
+\contentsline {section}{\numberline {B.2}Embedding Model Robustness}{104}{section.1.B.2}%
+\contentsline {chapter}{References}{113}{appendix*.41}%
+\contentsline {chapter}{References}{122}{appendix*.43}%

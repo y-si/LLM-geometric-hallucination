@@ -37,10 +37,10 @@ plt.rcParams.update({
 COLORS = {
     "mixtral": "#e74c3c",
     "llama": "#3498db",
-    "geo_only": "#95a5a6",       # Gray
-    "cat_only": "#f39c12",       # Orange
-    "cat_geo": "#2ecc71",        # Green
-    "increment": "#27ae60",      # Darker green
+    "geo_only": "#A8C4E0",       # Light steel blue
+    "cat_only": "#4A90C4",       # Medium blue
+    "cat_geo": "#1B3A5C",        # Dark navy
+    "increment": "#C0392B",      # Dark red (contrast against blue bars)
     "chance": "#bdc3c7",         # Light gray
     "v3": "#9b59b6",             # Purple
 }
@@ -74,20 +74,24 @@ def fig1_auc_comparison():
         for bar in bars:
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width() / 2, height + 0.008,
-                    f"{height:.3f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+                    f"{height:.3f}", ha="center", va="bottom", fontsize=9, fontweight="bold",
+                    color="black")
 
     # Chance line
     ax.axhline(y=0.5, color=COLORS["chance"], linestyle="--", linewidth=1.0, label="Chance (0.5)")
 
-    # Increment annotations — bracket above bars connecting cat-only to cat+geo
+    # Increment annotations — bracket above value labels, connecting cat-only to cat+geo
     for i, (co, cg) in enumerate(zip(cat_only, cat_geo)):
         increment = cg - co
-        top = cg + 0.022  # above the value label
+        # Start bracket lines above the value labels (not above the bars)
+        label_top_left = co + 0.025   # above "0.782" / "0.773" text
+        label_top_right = cg + 0.025  # above "0.800" / "0.814" text
+        top = max(label_top_left, label_top_right) + 0.020  # horizontal bar above both
         cat_x = x[i]
         geo_x = x[i] + width
-        # Horizontal bracket with vertical ticks
+        # Vertical ticks start above labels, horizontal bar connects them
         ax.plot([cat_x, cat_x, geo_x, geo_x],
-                [co + 0.003, top, top, cg + 0.003],
+                [label_top_left, top, top, label_top_right],
                 color=COLORS["increment"], lw=1.2, clip_on=False)
         ax.text((cat_x + geo_x) / 2, top + 0.006, f"+{increment:.3f}",
                 fontsize=9, color=COLORS["increment"], fontweight="bold",
@@ -96,8 +100,8 @@ def fig1_auc_comparison():
     ax.set_ylabel("Cross-Validated AUC")
     ax.set_xticks(x)
     ax.set_xticklabels(models)
-    ax.set_ylim(0.45, 0.90)
-    ax.legend(loc="upper left", framealpha=0.9)
+    ax.set_ylim(0.45, 0.92)
+    ax.legend(loc="lower right", framealpha=0.9)
     ax.grid(axis="y", alpha=0.3)
 
     plt.tight_layout()
@@ -182,64 +186,91 @@ def fig3_within_category_auc():
     df = pd.read_csv(csv_path)
     auc_rows = df[df["feature"] == "LOGISTIC_CV_AUC"].copy()
 
-    # Category display order (by Mixtral hallucination rate, matching Table 5.1)
+    # All 7 categories, sorted by Mixtral n_hall (matching Table 5.5 in thesis)
     cat_order = [
-        "borderline_plausible_fake",
         "nonexistent",
-        "impossible",
+        "borderline_plausible_fake",
         "factual",
         "borderline_obscure_real",
+        "impossible",
+        "ambiguous",
+        "borderline_edge_factual",
     ]
     cat_labels = {
-        "borderline_plausible_fake": "Plausible\nFake",
         "nonexistent": "Nonexistent",
-        "impossible": "Impossible",
+        "borderline_plausible_fake": "Plausible\nFake",
         "factual": "Factual",
         "borderline_obscure_real": "Obscure\nReal",
+        "impossible": "Impossible",
+        "ambiguous": "Ambiguous",
+        "borderline_edge_factual": "Edge\nFactual",
     }
 
-    fig, ax = plt.subplots(figsize=(9, 5))
+    # Model styling
+    models = [
+        ("mixtral-8x7b", "#C0392B", "o", "Mixtral 8x7B"),
+        ("llama-4-maverick-17b", "#2166AC", "s", "Llama 4 Maverick"),
+    ]
 
-    offset = 0.12
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+
+    offset = 0.15  # horizontal offset between models within a category
+
     for i, cat in enumerate(cat_order):
-        for j, (model_key, color, marker, label) in enumerate([
-            ("mixtral-8x7b", COLORS["mixtral"], "o", "Mixtral"),
-            ("llama-4-maverick-17b", COLORS["llama"], "s", "Llama"),
-        ]):
+        for j, (model_key, color, marker, label) in enumerate(models):
             row = auc_rows[(auc_rows["model"] == model_key) & (auc_rows["category"] == cat)]
+            x_pos = i + (j - 0.5) * offset * 2
+
             if row.empty:
-                # Mark as missing
-                ax.scatter(i + (j - 0.5) * offset * 2, 0.5, marker="x",
-                          color=color, s=60, alpha=0.4, zorder=5)
+                # Excluded category — mark with ×
+                ax.scatter(x_pos, 0.5, marker="x", color=color, s=70,
+                          alpha=0.5, zorder=5, linewidths=1.5)
                 continue
 
             auc_val = row["hall_mean"].values[0]
-            auc_std = row["correct_mean"].values[0]  # std stored in correct_mean column
-            n_hall = row["n_hall"].values[0]
+            auc_std = row["correct_mean"].values[0]  # std stored in correct_mean col
+            n_hall = int(row["n_hall"].values[0])
 
-            x_pos = i + (j - 0.5) * offset * 2
-            ax.scatter(x_pos, auc_val, marker=marker, color=color, s=80,
+            # Point + error bar
+            ax.scatter(x_pos, auc_val, marker=marker, color=color, s=90,
                       edgecolors="black", linewidth=0.5, zorder=5,
                       label=label if i == 0 else None)
             ax.errorbar(x_pos, auc_val, yerr=auc_std, color=color,
-                       capsize=3, capthick=1, linewidth=1, alpha=0.6, zorder=4)
-
-            # n label
-            ax.text(x_pos, auc_val - auc_std - 0.035, f"n={int(n_hall)}",
-                   fontsize=7, ha="center", color=color, alpha=0.7)
+                       capsize=4, capthick=1, linewidth=1.2, alpha=0.5, zorder=4)
 
     # Chance line
-    ax.axhline(y=0.5, color=COLORS["chance"], linestyle="--", linewidth=1.0, label="Chance")
+    ax.axhline(y=0.5, color="#bdc3c7", linestyle="--", linewidth=1.0, label="Chance (0.5)")
+
+    # n-labels as a compact table below x-axis labels
+    # Place combined "n = Mixtral / Llama" below each category
+    n_data = {}
+    for cat in cat_order:
+        n_data[cat] = {}
+        for model_key, _, _, _ in models:
+            row = auc_rows[(auc_rows["model"] == model_key) & (auc_rows["category"] == cat)]
+            if not row.empty:
+                n_data[cat][model_key] = int(row["n_hall"].values[0])
+            else:
+                n_data[cat][model_key] = "—"
+
+    # Add n-labels as a second line under category labels
+    cat_label_with_n = []
+    for cat in cat_order:
+        nm = n_data[cat].get("mixtral-8x7b", "—")
+        nl = n_data[cat].get("llama-4-maverick-17b", "—")
+        base = cat_labels[cat]
+        cat_label_with_n.append(f"{base}\n($n$={nm} / {nl})")
 
     ax.set_xticks(range(len(cat_order)))
-    ax.set_xticklabels([cat_labels[c] for c in cat_order])
-    ax.set_ylabel("Within-Category CV AUC")
-    ax.set_ylim(0.30, 0.80)
-    ax.legend(loc="upper right", framealpha=0.9)
+    ax.set_xticklabels(cat_label_with_n, fontsize=9)
+    ax.set_ylabel("Within-Category Cross-Validated AUC", fontsize=12)
+    ax.set_ylim(0.22, 0.82)
+    ax.set_xlim(-0.5, len(cat_order) - 0.5)
+    ax.legend(loc="upper right", framealpha=0.9, fontsize=9)
     ax.grid(axis="y", alpha=0.3)
 
-    # Note about missing categories
-    ax.text(0.02, 0.02, "× = too few hallucinations for logistic regression",
+    # Note about excluded categories
+    ax.text(0.02, 0.02, "× = insufficient hallucinations for logistic regression",
            transform=ax.transAxes, fontsize=8, fontstyle="italic", alpha=0.6)
 
     plt.tight_layout()

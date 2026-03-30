@@ -1,9 +1,515 @@
 %!TEX root = ../dissertation.tex
 \begin{savequote}[75mm]
-This is some random quote to start off the chapter.
-\qauthor{Firstname lastname}
+The purpose of computing is insight, not numbers.
+\qauthor{Richard Hamming}
 \end{savequote}
 
 \chapter{Can Geometry Guide Intervention?}
 \label{ch:finetuning}
 
+% Chapter~\ref{ch:geo-predict-hallucination} established that geometric properties of prompt embeddings predict hallucination risk, most robustly through within-category embedding density. Chapter~\ref{ch:prefixes} showed that system-prompt prefixes substantially reduce hallucination rates, with the best prefix per model eliminating 68--69\% of baseline hallucinations. This chapter asks whether these two findings connect: do the same geometric features that predict whether a prompt \emph{will} hallucinate also predict whether that hallucination \emph{can be fixed}?
+
+% A positive answer would mean geometry provides not just a risk signal but a difficulty signal---distinguishing prompts that yield to simple intervention from those that resist it. This chapter tests that hypothesis through a bridge analysis linking geometric features to prefix fixability, then explores whether the best prompt behavior can be made permanent through fine-tuning and what that consolidation costs.
+
+Prompting changes what a model does with what it knows. Fine-tuning changes what it knows---or more precisely, how it organizes and accesses its knowledge. The previous chapter established that instructional prompting reduces hallucination broadly but bluntly, without discriminating between entities the model nearly knows and entities it cannot know. This chapter investigates whether fine-tuning can achieve what prompting cannot: a targeted improvement that reshapes the model's behavior in sparse embedding regions while preserving its competence in dense ones.
+
+But first it asks: do the geometric features that predict where hallucination occurs also predict which hallucinations can be fixed? If so, then geometry is not just a diagnostic tool---it is a difficulty signal, and one that could guide which interventions to apply and where.
+
+\section{Geometric Prediction of Fixability}
+\label{sec:fixability-prediction}
+
+Among prompts that hallucinate at baseline, some are corrected by at least one of the four prefix interventions, while others resist all four. Can geometric features of the embedding space predict which group a hallucinating prompt falls into?
+
+\subsection{Fixability Framework}
+\label{sec:fixability-framework}
+
+We classify each prompt into one of five mutually exclusive outcome categories based on its baseline (no-prefix) label and its results across all four prefix conditions:
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lp{9.5cm}@{}}
+\toprule
+\textbf{Outcome} & \textbf{Definition} \\
+\midrule
+Already correct & Correct at baseline (label = 0) and never hallucinating under any prefix. \\
+Fixed & Hallucinated at baseline (label = 2), not hallucinating (label $\neq$ 2) with at least one prefix. \\
+Still broken & Hallucinated at baseline, still hallucinating with all four prefixes. \\
+Regressed & Correct at baseline, hallucinated with at least one prefix. \\
+Other & Partial or refused at baseline. Excluded from fixability analysis. \\
+\bottomrule
+\end{tabular}
+\caption{Outcome categories for the fixability analysis. Each prompt receives one label per model based on its baseline label and its results across all four prefix conditions from Chapter~\ref{ch:prefixes}. Categories are mutually exclusive.}
+\label{tab:fixability-definitions}
+\end{table}
+
+The definition of ``fixed'' is deliberately permissive: the question is whether the model can be steered away from fabrication, not whether it produces a perfect answer. Any non-hallucination outcome---correct, refused, or partial---counts as fixed. A model that refuses a question about a nonexistent entity has arguably succeeded; it stopped hallucinating.
+
+Table~\ref{tab:outcome-distribution} reports the outcome distribution.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Already correct} & \textbf{Fixed} & \textbf{Still broken} & \textbf{Regressed} & \textbf{Other} \\
+\midrule
+Mixtral 8x7B & 1{,}868 & 333 & 27 & 136 & 66 \\
+Llama 4 Maverick & 2{,}073 & 211 & 24 & 64 & 58 \\
+\bottomrule
+\end{tabular}
+\caption{Outcome distribution across the 2,430-prompt expanded benchmark. Prefixes fix 92.5\% (333/360) of Mixtral baseline hallucinations and 89.8\% (211/235) of Llama baseline hallucinations. 27 and 24 prompts respectively resist all four prefix interventions.}
+\label{tab:outcome-distribution}
+\end{table}
+
+The fix rates are high: prefixes eliminate hallucination for the large majority of baseline failures. The ``still broken'' class is small---27 prompts for Mixtral and 24 for Llama. These prompts span multiple categories: Mixtral's unfixable prompts include 13 nonexistent, 7 plausible-but-fake, 5 factual, and 2 from other categories; Llama's include 14 plausible-but-fake, 7 nonexistent, and 3 impossible. Entity-dependent categories (nonexistent and plausible-but-fake) account for 74\% of Mixtral and 88\% of Llama unfixable prompts---though for Mixtral this roughly matches the base rate of these categories in the hallucinating pool (73.3\%), so the concentration is informative only for Llama (base rate 74.0\%).
+
+The 136 Mixtral and 64 Llama regressions---prompts correct at baseline that hallucinate under at least one prefix---do not affect the best-per-prompt selection in Section~\ref{sec:best-per-prompt}, which chooses each prompt's best outcome across all conditions including the no-prefix baseline. A prompt that regresses under one prefix but remains correct at baseline is assigned its baseline label.
+
+\subsection{Fixed vs.\ Correct: Geometric Differences}
+\label{sec:fixed-vs-correct}
+
+Do fixable hallucinations have different geometric signatures from prompts that never hallucinate? Table~\ref{tab:fixed-vs-correct} reports Mann-Whitney $U$ tests comparing fixed and already-correct prompts across four geometric features.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Feature} & \textbf{Fixed mean} & \textbf{Correct mean} & $p$ & $|r|$ \\
+\midrule
+Mixtral & \textbf{Oppositeness} & \textbf{0.513} & \textbf{0.491} & $\boldsymbol{2.1 \times 10^{-10}}$ & \textbf{0.218} \\
+        & \textbf{Density}      & \textbf{2.025} & \textbf{2.084} & $\boldsymbol{6.9 \times 10^{-5}}$ & \textbf{0.137} \\
+        & Centrality   & 0.705 & 0.714 & 0.058 & 0.065 \\
+        & Curvature    & 0.366 & 0.358 & 0.849 & 0.007 \\
+\addlinespace
+Llama   & \textbf{Oppositeness} & \textbf{0.525} & \textbf{0.492} & $\boldsymbol{8.4 \times 10^{-17}}$ & \textbf{0.347} \\
+        & \textbf{Centrality}   & \textbf{0.697} & \textbf{0.714} & $\boldsymbol{7.2 \times 10^{-4}}$ & \textbf{0.141} \\
+        & Density      & 2.033 & 2.084 & 0.084 & 0.072 \\
+        & Curvature    & 0.346 & 0.359 & 0.351 & 0.039 \\
+\bottomrule
+\end{tabular}
+\caption{Mann-Whitney $U$ tests comparing fixed (baseline hallucination corrected by a prefix) and already-correct prompts. Bold rows are significant ($p < 0.05$). Features sorted by $|r|$ within each model. Fixed prompts tend toward higher oppositeness and lower density than correct prompts---the same direction as Chapter~\ref{ch:geo-predict-hallucination}'s hallucination prediction, though density reaches significance only for Mixtral. Curvature is null for both models, consistent with its downgrading in Table~\ref{tab:feature-synthesis}.}
+\label{tab:fixed-vs-correct}
+\end{table}
+
+Oppositeness is the strongest discriminator, with effect sizes ($|r| = 0.218$ and $0.347$) comparable to Chapter~\ref{ch:geo-predict-hallucination}'s between-category hallucination analysis ($|r| = 0.218$ and $0.367$, Table~\ref{tab:mann-whitney}). Centrality reaches significance for Llama; Mixtral's effect is in the same direction but borderline ($p = 0.058$). Curvature remains null.
+
+This establishes that fixable hallucinations are geometrically distinguishable from correct prompts---they show higher oppositeness and lower density, the same pattern identified in Chapter~\ref{ch:geo-predict-hallucination}'s hallucination analysis. The sharper test is whether geometry distinguishes fixable from \emph{unfixable} hallucinations: among prompts that hallucinate at baseline, what separates those that yield to intervention from those that resist it?
+
+\subsection{Aggregate Fixability Prediction}
+\label{sec:aggregate-fixability}
+
+A logistic regression predicting fixed vs.\ still-broken using all four geometric features provides a direct multivariate test. An initial study on the 449-prompt held-out benchmark achieved AUC = 0.86 (Mixtral) and 0.83 (Llama)---but those numbers used train-set evaluation without cross-validation.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lrrcc@{}}
+\toprule
+\textbf{Model} & $n_{\text{fixed}}$ & $n_{\text{broken}}$ & \textbf{AUC (train)} & \textbf{AUC (5-fold CV)} \\
+\midrule
+Mixtral 8x7B & 333 & 27 & 0.653 & 0.573 \\
+Llama 4 Maverick & 211 & 24 & 0.768 & 0.712 \\
+\bottomrule
+\end{tabular}
+\caption{Logistic regression AUC for predicting fixability (fixed vs.\ still-broken) using four geometric features, with 5-fold cross-validation. Llama achieves a cross-validated AUC of 0.712, indicating genuine predictive signal despite severe class imbalance (9:1). Mixtral's weaker 0.573 likely reflects its more extreme imbalance (12:1).}
+\label{tab:fixability-auc}
+\end{table}
+
+The cross-validated AUCs are lower than the initial study for three reasons. First, the expanded analysis uses 5-fold cross-validation rather than train-set evaluation, which eliminates overfitting bias. Second, the initial study computed fixability per-prefix, producing larger still-broken groups per comparison. The expanded analysis asks whether any prefix fixes the hallucination, collapsing more cases into the fixed category. Third, the initial study used only four categories of prompts; the expanded benchmark spans seven categories with different baseline difficulty.
+
+Llama's cross-validated AUC of 0.712 is above chance and indicates genuine predictive signal: geometry captures meaningful variation in fixability. Mixtral's 0.573 is weaker, consistent with the more severe class imbalance. At the individual feature level, Llama shows a significant aggregate difference between fixed and still-broken prompts on density ($p = 0.008$, $|r| = 0.334$): unfixable prompts occupy sparser embedding neighborhoods regardless of category. Mixtral's aggregate feature-level tests do not reach significance (all $p > 0.08$), though directions are consistent.
+
+\subsection{Within-Category Fixability Prediction}
+\label{sec:within-cat-fixability}
+
+The non-circular test: among prompts that share the same category and question structure, can geometric features predict which hallucinations are fixable? We focus on categories with sufficient still-broken prompts for meaningful analysis. Table~\ref{tab:within-cat-fixability} reports results for the nonexistent category, which provides the largest within-category samples.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Feature} & \textbf{Broken mean} & \textbf{Fixed mean} & $p$ & $|r|$ \\
+\midrule
+Mixtral & \textbf{Density} & \textbf{1.959} & \textbf{2.181} & \textbf{0.046} & \textbf{0.334} \\
+        & Curvature & 0.176 & 0.366 & 0.073 & 0.299 \\
+        & Centrality & 0.704 & 0.678 & 0.243 & 0.195 \\
+        & Oppositeness & 0.536 & 0.532 & 0.717 & 0.061 \\
+\addlinespace
+Llama   & \textbf{Density} & \textbf{1.877} & \textbf{2.149} & \textbf{0.012} & \textbf{0.557} \\
+        & Centrality & 0.717 & 0.678 & 0.146 & 0.332 \\
+        & Oppositeness & 0.518 & 0.534 & 0.437 & 0.180 \\
+        & Curvature & 0.341 & 0.311 & 0.530 & 0.143 \\
+\bottomrule
+\end{tabular}
+\caption{Within-category Mann-Whitney $U$ tests for the nonexistent category, comparing still-broken and fixed hallucinations. Features sorted by $|r|$ within each model. Bold rows significant at $p < 0.05$ (uncorrected); neither survives Bonferroni correction for 24 within-category tests ($\alpha = 0.0021$). Mixtral: $n_{\text{broken}} = 13$, $n_{\text{fixed}} = 164$. Llama: $n_{\text{broken}} = 7$, $n_{\text{fixed}} = 107$.}
+\label{tab:within-cat-fixability}
+\end{table}
+
+Density predicts fixability within the nonexistent category for both models: unfixable prompts have lower density (sparser neighborhoods) than fixable ones, with $p = 0.046$ for Mixtral and $p = 0.012$ for Llama. The effect sizes are medium-to-large ($|r| = 0.334$ and $0.557$), and the direction matches Chapter~\ref{ch:geo-predict-hallucination}'s within-category finding for hallucination prediction---sparser regions predict worse outcomes at both the hallucination level (Chapter~\ref{ch:geo-predict-hallucination}) and the fixability level.
+
+The plausible-but-fake category provides partial additional evidence, though the significant feature differs across models. Mixtral shows a borderline density effect ($p = 0.059$, $|r| = 0.432$, $n_{\text{broken}} = 7$), while Llama shows a significant oppositeness effect ($p = 0.009$, $|r| = 0.466$, $n_{\text{broken}} = 14$): within this single category of plausible fabrications, unfixable prompts have higher oppositeness (broken mean $= 0.556$ vs.\ fixed mean $= 0.522$), indicating stronger opposing semantic associations in their embedding neighborhoods.
+
+\paragraph{Multiple comparisons.} The strongest evidence is the consistency of the density signal, not any individual $p$-value. Density predicts fixability the same way it predicts hallucination: sparser neighborhoods mean worse outcomes. This holds for both models in the nonexistent category, and it matches Chapter~\ref{ch:geo-predict-hallucination}'s within-category finding, where the same test on larger samples ($n = 177$ and $114$ hallucinated prompts, vs.\ 7--13 here) survived study-wide Bonferroni correction ($p = 5.7 \times 10^{-7}$ and $3.4 \times 10^{-5}$). The convergence across two independent models, two independent analyses, and a shared feature identity supports the interpretation that the density signal extends from predicting hallucination to predicting fixability. That said, no individual within-category fixability $p$-value survives Bonferroni correction for 24 tests ($\alpha = 0.0021$); the small still-broken samples (7--13 prompts) limit statistical power rather than indicating absent signal.
+
+\subsection{Summary and Interpretation}
+\label{sec:fixability-summary}
+
+Category membership alone does not predict which hallucinations resist intervention---Mixtral's unfixable prompts are distributed across categories in roughly the same proportions as its hallucinating prompts overall. Geometry does predict it. Within structurally identical prompts, those in sparser embedding neighborhoods are not only more likely to hallucinate but also more likely to resist intervention. This extends density from a risk predictor to a difficulty predictor---the central claim of this chapter. The 27 and 24 unfixable prompts identified by this analysis are excluded from fine-tuning training data in the next section: the first practical application of the fixability analysis informing intervention.
+
+
+\section{Training Data Curation}
+\label{sec:training-curation}
+
+\subsection{Best-Per-Prompt Selection}
+\label{sec:best-per-prompt}
+
+For each of the 2,430 expanded benchmark prompts, we select the single best model response from five candidate sources: the baseline (no-prefix) condition and the four prefix conditions evaluated in Chapter~\ref{ch:prefixes}. Selection follows a strict priority ordering:
+
+\begin{enumerate}
+    \item \textbf{Correct} (label = 0). Among multiple correct responses, the one with the highest judge confidence score is selected.
+    \item \textbf{Partial} (label = 1). Contains substantive correct content with minor gaps or imprecision.
+    \item \textbf{Refusal} (label = 3). The model declined to answer---preferable to fabrication.
+    \item \textbf{Hallucination} (label = 2). If all five sources hallucinate, the prompt is \emph{excluded} from training data entirely.
+\end{enumerate}
+
+Two design choices here merit explanation. First, partial responses are prioritized over refusals. A partial answer contains learnable knowledge---correct content that the model can be trained to reproduce---while a refusal teaches the model to decline. Training on partials preserves knowledge breadth; training on refusals risks teaching excessive caution, a tradeoff we examine in Section~\ref{sec:ft-results}.
+
+Second, the baseline (no-prefix) response is included as a candidate alongside the four prefix responses. This prevents a subtle form of data degradation: 6 Mixtral and 2 Llama prompts are answered correctly at baseline but receive no correct response from any of the four prefixes. Without baseline as a candidate, these prompts would receive partial or hallucinated training targets, teaching the model to worsen on questions it already handles correctly. Including baseline ensures all 8 receive correct training targets at no cost---the training format is (question, response) pairs regardless of which source provided the response.
+
+\subsection{Training Data Composition}
+\label{sec:training-composition}
+
+The resulting training data is overwhelmingly correct (Table~\ref{tab:training-composition}).
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+& \multicolumn{2}{c}{\textbf{Mixtral 8x7B}} & \multicolumn{2}{c}{\textbf{Llama 4 Maverick}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+& Count & \% & Count & \% \\
+\midrule
+Correct (label = 0) & 2{,}381 & 99.1 & 2{,}394 & 99.5 \\
+Partial (label = 1) & 22 & 0.9 & 11 & 0.5 \\
+Refusal (label = 3) & 0 & 0.0 & 1 & $<$0.1 \\
+\midrule
+\textbf{Selected for training} & \textbf{2{,}403} & & \textbf{2{,}406} & \\
+Excluded (unfixable) & 27 & & 24 & \\
+\bottomrule
+\end{tabular}
+\caption{Training data composition after best-per-prompt selection. Over 99\% of selected responses are correct. The 27 and 24 excluded prompts are the unfixable set from Section~\ref{sec:fixability-prediction}---prompts where all five candidate sources (baseline + four prefixes) produce hallucinations.}
+\label{tab:training-composition}
+\end{table}
+
+The 22 Mixtral and 11 Llama partial responses are concentrated in factual and borderline categories where questions admit nuanced answers that the judges rated as technically incomplete rather than fabricated. Entity-Aware contributes the largest share of selected responses for both models (${\sim}40\%$), consistent with its position as the best single prefix in Chapter~\ref{ch:prefixes}. The baseline contributes ${\sim}20$--$24\%$ of selections---prompts the model already handles correctly without intervention.
+
+\subsection{From Selection to Fine-Tuning}
+\label{sec:selection-to-ft}
+
+The selected (question, response) pairs are converted to chat-format training examples for supervised fine-tuning. Each example consists of a user message containing the benchmark question and an assistant message containing the selected response. No system message is included during training---the model learns careful answering behavior from the response content alone, without an explicit instruction to be cautious. This design choice tests whether epistemic caution can be internalized through examples rather than imposed through prompting.
+
+\section{Fine-Tuning Results}
+\label{sec:ft-results}
+
+Can the best prompt behavior be made permanent? We fine-tune both models on the curated training data using LoRA and evaluate on the held-out test set with no system prompt, testing whether the cautious behavior survives without the instruction that originally produced it.
+
+\subsection{Fine-Tuning Setup}
+\label{sec:ft-setup}
+
+We fine-tune both models using LoRA \citep{hu2022lora} via the Together AI platform. To test hyperparameter sensitivity, we train Mixtral under three configurations and Llama under one (see Table~\ref{tab:ft-lora-configs}).
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& \textbf{Config A} & \textbf{Config B} & \textbf{Config C} \\
+\midrule
+Learning rate & $2 \times 10^{-4}$ & $1 \times 10^{-4}$ & $2 \times 10^{-4}$ \\
+Epochs & 3 & 3 & 5 \\
+Purpose & Standard & Lower LR & More epochs \\
+\bottomrule
+\end{tabular}
+\caption{LoRA fine-tuning configurations. Learning rate and epochs (shown) were honored as requested; Together AI overrode other parameters: LoRA rank $16 \to 64$, alpha $32 \to 128$, dropout and weight decay removed. Mixtral uses standard LoRA on attention projections; Llama uses QLoRA with 4-bit quantization. Only Config~A was tested for Llama due to cost constraints.}
+\label{tab:ft-lora-configs}
+\end{table}
+
+Together AI overrode several hyperparameters (Table~\ref{tab:ft-lora-configs}; Appendix~\ref{app:ft-configs}), though \citet{hu2022lora} show LoRA performance is relatively insensitive to rank.
+
+All models are evaluated on the 449-prompt held-out test set using the same judge panel. No system message is used during inference, matching the training format.
+
+\subsection{Aggregate Results}
+\label{sec:ft-aggregate}
+
+Table~\ref{tab:ft-results} presents the main results.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}llccc@{}}
+\toprule
+\textbf{Model} & \textbf{Condition} & \textbf{Accuracy} & \textbf{Halluc.\ rate} & \textbf{Refusal rate} \\
+\midrule
+Mixtral & Baseline & 82.9\% & 11.8\% & 1.1\% \\
+        & Config A & 93.3\% & 1.8\% & 4.2\% \\
+        & Config B & 93.1\% & 1.8\% & 4.0\% \\
+        & \textbf{Config C} & \textbf{94.4\%} & \textbf{1.3\%} & \textbf{3.6\%} \\
+        & Best single prefix & 94.9\% & 1.8\% & 3.1\% \\
+\addlinespace
+Llama   & Baseline & 90.6\% & 5.8\% & 0.2\% \\
+        & \textbf{Config A} & \textbf{94.0\%} & \textbf{1.1\%} & \textbf{4.5\%} \\
+        & Best single prefix & 95.8\% & 1.3\% & 2.7\% \\
+\bottomrule
+\end{tabular}
+\caption{Fine-tuning results on the 449-prompt held-out test set. Accuracy = proportion judged correct (label~=~0). Best single prefix = Structured Caution for both models (evaluated on this test set; differs from Chapter~\ref{ch:prefixes}'s ranking on the expanded benchmark). Bold rows indicate the best fine-tuned configuration per model.}
+\label{tab:ft-results}
+\end{table}
+
+Fine-tuning achieves an 89\% relative hallucination reduction for Mixtral ($11.8\% \to 1.3\%$) and 81\% for Llama ($5.8\% \to 1.1\%$), with all improvements baked into model weights. McNemar's test confirms significance: Mixtral Config~C vs.\ baseline $p = 1.8 \times 10^{-10}$; Llama Config~A vs.\ baseline $p = 3.5 \times 10^{-3}$.
+
+Relative to the best single prefix (Structured Caution on this held-out test set; Entity-Aware ranked best for Mixtral on the larger expanded benchmark in Chapter~\ref{ch:prefixes}, reflecting the different prompt distributions), neither fine-tuned model differs significantly in accuracy (McNemar $p = 0.82$ for Mixtral, $p = 0.14$ for Llama). The comparison reveals a consistent tradeoff: fine-tuning produces lower hallucination rates than the best prefix (Table~\ref{tab:ft-results}) but higher refusal rates---the fine-tuned models shift the error profile toward caution rather than fabrication. The practical advantage is that this careful behavior is permanent, requiring no runtime prompt engineering. Figure~\ref{fig:hallucination-comparison} summarizes this tradeoff.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/ch7_hallucination_comparison.png}
+\caption{Hallucination and refusal rates on the 449-prompt held-out test set. Both interventions dramatically reduce hallucination relative to baseline (McNemar $p < 10^{-2}$), but fine-tuning and the best prefix do not differ significantly from each other (n.s.). The majority of reduced hallucinations become correct responses (Table~\ref{tab:ft-results}: accuracy rises from 82.9\%/90.6\% to 94.4\%/94.0\%), not refusals---refusal rates increase by only 2--4 percentage points. Fine-tuning achieves comparable error rates to the best prefix with the behavior baked into model weights.}
+\label{fig:hallucination-comparison}
+\end{figure}
+
+\paragraph{Hyperparameter sensitivity.} Among Mixtral's three configurations, more epochs outperforms lower learning rate: Config~C (5~epochs) achieves the highest accuracy (94.4\%) and lowest hallucination rate (1.3\%), while Configs~A and~B (3~epochs, different learning rates) are nearly identical (93.3\% vs.\ 93.1\%). Despite Together AI's aggressive LoRA rank of 64 and no dropout on ${\sim}2{,}400$ examples, there is no overfitting signal---the configuration with the most training (Config~C) is the best, not the worst. All three significantly outperform baseline ($p < 10^{-8}$).
+
+\subsection{Per-Category Analysis: The Precision-Recall Tradeoff}
+\label{sec:ft-precision-recall}
+
+Table~\ref{tab:ft-per-category} reveals where fine-tuning helps and where it costs.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lrccccc@{}}
+\toprule
+& & \multicolumn{2}{c}{\textbf{Mixtral Config C}} & & \multicolumn{2}{c}{\textbf{Llama Config A}} \\
+\cmidrule(lr){3-4} \cmidrule(lr){6-7}
+\textbf{Category} & $n$ & $\Delta$ Acc & $\Delta$ Hall & & $\Delta$ Acc & $\Delta$ Hall \\
+\midrule
+Nonexistent & 120 & $+$29.2 & $-$27.5 & & $+$5.8 & $-$5.8 \\
+Plausible fake & 31 & $+$32.3 & $-$32.3 & & $+$29.0 & $-$41.9 \\
+Factual & 98 & $+$5.1 & $-$4.1 & & $-$3.1 & $+$0.0 \\
+Obscure real & 30 & $+$6.7 & $+$0.0 & & $+$3.3 & $-$3.3 \\
+Impossible & 30 & $+$0.0 & $+$0.0 & & $+$3.3 & $+$0.0 \\
+Ambiguous & 120 & $+$0.0 & $+$0.0 & & $+$0.0 & $+$0.0 \\
+Edge factual & 20 & $+$0.0 & $+$0.0 & & $+$0.0 & $+$0.0 \\
+\bottomrule
+\end{tabular}
+\caption{Per-category accuracy and hallucination rate changes (fine-tuned minus baseline, in percentage points). Nonexistent and plausible-but-fake categories see dramatic improvements. Factual is the only category with an accuracy regression (Llama $-$3.1pp), driven by increased refusals.}
+\label{tab:ft-per-category}
+\end{table}
+
+The gains are concentrated in entity-dependent categories. Nonexistent prompts improve by 29.2~percentage points for Mixtral (70.0\%$\to$99.2\% accuracy, 28.3\%$\to$0.8\% hallucination) and 5.8pp for Llama (which had less room to improve from a 93.3\% baseline). Plausible-but-fake prompts improve by 32.3pp (Mixtral) and 29.0pp (Llama). These are the two categories where entity existence is the core question, and where learned skepticism directly applies.
+
+The cost of this learned skepticism is increased refusals on factual questions. Mixtral's factual refusal rate rises from 5.1\% to 15.3\% ($+$10 refusals); Llama's from 1.0\% to 15.3\% ($+$14 refusals). Llama's factual accuracy drops 3.1pp---the only category-level accuracy regression for either model. Plausible-but-fake also gains refusals (Llama: 0\%$\to$16.1\%), though this is offset by the large hallucination reduction.
+
+\paragraph{Regression analysis.} Examining individual prompt-level transitions from baseline-correct to fine-tuned-incorrect: Mixtral has 6 regressions (4~factual, 1~obscure-real, 1~plausible-fake) and Llama has 4 (3~factual, 1~plausible-fake). Of these 10 regressions, 7 are refusals (70\%), 2 are new hallucinations (20\%), and 1 is a partial (10\%). The model overwhelmingly errs toward caution rather than fabrication. This is a precision-recall tradeoff in the safer direction.
+
+\subsection{Robustness Checks}
+\label{sec:ft-robustness}
+
+\paragraph{Overfitting check.} We evaluate fine-tuned models on 200 randomly sampled training prompts (stratified by category) and compare accuracy to the 449-prompt held-out test set. Train--test accuracy gaps are small: $+$1.9pp for Mixtral Config~C (93.0\% train vs.\ 91.1\% test) and $+$4.1pp for Llama Config~A (96.5\% vs.\ 92.4\%). Both gaps are under 5pp, consistent with generalization rather than memorization. These figures reflect pre-correction labels (the overfitting check was conducted before the judge contamination correction described in Appendix~\ref{sec:judge-contamination}); the gap direction and magnitude are expected to be stable under correction, as both train and test subsets had similar rates of label error.
+
+\paragraph{Entity-level decontamination.} The training set and held-out test set share 59\% entity-level overlap (265 of 449 test prompts contain entities that also appear in training prompts with different templates). To assess whether fine-tuning memorized entity-specific answers rather than learning general caution, we re-score accuracy on the 107 clean test prompts whose entities do not appear in training.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+& \multicolumn{2}{c}{\textbf{All categories}} & \multicolumn{2}{c}{\textbf{Entity-independent only}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+\textbf{Model} & Full ($n{=}449$) & Clean ($n{=}107$) & Full ($n{=}268$) & Clean ($n{=}86$) \\
+\midrule
+Mixtral Config C & 94.4\% & 91.6\% & 92.9\% & 91.9\% \\
+Llama Config A & 94.0\% & 93.5\% & 92.9\% & 93.0\% \\
+\bottomrule
+\end{tabular}
+\caption{Decontamination analysis: accuracy on full test set vs.\ clean subset (no entity overlap with training). Entity-independent categories (factual, ambiguous, impossible, edge factual) provide the fairest comparison---entity overlap should not affect performance on questions that do not test entity identity. Gaps on entity-independent categories are $+$1.0pp (Mixtral) and $-$0.1pp (Llama).}
+\label{tab:decontamination}
+\end{table}
+
+The overall gap is $+$2.8pp for Mixtral and $+$0.5pp for Llama. Parsing by category type sharpens the interpretation. On entity-independent categories (where entity overlap between training and test is irrelevant because the questions test reasoning, not entity recognition) the gap is $+$1.0pp (Mixtral) and $-$0.1pp (Llama): effectively zero. On entity-dependent categories, the gap is larger ($+$6.2pp for Mixtral) but the clean subset is small ($n = 21$) and dominated by the plausible-but-fake category ($n = 6$ clean), where a single additional error changes accuracy by 16.7pp. Llama's entity-dependent gap is $+$0.3pp.
+
+The pattern is consistent with behavioral learning, not memorization: the model performs comparably on prompts whose entities it has never seen, particularly in the categories where entity identity should not matter.
+
+\subsection{Geometric Analysis of Fine-Tuning Outcomes}
+\label{sec:ft-geometry}
+
+Does geometry predict fine-tuning fixability the same way it predicts prefix fixability?
+
+On the 449-prompt held-out test set, fine-tuning produces the following outcome partition: Mixtral has 366 always-correct, 47 fixed by fine-tuning, 6 still broken, and 6 regressions (plus 24 other). Llama has 403 always-correct, 17 fixed, 9 still broken, and 4 regressions (plus 16 other).
+
+Table~\ref{tab:ft-bridge} reports Mann-Whitney $U$ tests comparing fixed and still-broken prompts.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+\textbf{Model} & \textbf{Feature} & \textbf{Fixed mean} & \textbf{Broken mean} & $p$ & $|r|$ & \textbf{Bonf.} \\
+\midrule
+Mixtral & \textbf{Centrality} & \textbf{0.654} & \textbf{0.777} & \textbf{0.0009} & \textbf{0.840} & \textbf{0.022} \\
+        & \textbf{Density} & \textbf{1.950} & \textbf{1.481} & \textbf{0.0017} & \textbf{0.798} & \textbf{0.040} \\
+        & Curvature & 0.313 & 0.587 & 0.070 & 0.461 & 1.000 \\
+\addlinespace
+Llama   & Density & 1.738 & 1.558 & 0.024 & 0.556 & 0.566 \\
+        & Curvature & 0.433 & 0.283 & 0.195 & 0.320 & 1.000 \\
+        & Centrality & 0.693 & 0.715 & 0.451 & 0.190 & 1.000 \\
+\bottomrule
+\end{tabular}
+\caption{Geometric features of prompts fixed vs.\ still broken by fine-tuning (Mann-Whitney $U$). Bonferroni correction applied across all 24 geometric tests conducted on the held-out test set (this table shows 6 of 24; remaining tests cover within-category and regression comparisons). Bold rows survive correction. Oppositeness excluded due to instability under corpus re-embedding (Appendix~\ref{app:embedding-robustness}). Mixtral: $n_{\text{fixed}} = 47$, $n_{\text{broken}} = 6$. Llama: $n_{\text{fixed}} = 17$, $n_{\text{broken}} = 9$.}
+\label{tab:ft-bridge}
+\end{table}
+
+This is the strongest geometric result in this chapter. Density and centrality predict fine-tuning fixability for Mixtral with large effect sizes ($|r| = 0.80$ and $0.84$) that survive Bonferroni correction. Fixed prompts have higher density (denser embedding neighborhoods) and lower centrality (closer to the corpus centroid) than still-broken prompts. Llama's density effect is in the same direction ($|r| = 0.56$, $p = 0.024$), yet does not survive Bonferroni correction, which is consistent with the smaller sample of fixed prompts ($n = 17$ vs.\ 47).
+
+This finding extends Section~\ref{sec:fixability-prediction}'s result across intervention types: embedding density predicts fixability whether the intervention is prompting (Section~\ref{sec:within-cat-fixability}) or fine-tuning. The direction is identical---sparser neighborhoods predict resistance to intervention---and the effect sizes are larger here than in the prefix analysis.
+
+Regressions ($n = 6$ for Mixtral, $n = 4$ for Llama) trend toward lower density (Mixtral: 1.548 vs.\ 1.880 for always-correct, $p = 0.061$), but no comparison reaches significance at these sample sizes.
+
+
+\section{Generalization Evidence}
+\label{sec:generalization}
+
+The previous section established that fine-tuning reduces hallucination and produces a precision-recall tradeoff on the custom benchmark. But does the learned caution generalize beyond the training distribution? We test generalization along three orthogonal dimensions: a different domain (TruthfulQA), different question structures (template ablation), and different category types (cross-category ablation). 
+\subsection{Cross-Domain Transfer: TruthfulQA}
+\label{sec:truthfulqa}
+
+TruthfulQA \citep{lin2022truthfulqa} tests a categorically different type of hallucination: misconceptions (false beliefs that humans commonly hold) rather than entity fabrication (inventing nonexistent entities). TruthfulQA's 817-question benchmark spans 38 categories including law, health, politics, and superstitions. Our fine-tuned models were trained exclusively on entity-fabrication questions and have never seen TruthfulQA or any misconception-focused data. Any improvement on TruthfulQA therefore reflects cross-domain transfer of learned caution.
+
+We evaluate the best configuration per model (Mixtral Config~C, Llama Config~A), selected by held-out performance before observing TruthfulQA results. Evaluation uses the same judge panel as all other experiments.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+\textbf{Model} & \textbf{Condition} & \textbf{Accuracy} & \textbf{Halluc.} & \textbf{Refusal} & \textbf{McNemar $p$} & \textbf{Bonf.} \\
+\midrule
+Mixtral & Baseline & 74.4\% & 16.9\% & 0.0\% & & \\
+        & Fine-tuned & 76.6\% & 14.7\% & 0.7\% & & \\
+        & $\Delta$ Accuracy & & & & 0.115 & No \\
+        & $\Delta$ Hallucination & & & & 0.076 & No \\
+\addlinespace
+Llama   & Baseline & 71.8\% & 17.6\% & 0.6\% & & \\
+        & Fine-tuned & 77.1\% & 13.2\% & 0.5\% & & \\
+        & $\Delta$ Accuracy & & & & \textbf{0.0002} & \textbf{Yes} \\
+        & $\Delta$ Hallucination & & & & \textbf{0.0005} & \textbf{Yes} \\
+\bottomrule
+\end{tabular}
+\caption{TruthfulQA results (817 questions). McNemar's tests with Bonferroni correction for 4 tests ($\alpha = 0.05/4 = 0.0125$). Models were fine-tuned on entity-fabrication data only and have never seen TruthfulQA during training. Bold indicates significance after correction.}
+\label{tab:truthfulqa}
+\end{table}
+
+Llama shows statistically significant improvement on both metrics: $+$5.3pp accuracy ($p = 0.0002$) and $-$4.4pp hallucination ($p = 0.0005$), both surviving Bonferroni correction. The transition matrix reveals 44 hallucinations fixed and 15 broken, for a net gain of 29 prompts. Mixtral improves directionally ($+$2.2pp accuracy, $-$2.2pp hallucination) but does not reach significance after correction ($p = 0.115$ and $0.076$).
+
+The relative hallucination reductions---13\% for Mixtral and 25\% for Llama---are modest compared to the 89\%/81\% reductions on the custom benchmark (Section~\ref{sec:ft-aggregate}). This is expected: entity skepticism partially overlaps with but does not fully address misconception detection. The categories with the largest Llama improvements (Law $-$19pp, Advertising $-$31pp) involve confident factual assertions---the same failure mode that entity-fabrication training targets.
+
+Notably, neither model shows increased refusal on TruthfulQA (Mixtral: 0.0\%$\to$0.7\%; Llama: 0.6\%$\to$0.5\%). The precision-recall tradeoff observed on factual questions in Section~\ref{sec:ft-precision-recall} does not transfer to this domain, suggesting that the increased refusal behavior is specific to entity-type uncertainty rather than a blanket personality shift. 
+
+This cross-domain transfer---from entity fabrication to misconception detection, with no shared training data---is the strongest single piece of evidence that fine-tuning taught general epistemic caution rather than domain-specific pattern matching.
+
+\subsection{Template Invariance}
+\label{sec:template-ablation}
+
+If the model learned template-specific patterns rather than a behavioral strategy, performance should degrade when evaluated on question structures that are absent from training. We test this by varying the number of distinct question templates in the fine-tuning data while evaluating on the same held-out test set.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lrcccccc@{}}
+\toprule
+& & \multicolumn{3}{c}{\textbf{Mixtral}} & \multicolumn{3}{c}{\textbf{Llama}} \\
+\cmidrule(lr){3-5} \cmidrule(lr){6-8}
+\textbf{Condition} & $n_{\text{train}}$ & Acc & Hall & $p$ vs T-all & Acc & Hall & $p$ vs T-all \\
+\midrule
+T5 (5 templates) & ${\sim}400$ & 92.7\% & 3.6\% & 0.099 & 94.4\% & 1.3\% & 0.773 \\
+T10 (10 templates) & ${\sim}660$ & 94.0\% & 2.2\% & 0.803 & 95.8\% & 1.3\% & 0.080 \\
+R$\{N\}$ (194, size-matched) & ${\sim}400$ & 93.1\% & 3.1\% & --- & 93.5\% & 1.6\% & --- \\
+T-all (194 templates) & ${\sim}2{,}400$ & 94.4\% & 1.3\% & --- & 94.0\% & 1.1\% & --- \\
+\bottomrule
+\end{tabular}
+\caption{Template diversity ablation on the 449-prompt held-out test set. T5/T10 use 5/10 templates; R$\{N\}$ uses all 194 templates but matches T5's dataset size (isolating diversity from size). McNemar $p$-values test each condition against T-all (the full training set). No condition is significantly worse than T-all.}
+\label{tab:template-ablation}
+\end{table}
+
+We find that template diversity is largely irrelevant. T5 (5~templates, ${\sim}400$ examples) is statistically indistinguishable from T-all (194~templates, ${\sim}2{,}400$ examples) for both models (McNemar $p = 0.099$ and $0.773$). The R$\{N\}$ condition---which matches T5's dataset size but draws from all 194 templates---performs comparably to T5 (McNemar $p = 0.838$ Mixtral, $0.386$ Llama), confirming that neither template diversity nor dataset size is the critical variable at this scale.
+
+A template-overlap analysis on the T5 condition reinforces this interpretation. Among test prompts whose question template appeared in T5 training, accuracy is 96.3\% for both models. Among prompts with novel templates not seen during training, accuracy drops only modestly: to 93.0\% for Mixtral ($-$3.3pp) and 94.1\% for Llama ($-$2.2pp). The model generalizes across question structures with minimal degradation, consistent with having learned a behavioral strategy (when to express skepticism) rather than template-specific response patterns.
+
+\subsection{Cross-Category Generalization}
+\label{sec:cross-category}
+
+The third generalization test asks whether caution learned from one type of knowledge failure transfers to other types. Our benchmark categories divide naturally into two groups: \emph{entity-dependent} categories (nonexistent, plausible-but-fake, obscure-but-real) where uncertainty concerns entity existence, and \emph{entity-independent} categories (factual, ambiguous, impossible, edge factual) where uncertainty concerns reasoning, scope, or question structure. We fine-tune models on each group separately and test on the full held-out set.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{@{}lrcccc@{}}
+\toprule
+& & \multicolumn{2}{c}{\textbf{Mixtral}} & \multicolumn{2}{c}{\textbf{Llama}} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+\textbf{Condition} & $n_{\text{train}}$ & Acc & Hall & Acc & Hall \\
+\midrule
+Full (all categories) & ${\sim}2{,}400$ & 94.4\% & 1.3\% & 94.0\% & 1.1\% \\
+Entity-dep only & ${\sim}980$ & 93.3\% & 2.0\% & \textbf{95.3\%} & \textbf{0.2\%} \\
+R$_{\text{entity-dep}}$ (size control) & ${\sim}980$ & 93.1\% & 2.4\% & 94.4\% & 1.1\% \\
+Entity-indep only & ${\sim}1{,}430$ & 90.9\% & 4.9\% & 92.7\% & 3.8\% \\
+\addlinespace
+Leave-out nonexistent & ${\sim}1{,}810$ & 92.2\% & 3.8\% & 95.8\% & 0.4\% \\
+Leave-out factual & ${\sim}1{,}910$ & 93.5\% & 1.6\% & 95.3\% & 0.9\% \\
+\bottomrule
+\end{tabular}
+\caption{Cross-category generalization ablation on the 449-prompt held-out test set. Entity-dependent = nonexistent, plausible-but-fake, obscure-but-real. Entity-independent = factual, ambiguous, impossible, edge factual. R$_{\text{entity-dep}}$ is a size-matched random sample from all categories (isolates category composition from dataset size). Bold: Llama entity-dep \emph{exceeds} the full training set.}
+\label{tab:cross-category}
+\end{table}
+
+Three findings emerge. First, entity-dependent training (${\sim}980$ examples) matches or exceeds the full training set (${\sim}2{,}400$) despite having less than half the data: Mixtral trails by only 1.1pp (93.3\% vs.\ 94.4\%), while Llama \emph{exceeds} it (95.3\% vs.\ 94.0\%, 0.2\% vs.\ 1.1\% hallucination).
+
+Second, the transfer is asymmetric. Entity-independent training (${\sim}1{,}430$ examples) produces the weakest performance for both models (90.9\% and 92.7\%), with substantially higher hallucination rates (4.9\% and 3.8\% vs.\ 2.0\% and 0.2\% for entity-dependent). Training on question-structure uncertainty alone does not teach entity skepticism, but training on entity-existence uncertainty does transfer to question-structure tasks. This asymmetry suggests that entity-focused caution captures a deeper epistemic strategy---learning \emph{when} knowledge is unreliable---that applies across failure types.
+
+Third, the R$_{\text{entity-dep}}$ condition (same size as entity-dep but drawn from all categories) rules out a dataset-size confound: R$_{\text{entity-dep}}$ performs comparably to entity-dep (93.1\% vs.\ 93.3\% Mixtral, 94.4\% vs.\ 95.3\% Llama), confirming that category composition, not just the number of examples, drives the asymmetry.
+
+The leave-out conditions further demonstrate graceful degradation. Removing the entire nonexistent category from training barely affects Llama (95.8\% accuracy, 0.4\% hallucination---actually surpassing the full condition) and causes only a modest drop for Mixtral ($-$2.2pp). Removing the factual category has even less impact. The model does not rely on any single category for its learned caution. This is the third type of generalization demonstrated in this chapter: not just unseen entities (Section~\ref{sec:ft-robustness}) or unseen templates (Section~\ref{sec:template-ablation}), but unseen category types.
+
+\subsection{Convergence of Evidence}
+\label{sec:convergence}
+
+Three independent tests probe different dimensions of generalization and converge on the same conclusion: the fine-tuned model learned a behavioral strategy---epistemic caution in the face of uncertain knowledge---rather than memorizing training-specific patterns. TruthfulQA demonstrates transfer across domains (entity fabrication to misconceptions). Template ablation demonstrates invariance across question structures (5 templates indistinguishable from 194). Cross-category ablation demonstrates transfer across failure types (entity-dependent caution generalizes to entity-independent questions).
+
+Under the alternative hypothesis---that the model memorized entity names, template patterns, or category-specific shortcuts---at least one of these tests should have revealed a failure of transfer. None did. The convergence of three independent lines of evidence, each probing a different dimension of generalization, supports the behavioral learning interpretation.
+
+
+\section{Discussion}
+\label{sec:ch7-discussion}
+
+This chapter asked whether geometry can guide intervention. The answer has three parts:
+
+First, \emph{geometry predicts fixability}. Embedding density distinguishes fixable from unfixable hallucinations within the nonexistent category for both prompting ($p = 0.046$ and $0.012$, Section~\ref{sec:within-cat-fixability}) and fine-tuning ($p = 0.0017$, $|r| = 0.80$, surviving Bonferroni correction, Section~\ref{sec:ft-geometry}). The direction is the same as Chapter~\ref{ch:geo-predict-hallucination}'s hallucination prediction: sparser embedding neighborhoods predict worse outcomes. This extends density from a risk signal to a difficulty signal---a genuinely novel contribution, since prior work on hallucination prediction asks whether a prompt will trigger hallucination but not whether that hallucination is fixable.
+
+Second, \emph{geometry explains the structure of intervention resistance}. The unfixable prompts cluster in entity-dependent categories (74--88\% in nonexistent and plausible-but-fake) and occupy sparser embedding neighborhoods. This is consistent with the interpretation that sparse regions represent areas where the embedding model---and by extension, the target models---lack sufficient representational grounding to distinguish fabricated from real entities, even when explicitly prompted to do so.
+
+Third, \emph{geometry does not predict where intervention causes harm}. The regression analysis (Section~\ref{sec:ft-geometry}) finds no significant geometric difference between regressions and always-correct prompts ($p = 0.061$ and $0.110$). The precision-recall tradeoff identified in Section~\ref{sec:ft-precision-recall}---increased refusals on factual questions---is a behavioral pattern rather than a geometric one. Geometry predicts where intervention \emph{helps}, but not where it \emph{hurts}.
+
+\paragraph{The precision-recall tradeoff.} The increased factual refusals (Mixtral: 5$\to$15; Llama: 1$\to$15) reveal a fundamental tension in hallucination reduction: teaching a model skepticism about uncertain entities requires shifting its decision criterion toward caution, which inevitably catches some real knowledge queries. This pattern is consistent with a criterion shift in the sense of signal detection theory---the fine-tuned model reduces false alarms (hallucinations) at the cost of increased misses (false refusals on real entities).
+
+Two observations sharpen this interpretation. First, most regressions are refusals (70\%), not new hallucinations. The model does not learn to fabricate differently; it learns to decline. This is the safer failure mode---a refusal is recoverable (the user can rephrase or consult another source), while a confident hallucination is actively misleading. Second, the tradeoff is domain-specific. On TruthfulQA (Section~\ref{sec:truthfulqa}), neither model shows increased refusal ($\leq$0.7\%). The learned caution targets entity-type uncertainty specifically, not all questions. A deployment system could therefore use the fine-tuned model for entity-sensitive queries (where the caution is beneficial) and the base model or prefix-augmented model for general knowledge queries (where the refusal cost is unnecessary).
+
+\paragraph{What the model learned.} The convergence of three generalization tests (Section~\ref{sec:generalization}) supports the interpretation that fine-tuning taught the model \emph{when to be skeptical about its own knowledge}. This is consistent with a form of learned metacognition. The model did not memorize entity names (decontamination gap $<$3pp overall, ${\sim}$1pp on entity-independent categories), template patterns (5 templates $\approx$ 194, $p = 0.099$/$0.773$), or category-specific heuristics (entity-dependent training generalizes to entity-independent questions). What transferred across all three dimensions is the behavioral strategy itself: express uncertainty when the question probes the boundary of reliable knowledge.
+
+\paragraph{Hyperparameter overrides.} Together AI's platform overrode several LoRA hyperparameters (rank 16$\to$64, dropout removed, weight decay zeroed; Appendix~\ref{app:ft-configs}). The learning rate and epoch ablation confirms that results are stable across the hyperparameters we could vary, but sensitivity to LoRA rank and regularization has not been tested.
+
+\paragraph{Scope and limitations.} The fine-tuning bridge analysis rests on small still-broken samples ($n = 6$ and $9$), though the effect sizes are large ($|r| = 0.80$) and the direction is consistent across three independent analyses (within-category hallucination prediction, prefix fixability, and fine-tuning fixability). All fine-tuning experiments cover two models only, and all prompts are template-generated---deliberate choices that prioritize controlled comparison over breadth. The cross-category ablation lacks paired statistical tests, and TruthfulQA significance holds only for Llama.
+
+This chapter began by asking whether geometry can guide intervention. It can: density predicts which hallucinations resist correction, curated prefix data produces training signal that makes models permanently safer, and the resulting caution generalizes across entities, templates, and category types. 

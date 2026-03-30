@@ -3,7 +3,7 @@
 \chapter{Background}
 \label{ch:background}
 
-This chapter introduces the concepts and tools used throughout this thesis. We begin with large language models and the hallucination problem they exhibit, then introduce the embedding spaces and geometric concepts that underpin our analysis. We conclude with the LLM-as-judge evaluation paradigm and the parameter-efficient fine-tuning methods used in our intervention experiments.
+This chapter introduces the concepts and tools used throughout this thesis. We begin with large language models and the hallucination problem they exhibit, then introduce the embedding spaces and geometric concepts that underpin our analysis. We then cover the LLM-as-judge evaluation paradigm and the parameter-efficient fine-tuning methods used in our intervention experiments.
 
 \section{Large Language Models}
 \label{sec:bg-llms}
@@ -18,7 +18,7 @@ Model capabilities improve predictably with parameter count, training data, and 
 
 \paragraph{Open-weight vs.\ closed models.} Closed-source models (e.g., GPT-5.1, Claude Opus 4.5) are accessible only through APIs, with no access to weights or internal representations. Open-weight models (e.g., Mixtral 8x7B, Llama 4 Maverick) provide full weight access, thus enabling fine-tuning and, in principle, extraction of internal representations. This distinction shapes our experimental design: our cross-model analysis (Chapter~\ref{ch:geo-predict-hallucination}) includes both types, but the intervention experiments (Chapters~\ref{ch:prefixes} and~\ref{ch:finetuning}) require open-weight models for LoRA fine-tuning (Section~\ref{sec:bg-lora}).
 
-\paragraph{Mixture-of-Experts architectures.} Both of our intervention target models use Mixture-of-Experts (MoE) routing, in which only a subset of parameters is active for each token. Mixtral 8x7B has 46.7 billion total parameters with approximately 12.9 billion active per token \citep{jiang2024mixtral}; Llama 4 Maverick routes among 128 experts with approximately 17 billion active parameters per token. MoE architectures achieve strong performance at lower inference cost than equivalently-sized dense models, and their use of distinct experts for different inputs provides architectural diversity between our two target models (Chapter~\ref{ch:setup}).
+\paragraph{Mixture-of-Experts architectures.} Both of our intervention target models use Mixture-of-Experts (MoE) routing, in which only a subset of parameters is active for each token. Mixtral 8x7B has 46.7 billion total parameters with approximately 12.9 billion active per token \citep{jiang2024mixtral}; Llama 4 Maverick has approximately 400 billion total parameters, routing among 128 experts with approximately 17 billion active per token \citep{meta2025llama4}. MoE architectures achieve strong performance at lower inference cost than equivalently-sized dense models, and their use of distinct experts for different inputs provides architectural diversity between our two target models (Chapter~\ref{ch:setup}).
 
 \section{Hallucination in Large Language Models}
 \label{sec:bg-hallucination}
@@ -55,7 +55,7 @@ Detection is difficult precisely because hallucinations are fluent and locally c
 \section{Text Embeddings and Embedding Geometry}
 \label{sec:bg-embeddings}
 
-The geometric analysis in this thesis operates on \emph{text embeddings}---fixed-dimensional vector representations of natural language. This section introduces the embedding space, the distance metric we use, and the geometric concepts that our features (defined precisely in Chapter~\ref{ch:setup}) formalize.
+The geometric analysis in this thesis operates on \emph{text embeddings}---fixed-dimensional vector representations of natural language.
 
 \subsection{Text Embeddings}
 \label{sec:bg-text-embeddings}
@@ -70,12 +70,12 @@ All distance computations in this thesis use \emph{cosine distance}. For two vec
 \text{sim}(\mathbf{x}, \mathbf{y}) = \frac{\mathbf{x} \cdot \mathbf{y}}{\|\mathbf{x}\|\,\|\mathbf{y}\|},
 \label{eq:cosine-sim}
 \end{equation}
-and the cosine distance is $d_{\cos}(\mathbf{x}, \mathbf{y}) = 1 - \text{sim}(\mathbf{x}, \mathbf{y})$, ranging from 0 (identical direction) to 2 (opposite direction). Cosine distance is invariant to vector magnitude and depends only on the angle between vectors, making it appropriate for embeddings where direction carries more semantic information than magnitude. When vectors are L2-normalized (as in our setting), cosine distance and squared Euclidean distance are related by $\|\mathbf{x} - \mathbf{y}\|^2 = 2\,(1 - \text{sim}(\mathbf{x}, \mathbf{y}))$, so the choice of metric is equivalent.
+and the cosine distance is $d_{\cos}(\mathbf{x}, \mathbf{y}) = 1 - \text{sim}(\mathbf{x}, \mathbf{y})$, ranging from 0 (identical direction) to 2 (opposite direction). Cosine distance depends only on the angle between vectors, not their magnitude. When vectors are L2-normalized, cosine distance and squared Euclidean distance are related by $\|\mathbf{x} - \mathbf{y}\|^2 = 2\,(1 - \text{sim}(\mathbf{x}, \mathbf{y}))$, so the choice of metric is equivalent.
 
 \subsection{High-Dimensional Geometry}
 \label{sec:bg-highdim}
 
-Our embeddings reside in $\mathbb{R}^d$ for $d = 3{,}072$ (the dimensionality of the embedding model selected in Chapter~\ref{ch:setup}). High-dimensional spaces exhibit counterintuitive geometric properties that affect how we interpret distance-based features. A well-known example is \emph{distance concentration}: pairwise distances between random points in high dimensions converge to a narrow range, making absolute distances less informative \citep{aggarwal2001surprising}. Within structured datasets, however, relative distances---which points are closer or farther than others---remain meaningful. All of our geometric features (Chapter~\ref{ch:setup}) are defined relative to the corpus distribution rather than in absolute terms, making them robust to concentration effects. When embeddings are L2-normalized, all points lie on the surface of the unit hypersphere in $\mathbb{R}^{3072}$, and cosine distance is the natural metric on this surface.
+Our embeddings reside in $\mathbb{R}^{3072}$. High-dimensional spaces exhibit counterintuitive geometric properties, the most relevant being \emph{distance concentration}: pairwise distances between random points converge to a narrow range, making absolute distances less informative \citep{aggarwal2001surprising}. Within structured datasets, however, relative distances remain meaningful. All of our geometric features are defined relative to the corpus distribution rather than in absolute terms. When embeddings are L2-normalized, all points lie on the surface of the unit hypersphere in $\mathbb{R}^{3072}$, and cosine distance is the natural metric on this surface.
 
 \subsection{The Manifold Hypothesis}
 \label{sec:bg-manifold}
@@ -87,31 +87,25 @@ The central hypothesis of this thesis, stated informally, is that geometric prop
 \subsection{Geometric Concepts}
 \label{sec:bg-geometric-concepts}
 
-The geometric features defined in Chapter~\ref{ch:setup} each formalize a different aspect of manifold structure. Before those precise definitions, we introduce the underlying concepts.
+To characterize the local structure of a manifold, one needs a notion of neighborhood. For a point $\mathbf{x}_i$ in a dataset of $N$ points, its \emph{$k$-nearest neighbors} ($k$-NN) are the $k$ points with smallest distance to $\mathbf{x}_i$. The $k$-NN set defines the local neighborhood within which all subsequent geometric measurements are made. The choice of $k$ controls locality: small $k$ captures fine-grained structure; large $k$ smooths over broader regions.
 
-\paragraph{$k$-nearest neighbors.} For a point $\mathbf{x}_i$ in a dataset of $N$ points, its $k$-nearest neighbors ($k$-NN) are the $k$ points with smallest distance to $\mathbf{x}_i$ under the chosen metric. The $k$-NN set is the building block for most of our geometric features: it defines the ``local neighborhood'' within which we measure density, dimensionality, and curvature. The choice of $k$ controls the locality of the analysis: small $k$ captures fine-grained structure; large $k$ smooths over broader neighborhoods.
+Given a neighborhood, several questions arise. The first is \emph{how many effective dimensions} the data occupies locally. A manifold embedded in 3,072-dimensional space may have far fewer effective local dimensions---its \emph{intrinsic dimension}. Standard estimators include the TwoNN method \citep{facco2017twonn}, which uses only the ratio of distances to the two nearest neighbors, and the maximum likelihood estimator of \citet{levina2004maximum}, which averages log-distance ratios over a larger neighborhood.
 
-\paragraph{Principal Component Analysis.} Principal Component Analysis (PCA) finds the orthogonal directions of maximum variance in a dataset---the eigenvectors of the covariance matrix, ordered by eigenvalue magnitude. The \emph{explained variance ratio} of the top $p$ components,
+A second question is whether the neighborhood is \emph{flat or curved}. Principal Component Analysis (PCA) provides the tool: it finds the orthogonal directions of maximum variance in a dataset, ordered by eigenvalue magnitude. The \emph{explained variance ratio} of the top $p$ components,
 \begin{equation}
 \text{EVR}(p) = \frac{\sum_{j=1}^{p} \sigma_j^2}{\sum_{\ell} \sigma_\ell^2},
 \label{eq:evr}
 \end{equation}
-where $\sigma_j^2$ are the eigenvalues, measures how well a $p$-dimensional linear subspace approximates the data. PCA appears in two roles in our work: measuring how well a flat subspace approximates a local neighborhood (curvature), and constructing a novel ``semantic opposite'' of each point (oppositeness). Both are defined precisely in Chapter~\ref{ch:setup}.
+where $\sigma_j^2$ are the eigenvalues, measures how well a $p$-dimensional linear subspace approximates the data. If a local neighborhood lies on a flat subspace, PCA captures most of the variance and the residual---the \emph{curvature}---is small. If the neighborhood bends, the residual is large.
 
-\paragraph{Intrinsic dimensionality.} The \emph{intrinsic dimension} of a dataset at a point estimates the number of effective directions of variation in the local neighborhood. A manifold embedded in 3,072-dimensional space may have far fewer effective local dimensions. Standard estimators include the TwoNN method \citep{facco2017twonn}, which uses only the ratio of distances to the two nearest neighbors, and the maximum likelihood estimator of \citet{levina2004maximum}, which averages log-distance ratios over a larger neighborhood for a smoother estimate.
+A third question is \emph{how crowded} the neighborhood is. The \emph{density} at a point measures how many similar points surround it---equivalently, the inverse of the average distance to nearby neighbors. High density indicates a well-represented region; low density indicates an isolated point. Density-based measures are standard in anomaly detection \citep{breunig2000lof}.
 
-\paragraph{Local density.} The \emph{density} at a point measures how many similar points surround it---equivalently, the inverse of the average distance to nearby neighbors. High density indicates a well-represented region with many semantically similar texts; low density indicates an isolated point with few nearby neighbors, potentially representing out-of-distribution or under-represented content. Density-based measures are standard in anomaly detection \citep{breunig2000lof}.
-
-\paragraph{Curvature.} The \emph{curvature} of the manifold at a point reflects how well a flat (linear) subspace approximates the local neighborhood. If the neighborhood lies on a flat subspace, PCA captures most of the variance and the residual is small (low curvature). If the neighborhood bends or twists, the linear approximation misses variance and the residual is large (high curvature).
-
-\paragraph{Centrality.} The \emph{centrality} of a point, as used in this thesis, measures its distance from the center of the distribution (e.g., the corpus mean embedding); higher values indicate more \emph{peripheral} points. Points far from the center may represent unusual, specialized, or boundary-region content.
-
-\paragraph{Oppositeness.} In addition to these standard geometric concepts, Chapter~\ref{ch:setup} defines a novel \emph{oppositeness} feature that measures how far a point's ``semantic opposite'' (constructed by flipping principal component directions) lies from the nearest real data point. The construction is specific to our experimental design and is defined precisely in Section~\ref{sec:oppositeness}.
+Finally, one can ask how far a point sits from the \emph{center} of the distribution. \emph{Centrality} measures this distance (e.g., from the corpus mean embedding); higher values indicate more peripheral points. Chapter~\ref{ch:setup} also introduces a novel \emph{oppositeness} feature, which measures how far a point's ``semantic opposite'' lies from the nearest real data point---a construction specific to our experimental design.
 
 \section{Evaluating Language Model Outputs}
 \label{sec:bg-evaluation}
 
-Evaluating whether an LLM response is factually correct, partially correct, hallucinated, or a refusal requires semantic judgment that scales beyond traditional automated metrics and human annotation. This section introduces the LLM-as-judge paradigm that our evaluation pipeline builds on.
+Evaluating whether an LLM response is factually correct, partially correct, hallucinated, or a refusal requires semantic judgment that scales beyond traditional automated metrics and human annotation.
 
 \subsection{The Evaluation Bottleneck}
 \label{sec:bg-eval-bottleneck}
@@ -138,7 +132,7 @@ Hallucination evaluation requires distinguishing among multiple response types. 
 \section{Fine-Tuning and Parameter-Efficient Adaptation}
 \label{sec:bg-finetuning}
 
-Chapter~\ref{ch:finetuning} presents experiments in which we fine-tune language models to reduce hallucination. This section introduces the relevant concepts.
+The intervention experiments in this thesis include parameter-efficient fine-tuning of open-weight models.
 
 \subsection{Supervised Fine-Tuning}
 \label{sec:bg-sft}
@@ -155,11 +149,11 @@ Full fine-tuning updates all model parameters, which is prohibitively expensive 
 \end{equation}
 so the effective weight at inference is $W + BA$. The rank $r$ controls the capacity of the adaptation: typical values range from 8 to 64, reducing trainable parameters to roughly 0.1\% of the full model. A scaling factor $\alpha$ controls the effective learning rate of the adapter (the update is scaled by $\alpha / r$). LoRA inherently limits the risk of catastrophic forgetting---overwriting the model's general capabilities---because the vast majority of weights remain frozen.
 
-\emph{QLoRA} \citep{dettmers2023qlora} extends LoRA by quantizing the frozen base model to 4-bit precision, further reducing memory requirements while maintaining fine-tuning quality. Our fine-tuning experiments (Chapter~\ref{ch:finetuning}) use LoRA for Mixtral and QLoRA for Llama 4 Maverick, as determined by the fine-tuning API.
+\emph{QLoRA} \citep{dettmers2023qlora} extends LoRA by quantizing the frozen base model to 4-bit precision, further reducing memory requirements while maintaining fine-tuning quality. Our experiments use LoRA for Mixtral and QLoRA for Llama 4 Maverick.
 
 \subsection{Self-Distillation}
 \label{sec:bg-distillation}
 
-Our fine-tuning approach (Chapter~\ref{ch:finetuning}) is a form of \emph{self-distillation}: the model is fine-tuned on its own best outputs, selected across multiple prompting conditions. Rather than training on externally-generated targets, the model learns to produce its best observed behavior by default, without requiring a system prompt at inference time. Self-distillation is well-established as a technique for improving model performance: \citet{hinton2015distilling} introduced knowledge distillation between models, and subsequent work showed that training on a model's own outputs can improve performance through implicit regularization \citep{furlanello2018born}.
+Our fine-tuning approach is a form of \emph{self-distillation}: the model is fine-tuned on its own best outputs, selected across multiple prompting conditions. Rather than training on externally-generated targets, the model learns to produce its best observed behavior by default, without requiring a system prompt at inference time. Self-distillation is well-established as a technique for improving model performance: \citet{hinton2015distilling} introduced knowledge distillation between models, and subsequent work showed that training on a model's own outputs can improve performance through implicit regularization \citep{furlanello2018born}.
 
 This chapter has introduced the conceptual foundations for the remainder of this thesis: the structure and generation process of large language models, the hallucination problem and its causes, the embedding spaces and geometric concepts that underpin our analysis, the LLM-as-judge evaluation paradigm, and parameter-efficient fine-tuning. Chapter~\ref{ch:litreview} surveys the existing literature on hallucination detection, mitigation, and geometric analysis of neural representations, identifying the specific gaps that this thesis addresses. Chapter~\ref{ch:setup} then describes our experimental infrastructure.

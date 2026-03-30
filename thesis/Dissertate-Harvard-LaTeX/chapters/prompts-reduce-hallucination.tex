@@ -2,46 +2,39 @@
 \chapter{Can Prompts Reduce Hallucinations?}
 \label{ch:prefixes}
 
-% CHAPTER OPENING PARAGRAPH — write after body sections are complete.
-% Purpose: (1) State the research question: can discrete system-prompt prefixes
-%   reduce entity-level hallucination in a controlled comparison?
-% (2) Motivate: Ch 5 showed geometry predicts hallucination; now we test whether
-%   simple interventions can reduce it, and whether the effect varies by mechanism.
-% (3) Roadmap: Section 6.1 introduces the prefix designs. Section 6.2 presents
-%   the pilot study on the held-out benchmark. Section 6.3 replicates at scale
-%   on the expanded benchmark. Section 6.4 analyzes category-level effects.
-%   Section 6.5 examines the correctness-safety tradeoff.
+% The previous chapter established that geometric properties of prompt embeddings---particularly embedding density---carry a significant signal about hallucination risk, especially within entity categories after controlling for category structure. This chapter asks the next question: \emph{can simple interventions reduce the hallucinations that geometry predicts?} Specifically, we test whether discrete system-prompt prefixes---single instructions requiring no training or multi-pass generation---reduce entity-level hallucination, and whether different prefixes targeting different failure modes produce different effects.
 
+The previous chapter established that some prompts are geometrically predisposed to cause hallucination\allowbreak---specifically, prompts in sparser embedding neighborhoods are more likely to cause hallucination. A natural follow-up is whether anything can be done about it at inference time. If a model hallucinates because it defaults to generation when it should express uncertainty, then a carefully designed system prompt might redirect that behavior. Not by adding knowledge the model lacks, but by encouraging it to recognize the limits of what it knows. This chapter tests whether such interventions work, and how far they generalize.
 
 \section{Prefix Design}
 \label{sec:prefix-design}
 
-The literature review (Section~\ref{sec:lit-prompt}) identified a gap in prompting-based hallucination mitigation: most approaches require multi-pass reasoning \citep{dhuliawala2023chainofverification,wang2023selfconsistency} or gradient-based optimization of continuous prefixes \citep{jones2024teaching}.  System-prompt prefixes represent a simpler alternative---a single instruction passed once per query, requiring no training, no white-box model access, and no additional generation passes.  This makes them a natural first-line intervention to test before the more expensive fine-tuning approach explored in Chapter~\ref{ch:finetuning}.  The question is whether different instructions targeting different failure modes produce differential effects on entity-level factuality, and if so, which mechanisms matter most.
+Most prompting-based hallucination mitigations require multi-pass reasoning \citep{dhuliawala2023chainofverification,wang2023selfconsistency} or gradient-based optimization of continuous prefixes \citep{jones2024teaching}. System-prompt prefixes represent a simpler alternative: a single instruction passed once per query, requiring no training, no white-box model access, and no additional generation passes.  This makes them a natural first-line intervention to test before the more expensive fine-tuning approach explored in Chapter~\ref{ch:finetuning}. The question is whether different instructions targeting different failure modes produce differential effects on entity-level factuality, and if so, which mechanisms matter most.
 
-We designed four prefixes, each targeting a distinct hallucination mechanism identified in prior work.  The prefixes form a spectrum from least to most restrictive behavioral constraint, ranging from a one-sentence encouragement to express uncertainty to a five-rule protocol combining multiple strategies.  Each prefix is delivered as the \textbf{system message} in the chat API---cleanly separated from the user's query, which remains the unmodified benchmark question.  The baseline condition uses no system message at all, providing a null condition rather than a generic default such as ``You are a helpful assistant.''  Full prefix texts are reproduced verbatim in Appendix~\ref{app:prefixes}; Table~\ref{tab:prefix-design} summarizes the design rationale.
+We designed four prefixes, each targeting a distinct hallucination mechanism identified in prior work. The prefixes form a spectrum from least to most restrictive behavioral constraint, ranging from a one-sentence encouragement to express uncertainty to a five-rule protocol combining multiple strategies. Each prefix is delivered as the \textbf{system message} in the chat API---this cleanly separates the prefix from the user's query, which remains the unmodified benchmark question. The baseline condition uses no system message at all, thus providing a null condition rather than a generic default such as ``You are a helpful assistant.'' Full prefix texts are reproduced verbatim in Appendix~\ref{app:prefixes}; Table~\ref{tab:prefix-design} summarizes the design rationale.
 
 \begin{table}[ht]
 \centering
 \small
-\begin{tabular}{p{2.8cm} p{3.2cm} p{4.5cm} p{3.0cm}}
+\begin{tabular}{p{2.5cm} p{2.5cm} p{4.5cm} p{3.5cm}}
 \toprule
-\textbf{Prefix} & \textbf{Target mechanism} & \textbf{Key instruction} & \textbf{Literature basis} \\
+\textbf{Prefix} & \textbf{Mechanism} & \textbf{Core instruction} & \textbf{Basis} \\
 \midrule
 Epistemic Humility &
   Uncertainty surfacing &
-  ``If you genuinely do not know something, say `I don't know' rather than guessing.'' &
-  \citet{kadavath2022language}; \citet{yin2023large} \\[6pt]
+  Encourage ``I don't know'' over guessing &
+  \citet{kadavath2022language}; \citet{yin2023large} \\[4pt]
 Fact-Grounded &
   Fabrication prohibition &
-  ``Do not fabricate names, dates, statistics, or other specific details.'' &
-  \citet{min2023factscore}; \citet{varshney2023stitch} \\[6pt]
+  Prohibit fabricating names, dates, statistics &
+  \citet{min2023factscore}; \citet{varshney2023stitch} \\[4pt]
 Entity-Aware &
-  Entity existence verification &
-  ``Consider whether the entity or concept in the question actually exists. If it appears to be fictional, fabricated, or nonexistent, say so clearly.'' &
-  \citet{ferrando2024knowledge}; \citet{sun2024entity} \\[6pt]
+  Entity verification &
+  Verify whether entities exist before answering &
+  \citet{ferrando2024knowledge}; \citet{sun2024entity} \\[4pt]
 Structured Caution &
-  Combined multi-rule protocol &
-  Five numbered rules covering uncertainty, entity verification, logical impossibility, anti-speculation, and ``I don't know'' preference. &
+  Combined protocol &
+  Five numbered rules combining all above strategies &
   \citet{arora2024structured}; \citet{li2024inferencetime} \\
 \bottomrule
 \end{tabular}
@@ -49,8 +42,159 @@ Structured Caution &
 \label{tab:prefix-design}
 \end{table}
 
-The four prefixes test competing hypotheses about what makes prompting effective for factuality.  Epistemic Humility applies the lightest possible nudge: does merely asking a model to express uncertainty reduce hallucination?  Prior work suggests models possess internal calibration \citep{kadavath2022language} but need explicit encouragement to surface it \citep{yin2023large}; this prefix tests whether a single sentence of encouragement suffices.  Fact-Grounded is more targeted, prohibiting fabrication by category---names, dates, statistics---rather than asking for general caution, motivated by the finding that fabricated details concentrate in specific categories \citep{min2023factscore}.  Entity-Aware is the most benchmark-specific prefix: it explicitly asks the model to verify whether entities exist before answering, directly addressing the nonexistent and borderline categories that comprise nearly half the benchmark.  This targets the entity recognition capability that \citet{ferrando2024knowledge} showed exists internally but is not always engaged during generation.  Structured Caution tests whether enumerating all mechanisms as explicit numbered rules produces better compliance than any single instruction, motivated by evidence that explicit, structured prompting outperforms vague directives \citep{arora2024structured}.  The core design question is whether \emph{specificity}---targeting the dominant failure mode (entity existence)---outperforms \emph{breadth}---covering many failure modes in a single prefix.
+The four prefixes test competing hypotheses about what makes prompting effective for factuality. Epistemic Humility applies the lightest possible nudge: does merely asking a model to express uncertainty reduce hallucination? Prior work suggests models possess internal calibration \citep{kadavath2022language} but need explicit encouragement to surface it \citep{yin2023large}; this prefix tests whether a single sentence of encouragement suffices. Fact-Grounded takes a more targeted approach, prohibiting the fabrication of names, dates, and statistics rather than asking for general caution. This is motivated by evidence that fabricated details concentrate in specific categories \citep{min2023factscore}.  Entity-Aware is the most benchmark-specific prefix: it explicitly asks the model to verify whether entities exist before answering, directly addressing the nonexistent and borderline categories that comprise nearly half the benchmark. This targets the entity recognition capability that \citet{ferrando2024knowledge} showed exists in model representations.  Structured Caution tests whether enumerating all mechanisms as explicit numbered rules produces better compliance than any single instruction.  Prior work suggests that explicit, structured prompting outperforms vague directives \citep{arora2024structured}. The core design question is whether \emph{specificity}---targeting the dominant failure mode (entity existence)---outperforms \emph{breadth}---covering many failure modes in a single prefix.
 
-A fifth prefix, Chain-of-Thought Verification, was initially included.  Inspired by Chain-of-Verification \citep{dhuliawala2023chainofverification} and chain-of-thought reasoning \citep{wei2022chainofthought}, it asked the model to briefly verify its claims before providing a final answer.  This prefix was excluded from all analyses after a judge API failure artifact was discovered that corrupted approximately 65\% of its evaluation labels; the details of this artifact and its resolution are documented in Appendix~\ref{app:prefixes} and Section~\ref{sec:judge-contamination}.  All results in this chapter use the four non-CoT prefixes plus the no-prefix baseline.
+A fifth prefix, Chain-of-Thought Verification, was initially included.  Inspired by Chain-of-Verification \citep{dhuliawala2023chainofverification} and chain-of-thought reasoning \citep{wei2022chainofthought}, it asked the model to briefly verify its claims before providing a final answer. This prefix was excluded from all analyses after a judge API failure artifact was discovered that rendered approximately 65\% of its evaluation labels unrecoverable; the details of this artifact and its resolution are documented in Appendix~\ref{sec:judge-contamination}. All results in this chapter use the four non-CoT prefixes plus the no-prefix baseline.
 
-The controlled design---same prompts, same models, same generation parameters (Chapter~\ref{ch:setup}), same consensus evaluation, different system messages---isolates the effect of instruction content from all other variables.  Unlike SynTra's continuous optimization or CoVe's multi-stage pipeline, our prefixes are discrete, interpretable, and require no additional computation beyond a single generation call.  This enables a direct comparison of competing hypotheses: does the model benefit most from general encouragement to be uncertain, from specific prohibitions, from entity-targeted verification, or from exhaustive rule specification?  Sections~\ref{sec:pilot-study} and~\ref{sec:replication} test these hypotheses on the held-out and expanded benchmarks, respectively.
+\section{Pilot Study on the Held-Out Benchmark}
+\label{sec:pilot-study}
+
+We first tested the four prefixes on the 449-prompt held-out benchmark.  Each prompt was presented to both models under the baseline condition (no system message) and under each of the four prefix conditions, consequently producing $449 \times 4 \times 2 = 3{,}592$ prefix responses evaluated by the judge panel. Because each prompt appears in both the baseline and each prefix condition, we can apply a paired test: McNemar's test with Yates' continuity correction, applied to $449$ binary observations (hallucinated vs.\ not hallucinated) per prefix--model combination.  The binary outcome groups correct, partial, and refused responses together as ``not hallucinated''. A prompt that shifts from hallucination to refusal counts as improved, since the model has stopped fabricating even if it has not produced a correct answer.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{l rr r rr r}
+\toprule
+& \multicolumn{3}{c}{\textbf{Mixtral 8x7B}} & \multicolumn{3}{c}{\textbf{Llama 4 Maverick}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+\textbf{Condition} & Correct & Halluc. & Refused & Correct & Halluc. & Refused \\
+\midrule
+Baseline (no prefix)   & 82.9\% & 11.80\% & 1.1\% & 90.6\% & 5.79\% & 0.2\% \\[3pt]
+Epistemic Humility     & 91.3\% &  3.56\% & 2.9\% & 93.8\% & 1.78\% & 0.9\% \\
+Fact-Grounded          & 92.0\% &  3.56\% & 3.6\% & 94.4\% & 1.56\% & 3.8\% \\
+Entity-Aware           & 93.8\% & \textbf{1.34\%} & 3.8\% & 94.0\% & 2.45\% & 0.4\% \\
+Structured Caution     & 94.9\% & 1.78\% & 3.1\% & 95.8\% & \textbf{1.34\%} & 2.7\% \\
+\bottomrule
+\end{tabular}
+\caption[Pilot study prefix results]{Pilot study results on the 449-prompt held-out benchmark. Percentages are computed over all 449 prompts per condition; partial responses (0.2--4.2\%) are omitted for space.  Bold indicates the lowest hallucination rate per model. Baseline rates are from the no-prefix condition evaluated with the same consensus pipeline.}
+\label{tab:pilot-results}
+\end{table}
+
+All four prefixes substantially reduce hallucination for both models (Table~\ref{tab:pilot-results}). Mixtral's hallucination rate drops from 11.80\% to between 1.34\% and 3.56\%; Llama's from 5.79\% to between 1.34\% and 2.45\%.  Every prefix--model combination is statistically significant ($p < 0.003$, McNemar's test; Table~\ref{tab:pilot-mcnemar}), with between 18 and 48 prompts shifting from hallucinated to non-hallucinated per prefix. These are not marginal improvements; a single sentence of instruction eliminates the majority of hallucinations.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{ll rrrr}
+\toprule
+\textbf{Model} & \textbf{Prefix} & \textbf{Base hall.} & \textbf{Improved} & \textbf{Worsened} & $\boldsymbol{p}$ \\
+\midrule
+Mixtral & Entity-Aware       & 53 & 48 & 1 & $< 0.001$ \\
+        & Structured Caution &    & 46 & 1 & $< 0.001$ \\
+        & Fact-Grounded      &    & 41 & 4 & $< 0.001$ \\
+        & Epistemic Humility &    & 40 & 3 & $< 0.001$ \\[3pt]
+Llama   & Structured Caution & 26 & 22 & 2 & $< 0.001$ \\
+        & Fact-Grounded      &    & 21 & 2 & $< 0.001$ \\
+        & Epistemic Humility &    & 18 & 0 & $< 0.001$ \\
+        & Entity-Aware       &    & 18 & 3 & $0.002$ \\
+\bottomrule
+\end{tabular}
+\caption[McNemar's test results for the pilot study]{McNemar's test with Yates' continuity correction for each prefix--model combination.  \emph{Base hall.}: number of prompts hallucinated at baseline (out of 449).  \emph{Improved}: hallucinated at baseline, not hallucinated with prefix.  \emph{Worsened}: not hallucinated at baseline, hallucinated with prefix.  The difference between Base hall.\ and Improved reflects prompts that remained hallucinated under the prefix.  Rows are ordered by number of improved prompts within each model.}
+\label{tab:pilot-mcnemar}
+\end{table}
+
+The most notable finding is that the best prefix differs between models, which answers the design question posed in the previous section. For Mixtral, Entity-Aware achieves the lowest hallucination rate (1.34\%), with 48 prompts improved and only 1 worsened. This is consistent with the entity-targeted instruction directly addressing Mixtral's primary failure mode. For Llama, Structured Caution is best (1.34\%), while Entity-Aware ranks last among the four prefixes (2.45\%). The pattern suggests that specificity outperforms breadth for the higher-hallucination model: Mixtral, with a baseline rate more than twice Llama's, benefits most from the targeted entity-verification instruction. Llama, with fewer entity-fabrication errors to begin with, benefits more from the comprehensive rule-based approach that provides uniform coverage across failure modes.
+
+Regressions---prompts that were not hallucinated at baseline but hallucinate with a prefix---are rare across all conditions, ranging from 0 to 4 prompts per prefix--model combination (Table~\ref{tab:pilot-mcnemar}). Entity-Aware on Llama shows 3 regressions, which is consistent with the entity-verification instruction occasionally causing the model to second-guess obscure but real entities. A detailed category-level analysis of where regressions and refusals concentrate appears in Section~\ref{sec:category-analysis}.
+
+If we select the best response per prompt across the baseline and all four prefixes, correctness reaches 98.2\% for Mixtral and 98.4\% for Llama, with hallucination dropping to 0.2\% and 0.0\% respectively. Only one Mixtral prompt remains hallucinated under every condition tested. This upper bound demonstrates that the information needed to avoid nearly all hallucination exists across the prefix portfolio---the challenge is consolidating this behavior into model weights without requiring per-prompt prefix selection at inference time, which is the subject of Chapter~\ref{ch:finetuning}.
+
+\section{Replication at Scale}
+\label{sec:replication}
+
+The pilot study established prefix effectiveness on 449 prompts. The question is whether the findings replicate on a non-overlapping set five times larger. We evaluate both models under all four prefix conditions on the expanded benchmark of 2,430 prompts, yielding $2{,}430 \times 4 \times 2 = 19{,}440$ prefix responses judged by the same consensus pipeline.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{l rr r rr r}
+\toprule
+& \multicolumn{3}{c}{\textbf{Mixtral 8x7B}} & \multicolumn{3}{c}{\textbf{Llama 4 Maverick}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+\textbf{Condition} & Correct & Halluc. & Refused & Correct & Halluc. & Refused \\
+\midrule
+Baseline (no prefix)   & 82.5\% & 14.81\% & 0.04\% & 87.9\% & 9.67\% & 1.2\% \\[3pt]
+Epistemic Humility     & 86.8\% & 10.25\% & 0.3\%  & 93.3\% & 4.28\% & 1.2\% \\
+Fact-Grounded          & 90.1\% &  7.12\% & 0.5\%  & 93.5\% & 4.49\% & 1.2\% \\
+Structured Caution     & 91.9\% &  6.75\% & 0.2\%  & 95.8\% & \textbf{2.96\%} & 0.5\% \\
+Entity-Aware           & 93.7\% & \textbf{4.69\%} & 0.04\% & 95.4\% & 3.70\% & 0.1\% \\
+\bottomrule
+\end{tabular}
+\caption[Replication results on the expanded benchmark]{Prefix results on the 2,430-prompt expanded benchmark. Layout matches Table~\ref{tab:pilot-results} for direct comparison. Partial responses (0.7--2.7\%) are omitted for space. Bold indicates the lowest hallucination rate per model.}
+\label{tab:replication-results}
+\end{table}
+
+The pilot study's central finding holds on the expanded benchmark: the best prefix differs by model (Table~\ref{tab:replication-results}).  Entity-Aware remains the most effective prefix for Mixtral, reducing hallucination from 14.81\% to 4.69\% (a 68\% relative reduction), while Structured Caution remains best for Llama, reducing 9.67\% to 2.96\% (69\% relative reduction). All eight prefix--model comparisons are statistically significant at $p < 10^{-11}$ (Table~\ref{tab:replication-mcnemar}), with the larger sample providing overwhelming power. The best prefix per model is stable across benchmarks---Entity-Aware for Mixtral, Structured Caution for Llama---while the ordering among the remaining three prefixes shifts, consistent with the narrower gaps between them.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{ll rrrr}
+\toprule
+\textbf{Model} & \textbf{Prefix} & \textbf{Base hall.} & \textbf{Improved} & \textbf{Worsened} & $\boldsymbol{p}$ \\
+\midrule
+Mixtral & Entity-Aware       & 360 & 290 &  44 & $< 0.001$ \\
+        & Structured Caution &     & 256 &  60 & $< 0.001$ \\
+        & Fact-Grounded      &     & 246 &  59 & $< 0.001$ \\
+        & Epistemic Humility &     & 186 &  75 & $< 0.001$ \\[3pt]
+Llama   & Structured Caution & 235 & 182 &  19 & $< 0.001$ \\
+        & Entity-Aware       &     & 174 &  29 & $< 0.001$ \\
+        & Epistemic Humility &     & 163 &  32 & $< 0.001$ \\
+        & Fact-Grounded      &     & 154 &  29 & $< 0.001$ \\
+\bottomrule
+\end{tabular}
+\caption[McNemar's test results for the replication]{McNemar's test with Yates' continuity correction on the expanded benchmark (2,430 paired observations per test). All $p < 10^{-11}$. Layout matches Table~\ref{tab:pilot-mcnemar}.}
+\label{tab:replication-mcnemar}
+\end{table}
+
+Both baseline and prefix hallucination rates are higher on the expanded benchmark than in the pilot study. Mixtral's baseline rises from 11.80\% to 14.81\%, and its best prefix rate from 1.34\% to 4.69\%; Llama's baseline rises from 5.79\% to 9.67\%, and its best from 1.34\% to 2.96\%. This parallel increase of baselines and prefix rates rising together indicates that the expanded benchmark samples harder entity regions, not that prefixes are less effective on new data. The benchmark was designed to test a broader and more difficult entity distribution (Chapter~\ref{ch:setup}), so higher rates confirm that the pilot study's lower rates reflected easier prompts.
+
+The expanded benchmark also reveals more regressions than the pilot study: between 19 and 75 worsened prompts per prefix--model combination, compared to 0--4 in the pilot (Tables~\ref{tab:pilot-mcnemar} and~\ref{tab:replication-mcnemar}). Part of this increase is mechanical---with 5.4$\times$ more prompts, more regressions are expected in absolute terms. But the per-prompt regression rate is also somewhat higher (e.g., Mixtral Epistemic Humility: 0.7\% in the pilot vs.\ 3.1\% at scale), suggesting that the expanded benchmark's harder prompts are more susceptible to prefix-induced regressions. Section~\ref{sec:category-analysis} examines which categories drive these regressions.
+
+\section{Category-Level Analysis}
+\label{sec:category-analysis}
+
+All prefixes reduce hallucination in aggregate, but the benchmark's seven categories test distinct failure modes. Does prefix effectiveness vary across them---and does the variation reveal which mechanisms underlie prefix-based mitigation?
+
+\begin{table}[ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l r rrrrr rrrrr}
+\toprule
+& & \multicolumn{5}{c}{\textbf{Mixtral 8x7B}} & \multicolumn{5}{c}{\textbf{Llama 4 Maverick}} \\
+\cmidrule(lr){3-7} \cmidrule(lr){8-12}
+\textbf{Category} & $N$ & Base & EH & FG & EA & SC & Base & EH & FG & EA & SC \\
+\midrule
+Ambiguous          & 600 &  0.7 & 0.3 & \textbf{0.2} & 0.5 & \textbf{0.2} &  1.5 & 0.3 & 0.8 & 1.0 & \textbf{0.2} \\
+Edge factual       & 130 &  3.1 & 3.8 & \textbf{3.1} & 3.8 & \textbf{3.1} &  0.8 & 0.8 & 1.5 & 1.5 & \textbf{0.0} \\
+Obscure real       & 200 & 11.5 & 9.5 & 9.0 & \textbf{8.0} & 9.0 &  3.0 & 4.0 & 5.0 & 4.0 & \textbf{2.0} \\
+Plausible fake     & 200 & 43.5 &30.0 &14.5 &\textbf{11.0} &15.5 & 30.0 &16.0 &18.0 &16.5 &\textbf{14.0} \\
+Factual            & 500 &  9.2 &\textbf{7.4}& 8.0 & 9.2 & 9.6 &  2.6 & 1.8 & 2.4 & 2.6 & \textbf{1.6} \\
+Impossible         & 200 &  9.5 & 1.5 & 1.5 &\textbf{1.0} & 1.5 & 16.0 & 9.0 & 9.0 &\textbf{4.5}&\textbf{4.5} \\
+Nonexistent        & 600 & 29.5 &20.5 &13.0 &\textbf{3.3} & 9.8 & 19.0 & 5.7 & 4.3 &\textbf{3.2}& 3.7 \\
+\bottomrule
+\end{tabular}
+\caption[Category-level hallucination rates by prefix]{Hallucination rates (\%) by category on the expanded benchmark.  EH = Epistemic Humility, FG = Fact-Grounded, EA = Entity-Aware, SC = Structured Caution.  Bold indicates the lowest rate per row within each model.}
+\label{tab:category-halluc}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{figures/ch6_category_heatmap.png}}
+\caption[Category-level hallucination heatmap]{Hallucination rates (\%) by category and prefix on the expanded benchmark.  The baseline row (top, separated by a white line) shows rates without any prefix.  Green indicates low hallucination; red indicates high.  The plausible-but-fake column stands out as the hardest category for both models, while ambiguous and impossible categories approach zero with the right prefix.}
+\label{fig:category-heatmap}
+\end{figure}
+
+Table~\ref{tab:category-halluc} and Figure~\ref{fig:category-heatmap} reveal striking heterogeneity.  Ambiguous questions---which test whether models respect subjectivity---were already near-zero at baseline and remain so (0.2\% with Structured Caution for both models).  Impossible questions show large reductions, from 9.5\%/16.0\% to 1.0\%/4.5\%, and borderline edge-factual prompts reach 0.0\% for Llama with Structured Caution.  These easier categories respond well to prefix intervention, leaving the challenge concentrated in the entity-existence categories.
+
+At the other extreme, borderline plausible-but-fake prompts remain the hardest category by a wide margin.  Even the best prefix leaves 11.0\% hallucination for Mixtral and 14.0\% for Llama---residual rates far exceeding those of any other category.  These prompts describe entities designed to sound real but that do not exist: plausible organization names, fictional but realistic people, invented but credible locations.  The residual rate is consistent with a knowledge-boundary limitation: when an entity is designed to be maximally plausible, prompting the model to verify existence may be insufficient if the model's training data does not provide a basis for distinguishing the entity from a real one.
+
+Entity-Aware achieves the largest reductions on the two categories where entity existence is the core question: nonexistent (29.5\%$\to$3.3\% Mixtral, 19.0\%$\to$3.2\% Llama) and plausible-but-fake (43.5\%$\to$11.0\% Mixtral).  These are large effects ($>$15 percentage-point reductions) consistent with Entity-Aware's design---it explicitly asks the model to verify whether entities exist.  However, Entity-Aware is not the best prefix for every category.  On factual questions, Epistemic Humility outperforms it for Mixtral (7.4\% vs.\ 9.2\%) and Structured Caution for Llama (1.6\% vs.\ 2.6\%), though these differences are small ($<$2 percentage points) relative to the per-cell sample sizes ($n = 130$--$600$).  No single prefix dominates across all categories, confirming that the specificity-vs-breadth tradeoff identified in Section~\ref{sec:prefix-design} operates at the category level.
+
+The borderline obscure-but-real category reveals an early sign of the skepticism-coverage tradeoff.  For Mixtral, all four prefixes reduce hallucination on this category (from 11.5\% to 8.0--9.5\%), but for Llama the direction reverses: three of the four prefixes show numerically higher hallucination than baseline (3.0\%), with Entity-Aware and Epistemic Humility at 4.0\% and Fact-Grounded at 5.0\%.  Only Structured Caution is lower (2.0\%).  The consistent direction across three Llama prefixes suggests that entity-skepticism instructions cause the model to second-guess real but unfamiliar entities.  Whether this tradeoff sharpens when prefix behavior is consolidated into model weights is examined in Chapter~\ref{ch:finetuning}.
+
+Refusal rates across all non-CoT prefix conditions remain below 5\%, but their distribution is uneven.  Fact-Grounded produces the highest refusal---4.8\% on Llama factual questions and 3.0\% on Mixtral borderline obscure-real prompts---consistent with its blanket instruction to ``never fabricate'' causing the model to refuse questions it could answer correctly.  Entity-Aware, despite being the most benchmark-targeted prefix, has the cleanest refusal profile: at or below 0.5\% across nearly all categories for both models.  This suggests that asking a model to \emph{verify} entity existence is less prone to over-caution than \emph{prohibiting} fabrication outright.
+
+The broader lesson is that a single sentence of instruction can eliminate the majority of hallucinations, suggesting that models already possess the capability to be cautious but need explicit permission to exercise it. The prefix does not teach the model new facts; it activates a behavioral mode that the model's training made available but did not make default. The cost of this activation is a fundamental tradeoff: making a model more skeptical about fabricated entities inevitably makes it more skeptical about real but unfamiliar ones. Whether this tradeoff sharpens or resolves when prefix behavior is consolidated into model weights is the question the next chapter addresses.

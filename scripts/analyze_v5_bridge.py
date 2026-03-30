@@ -51,7 +51,9 @@ MODEL_LABELS = {
 }
 PREFIXES = [
     'epistemic_humility', 'fact_grounded', 'entity_aware',
-    'structured_caution', 'cot_verification',
+    'structured_caution',
+    # 'cot_verification' excluded — CoT results invalidated by judge API
+    # failure contamination (see JUDGE_CONTAMINATION_ISSUE.md, Mar 12 decision)
 ]
 GEO_FEATURES = ['curvature_score', 'oppositeness_score', 'density', 'centrality']
 

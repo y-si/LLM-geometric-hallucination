@@ -35,8 +35,8 @@ plt.rcParams.update({
 COLORS = {
     "mixtral": "#e74c3c",
     "llama": "#3498db",
-    "hallucinated": "#e74c3c",
-    "correct": "#2ecc71",
+    "hallucinated": "#bd6565",
+    "correct": "#accd91",
 }
 
 # ── Load geometry features ───────────────────────────────────────────────
@@ -141,9 +141,6 @@ for ax, (model_id, data) in zip(axes, model_data.items()):
             color="black", linewidth=0.8)
     ax.plot([2, 2], [bracket_y - 0.015 * y_range, bracket_y],
             color="black", linewidth=0.8)
-
-fig.suptitle("Density Distribution: Nonexistent Category", fontsize=13,
-             fontweight="bold", y=1.02)
 
 plt.tight_layout()
 

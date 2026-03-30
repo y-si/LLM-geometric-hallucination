@@ -1,9 +1,45 @@
 %!TEX root = ../dissertation.tex
 \begin{savequote}[75mm]
 It ain't what you don't know that gets you into trouble. It's what you know for sure that just ain't so.
-\qauthor{Commonly attributed to Mark Twain}
+\qauthor{Mark Twain}
 \end{savequote}
 
 \chapter{Introduction}
 \label{introduction}
 
+Large language models (LLMs) are now routinely used in domains where factual accuracy is consequential: generating medical advice, drafting legal documents, writing code, summarizing scientific literature, and answering questions in educational settings. In each of these contexts, users rely on the model's outputs being grounded in reality. Yet language models hallucinate---they produce text that is fluent, confident, and \emph{wrong}. A model asked to summarize a nonexistent book will sometimes produce a detailed chapter-by-chapter synopsis. A model asked about a fabricated person will sometimes narrate their biography. These are not random errors or garbled outputs; they are coherent fabrications delivered with the same tone and certainty as correct responses, making them difficult for users to detect. % 2. i also am not sure that the "A model asked" sentences are extending your point; a specific anecdote (perhaps a real story would be more impactful to your reader).
+
+Hallucination is unfortunately not a problem that scales away. Theoretical work has shown that any computable language model will hallucinate on some inputs \citep{xu2024hallucination}. Consequently, complete elimination is provably impossible. This means that while hallucination rates vary widely across models and prompts,  no frontier model is immune to hallucinations. The practical consequence is that the research agenda must shift from \emph{preventing} hallucination in general, to \emph{predicting} where it will occur and reducing it where it matters most. 
+
+This reframing connects to a much older research question. In cognitive science, \emph{metacognition}, or the capacity to assess one's own knowledge, has been studied for decades \citep{kadavath2022language}. Humans exhibit characteristic failures of metacognition: we confabulate, producing plausible but false memories when probed at the boundaries of what we know \citep{roediger1995creating}. LLM hallucination bears a structural resemblance to human confabulation: both produce plausible content where genuine knowledge is absent. This thesis asks a geometric version of the metacognitive question: does the \emph{structure} of a model's representational space reveal where its knowledge thins out, and can that structure guide efforts to make models more reliable?
+ % also i think being a little more technical would be okay (what does it mean for knowledge to thin out--just a little more color would be nice, even for the uninitiated reader).
+
+Existing approaches to hallucination mitigation address pieces of this question in isolation. Detection methods identify hallucination after generation, typically by probing a model's internal representations \citep{li2024inferencetime} or measuring consistency across multiple sampled outputs \citep{manakul2023selfcheckgpt}. Prompting strategies encourage models to express uncertainty rather than fabricate \citep{dhuliawala2023chainofverification}, but require careful per-query engineering and offer no guarantee of generalization. Fine-tuning approaches modify model weights to improve factual accuracy, though recent work has shown that standard supervised fine-tuning on human-written answers can paradoxically \emph{increase} hallucination by teaching the model knowledge it does not actually possess \citep{gekhman2024does}. What is missing is a framework that connects these efforts: \emph{predicting} which prompts are at risk, \emph{intervening} with targeted prompting, and \emph{consolidating} the resulting behavior into model weights. % i like this paragraph a lot. 
+
+\section{Our Contributions}
+\label{sec:contributions}
+
+The primary contribution of this thesis is to develop such a framework, with geometric structure as the diagnostic thread. We begin by embedding prompts into a high-dimensional geometric space and showing that the structure of that space predicts whether a model will hallucinate. We then test whether targeted system-prompt interventions can reduce hallucination in a controlled comparison, and show that geometric features predict not only which prompts cause hallucination, but which hallucinations \emph{resist} intervention. Finally, we distill the most effective prompt behavior into model weights through parameter-efficient fine-tuning, producing models that are more reliable without runtime prompt engineering. Three independent tests confirm that the fine-tuned models learned general epistemic caution---not surface-level memorization of training patterns. 
+
+This framework rests on three original contributions:
+
+\begin{enumerate}
+    \item \textbf{Geometric prediction of hallucination} (Chapter~\ref{ch:geo-predict-hallucination}). We show that geometric properties of prompt embeddings, which are computed from the question text alone before any model generates a response, predict which prompts will cause hallucination across ten language models spanning three provider families. We decompose this signal and show that most of its predictive power reflects the structure of question types: questions about nonexistent entities, factual recall, and logical impossibility occupy geometrically distinct regions of embedding space. The more substantive finding is that \emph{within} a single question type, embedding density distinguishes prompts that cause hallucination from those that do not. This signal is statistically significant, consistent across both models tested, and cannot be attributed to differences between question types.
+
+    \item \textbf{Prompt-based hallucination reduction} (Chapter~\ref{ch:prefixes}). We design four targeted system-prompt interventions, each addressing a distinct mechanism by which models hallucinate: failure to verify entity existence, overconfidence in uncertain domains, lack of structured reasoning constraints, and fabrication of specific details. In a controlled comparison using the same prompts and evaluation pipeline, all four interventions significantly reduce hallucination while maintaining or improving accuracy. This result is replicated at five times the original benchmark scale on an expanded set of prompts.
+
+    \item \textbf{Geometric diagnosis and fine-tuning distillation} (Chapter~\ref{ch:finetuning}). We show that the same geometric features that predict hallucination occurrence also predict which hallucinations \emph{resist} intervention, connecting geometric structure to hallucination \emph{difficulty}, not just occurrence. We then distill the most effective prompt behavior into model weights through fine-tuning, producing models that match the best prompt intervention's accuracy without runtime engineering. Three independent tests confirm the models learned general epistemic caution, not surface memorization: they transfer to an external benchmark testing a different type of hallucination, they are invariant to the number of training templates, and they generalize to question types not seen during training.
+\end{enumerate}
+
+\begin{figure}[ht]
+\centering
+\makebox[\textwidth][c]{\includegraphics[width=1.3\textwidth]{figures/intro_overview.png}}
+\caption{Overview of this thesis's three contributions. (a)~Within the nonexistent category ($n = 600$), the largest and most practically relevant category, prompts that cause hallucination occupy sparser embedding neighborhoods than those answered correctly ($p < 0.001$, both models); full within-category results appear in Chapter~\ref{ch:geo-predict-hallucination}. (b)~Targeted system-prompt interventions reduce hallucination rates by up to 89\%. (c)~Fine-tuned models transfer epistemic caution to TruthfulQA, an unseen external benchmark, with significant improvement for Llama ($p < 0.01$).}
+\label{fig:intro-overview}
+\end{figure}
+
+The remainder of this thesis is organized as follows. Chapter~\ref{ch:background} introduces the technical background: large language models, hallucination, text embeddings, geometric features, and parameter-efficient fine-tuning. Chapter~\ref{ch:litreview} surveys prior work on hallucination detection, benchmarking, prompting, and fine-tuning, identifying the gaps this thesis addresses. Chapter~\ref{ch:setup} describes the shared experimental infrastructure---the benchmark, model selection, consensus judging pipeline, and embedding approach. Chapters~\ref{ch:geo-predict-hallucination},~\ref{ch:prefixes}, and~\ref{ch:finetuning} present the three contributions listed above. Chapter~\ref{ch:discussion} discusses implications, limitations, connections to cognitive science, and directions for future work. 
+
+The central finding, developed across these chapters, is that \emph{hallucination has a difficulty structure, and that structure is legible from the geometry of the embedding space.}
+
+\input{figures/pipeline_example.tex}

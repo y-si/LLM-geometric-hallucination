@@ -248,13 +248,15 @@ def analyze_robustness(original_results, alternative_embeddings_dir, output_dir)
     
     # Create visualization
     pivot = results_df.pivot(index='geometry_feature', columns='embedding_model', values='correlation')
-    
+    # Clean up feature names for display
+    pivot.index = [name.replace('_', ' ').title() for name in pivot.index]
+
     plt.figure(figsize=(10, 6))
     pivot.plot(kind='bar', rot=0)
     plt.title('Geometry-Hallucination Correlation Across Embedding Models', fontsize=14, fontweight='bold')
     plt.ylabel('Spearman Correlation (r)', fontsize=12)
     plt.xlabel('Geometry Feature', fontsize=12)
-    plt.legend(title='Embedding Model', bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.legend(title='Embedding Model')
     plt.tight_layout()
     plt.savefig(f"{output_dir}/embedding_robustness_comparison.png", dpi=300, bbox_inches='tight')
     plt.close()

@@ -1,13 +1,99 @@
 \relax 
 \providecommand\hyper@newdestlabel[2]{}
-\@writefile{toc}{\contentsline {chapter}{\numberline {6}Can Geometry Guide Intervention?}{63}{chapter.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Can Geometry Guide Intervention?}{67}{chapter.6}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{ch:finetuning}{{6}{63}{Can Geometry Guide Intervention?}{chapter.6}{}}
+\newlabel{ch:finetuning}{{6}{67}{Can Geometry Guide Intervention?}{chapter.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Geometric Prediction of Fixability}{68}{section.6.1}\protected@file@percent }
+\newlabel{sec:fixability-prediction}{{6.1}{68}{Geometric Prediction of Fixability}{section.6.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.1}Fixability Framework}{68}{subsection.6.1.1}\protected@file@percent }
+\newlabel{sec:fixability-framework}{{6.1.1}{68}{Fixability Framework}{subsection.6.1.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.1}{\ignorespaces Outcome categories for the fixability analysis. Each prompt receives one label per model based on its baseline label and its results across all four prefix conditions from Chapter~\ref {ch:prefixes}. Categories are mutually exclusive.}}{68}{table.caption.21}\protected@file@percent }
+\newlabel{tab:fixability-definitions}{{6.1}{68}{Outcome categories for the fixability analysis. Each prompt receives one label per model based on its baseline label and its results across all four prefix conditions from Chapter~\ref {ch:prefixes}. Categories are mutually exclusive}{table.caption.21}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.2}{\ignorespaces Outcome distribution across the 2,430-prompt expanded benchmark. Prefixes fix 92.5\% (333/360) of Mixtral baseline hallucinations and 89.8\% (211/235) of Llama baseline hallucinations. 27 and 24 prompts respectively resist all four prefix interventions.}}{69}{table.caption.22}\protected@file@percent }
+\newlabel{tab:outcome-distribution}{{6.2}{69}{Outcome distribution across the 2,430-prompt expanded benchmark. Prefixes fix 92.5\% (333/360) of Mixtral baseline hallucinations and 89.8\% (211/235) of Llama baseline hallucinations. 27 and 24 prompts respectively resist all four prefix interventions}{table.caption.22}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.2}Fixed vs.\ Correct: Geometric Differences}{69}{subsection.6.1.2}\protected@file@percent }
+\newlabel{sec:fixed-vs-correct}{{6.1.2}{69}{Fixed vs.\ Correct: Geometric Differences}{subsection.6.1.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.3}{\ignorespaces Mann-Whitney $U$ tests comparing fixed (baseline hallucination corrected by a prefix) and already-correct prompts. Bold rows are significant ($p < 0.05$). Features sorted by $|r|$ within each model. Fixed prompts tend toward higher oppositeness and lower density than correct prompts---the same direction as Chapter~\ref {ch:geo-predict-hallucination}'s hallucination prediction, though density reaches significance only for Mixtral. Curvature is null for both models, consistent with its downgrading in Table~\ref {tab:feature-synthesis}.}}{70}{table.caption.23}\protected@file@percent }
+\newlabel{tab:fixed-vs-correct}{{6.3}{70}{Mann-Whitney $U$ tests comparing fixed (baseline hallucination corrected by a prefix) and already-correct prompts. Bold rows are significant ($p < 0.05$). Features sorted by $|r|$ within each model. Fixed prompts tend toward higher oppositeness and lower density than correct prompts---the same direction as Chapter~\ref {ch:geo-predict-hallucination}'s hallucination prediction, though density reaches significance only for Mixtral. Curvature is null for both models, consistent with its downgrading in Table~\ref {tab:feature-synthesis}}{table.caption.23}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.3}Aggregate Fixability Prediction}{70}{subsection.6.1.3}\protected@file@percent }
+\newlabel{sec:aggregate-fixability}{{6.1.3}{70}{Aggregate Fixability Prediction}{subsection.6.1.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.4}{\ignorespaces Logistic regression AUC for predicting fixability (fixed vs.\ still-broken) using four geometric features, with 5-fold cross-validation. Llama achieves a cross-validated AUC of 0.712, indicating genuine predictive signal despite severe class imbalance (9:1). Mixtral's weaker 0.573 likely reflects its more extreme imbalance (12:1).}}{70}{table.caption.24}\protected@file@percent }
+\newlabel{tab:fixability-auc}{{6.4}{70}{Logistic regression AUC for predicting fixability (fixed vs.\ still-broken) using four geometric features, with 5-fold cross-validation. Llama achieves a cross-validated AUC of 0.712, indicating genuine predictive signal despite severe class imbalance (9:1). Mixtral's weaker 0.573 likely reflects its more extreme imbalance (12:1)}{table.caption.24}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.4}Within-Category Fixability Prediction}{71}{subsection.6.1.4}\protected@file@percent }
+\newlabel{sec:within-cat-fixability}{{6.1.4}{71}{Within-Category Fixability Prediction}{subsection.6.1.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.5}{\ignorespaces Within-category Mann-Whitney $U$ tests for the nonexistent category, comparing still-broken and fixed hallucinations. Features sorted by $|r|$ within each model. Bold rows significant at $p < 0.05$ (uncorrected); neither survives Bonferroni correction for 24 within-category tests (${"α}= 0.0021$). Mixtral: $n_{\text  {broken}} = 13$, $n_{\text  {fixed}} = 164$. Llama: $n_{\text  {broken}} = 7$, $n_{\text  {fixed}} = 107$.}}{71}{table.caption.25}\protected@file@percent }
+\newlabel{tab:within-cat-fixability}{{6.5}{71}{Within-category Mann-Whitney $U$ tests for the nonexistent category, comparing still-broken and fixed hallucinations. Features sorted by $|r|$ within each model. Bold rows significant at $p < 0.05$ (uncorrected); neither survives Bonferroni correction for 24 within-category tests ($\alpha = 0.0021$). Mixtral: $n_{\text {broken}} = 13$, $n_{\text {fixed}} = 164$. Llama: $n_{\text {broken}} = 7$, $n_{\text {fixed}} = 107$}{table.caption.25}{}}
+\@writefile{toc}{\contentsline {paragraph}{Multiple comparisons.}{72}{table.caption.25}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1.5}Summary and Interpretation}{72}{subsection.6.1.5}\protected@file@percent }
+\newlabel{sec:fixability-summary}{{6.1.5}{72}{Summary and Interpretation}{subsection.6.1.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Training Data Curation}{73}{section.6.2}\protected@file@percent }
+\newlabel{sec:training-curation}{{6.2}{73}{Training Data Curation}{section.6.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.1}Best-Per-Prompt Selection}{73}{subsection.6.2.1}\protected@file@percent }
+\newlabel{sec:best-per-prompt}{{6.2.1}{73}{Best-Per-Prompt Selection}{subsection.6.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.2}Training Data Composition}{74}{subsection.6.2.2}\protected@file@percent }
+\newlabel{sec:training-composition}{{6.2.2}{74}{Training Data Composition}{subsection.6.2.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.6}{\ignorespaces Training data composition after best-per-prompt selection. Over 99\% of selected responses are correct. The 27 and 24 excluded prompts are the unfixable set from Section~\ref {sec:fixability-prediction}---prompts where all five candidate sources (baseline + four prefixes) produce hallucinations.}}{74}{table.caption.26}\protected@file@percent }
+\newlabel{tab:training-composition}{{6.6}{74}{Training data composition after best-per-prompt selection. Over 99\% of selected responses are correct. The 27 and 24 excluded prompts are the unfixable set from Section~\ref {sec:fixability-prediction}---prompts where all five candidate sources (baseline + four prefixes) produce hallucinations}{table.caption.26}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2.3}From Selection to Fine-Tuning}{74}{subsection.6.2.3}\protected@file@percent }
+\newlabel{sec:selection-to-ft}{{6.2.3}{74}{From Selection to Fine-Tuning}{subsection.6.2.3}{}}
+\citation{hu2022lora}
+\citation{hu2022lora}
+\@writefile{toc}{\contentsline {section}{\numberline {6.3}Fine-Tuning Results}{75}{section.6.3}\protected@file@percent }
+\newlabel{sec:ft-results}{{6.3}{75}{Fine-Tuning Results}{section.6.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.1}Fine-Tuning Setup}{75}{subsection.6.3.1}\protected@file@percent }
+\newlabel{sec:ft-setup}{{6.3.1}{75}{Fine-Tuning Setup}{subsection.6.3.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.7}{\ignorespaces LoRA fine-tuning configurations. Learning rate and epochs (shown) were honored as requested; Together AI overrode other parameters: LoRA rank $16 \to 64$, alpha $32 \to 128$, dropout and weight decay removed. Mixtral uses standard LoRA on attention projections; Llama uses QLoRA with 4-bit quantization. Only Config~A was tested for Llama due to cost constraints.}}{75}{table.caption.27}\protected@file@percent }
+\newlabel{tab:ft-lora-configs}{{6.7}{75}{LoRA fine-tuning configurations. Learning rate and epochs (shown) were honored as requested; Together AI overrode other parameters: LoRA rank $16 \to 64$, alpha $32 \to 128$, dropout and weight decay removed. Mixtral uses standard LoRA on attention projections; Llama uses QLoRA with 4-bit quantization. Only Config~A was tested for Llama due to cost constraints}{table.caption.27}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.2}Aggregate Results}{75}{subsection.6.3.2}\protected@file@percent }
+\newlabel{sec:ft-aggregate}{{6.3.2}{75}{Aggregate Results}{subsection.6.3.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.8}{\ignorespaces Fine-tuning results on the 449-prompt held-out test set. Accuracy = proportion judged correct (label~=~0). Best single prefix = Structured Caution for both models (evaluated on this test set; differs from Chapter~\ref {ch:prefixes}'s ranking on the expanded benchmark). Bold rows indicate the best fine-tuned configuration per model.}}{76}{table.caption.28}\protected@file@percent }
+\newlabel{tab:ft-results}{{6.8}{76}{Fine-tuning results on the 449-prompt held-out test set. Accuracy = proportion judged correct (label~=~0). Best single prefix = Structured Caution for both models (evaluated on this test set; differs from Chapter~\ref {ch:prefixes}'s ranking on the expanded benchmark). Bold rows indicate the best fine-tuned configuration per model}{table.caption.28}{}}
+\@writefile{toc}{\contentsline {paragraph}{Hyperparameter sensitivity.}{76}{figure.caption.29}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6.1}{\ignorespaces Hallucination and refusal rates on the 449-prompt held-out test set. Both interventions dramatically reduce hallucination relative to baseline (McNemar $p < 10^{-2}$), but fine-tuning and the best prefix do not differ significantly from each other (n.s.). The majority of reduced hallucinations become correct responses (Table~\ref {tab:ft-results}: accuracy rises from 82.9\%/90.6\% to 94.4\%/94.0\%), not refusals---refusal rates increase by only 2--4 percentage points. Fine-tuning achieves comparable error rates to the best prefix with the behavior baked into model weights.}}{77}{figure.caption.29}\protected@file@percent }
+\newlabel{fig:hallucination-comparison}{{6.1}{77}{Hallucination and refusal rates on the 449-prompt held-out test set. Both interventions dramatically reduce hallucination relative to baseline (McNemar $p < 10^{-2}$), but fine-tuning and the best prefix do not differ significantly from each other (n.s.). The majority of reduced hallucinations become correct responses (Table~\ref {tab:ft-results}: accuracy rises from 82.9\%/90.6\% to 94.4\%/94.0\%), not refusals---refusal rates increase by only 2--4 percentage points. Fine-tuning achieves comparable error rates to the best prefix with the behavior baked into model weights}{figure.caption.29}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.3}Per-Category Analysis: The Precision-Recall Tradeoff}{77}{subsection.6.3.3}\protected@file@percent }
+\newlabel{sec:ft-precision-recall}{{6.3.3}{77}{Per-Category Analysis: The Precision-Recall Tradeoff}{subsection.6.3.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.9}{\ignorespaces Per-category accuracy and hallucination rate changes (fine-tuned minus baseline, in percentage points). Nonexistent and plausible-but-fake categories see dramatic improvements. Factual is the only category with an accuracy regression (Llama $-$3.1pp), driven by increased refusals.}}{78}{table.caption.30}\protected@file@percent }
+\newlabel{tab:ft-per-category}{{6.9}{78}{Per-category accuracy and hallucination rate changes (fine-tuned minus baseline, in percentage points). Nonexistent and plausible-but-fake categories see dramatic improvements. Factual is the only category with an accuracy regression (Llama $-$3.1pp), driven by increased refusals}{table.caption.30}{}}
+\@writefile{toc}{\contentsline {paragraph}{Regression analysis.}{78}{table.caption.30}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.4}Robustness Checks}{78}{subsection.6.3.4}\protected@file@percent }
+\newlabel{sec:ft-robustness}{{6.3.4}{78}{Robustness Checks}{subsection.6.3.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Overfitting check.}{78}{subsection.6.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Entity-level decontamination.}{79}{subsection.6.3.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6.10}{\ignorespaces Decontamination analysis: accuracy on full test set vs.\ clean subset (no entity overlap with training). Entity-independent categories (factual, ambiguous, impossible, edge factual) provide the fairest comparison---entity overlap should not affect performance on questions that do not test entity identity. Gaps on entity-independent categories are $+$1.0pp (Mixtral) and $-$0.1pp (Llama).}}{79}{table.caption.31}\protected@file@percent }
+\newlabel{tab:decontamination}{{6.10}{79}{Decontamination analysis: accuracy on full test set vs.\ clean subset (no entity overlap with training). Entity-independent categories (factual, ambiguous, impossible, edge factual) provide the fairest comparison---entity overlap should not affect performance on questions that do not test entity identity. Gaps on entity-independent categories are $+$1.0pp (Mixtral) and $-$0.1pp (Llama)}{table.caption.31}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3.5}Geometric Analysis of Fine-Tuning Outcomes}{79}{subsection.6.3.5}\protected@file@percent }
+\newlabel{sec:ft-geometry}{{6.3.5}{79}{Geometric Analysis of Fine-Tuning Outcomes}{subsection.6.3.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.11}{\ignorespaces Geometric features of prompts fixed vs.\ still broken by fine-tuning (Mann-Whitney $U$). Bonferroni correction applied across all 24 geometric tests conducted on the held-out test set (this table shows 6 of 24; remaining tests cover within-category and regression comparisons). Bold rows survive correction. Oppositeness excluded due to instability under corpus re-embedding (Appendix~\ref {app:embedding-robustness}). Mixtral: $n_{\text  {fixed}} = 47$, $n_{\text  {broken}} = 6$. Llama: $n_{\text  {fixed}} = 17$, $n_{\text  {broken}} = 9$.}}{80}{table.caption.32}\protected@file@percent }
+\newlabel{tab:ft-bridge}{{6.11}{80}{Geometric features of prompts fixed vs.\ still broken by fine-tuning (Mann-Whitney $U$). Bonferroni correction applied across all 24 geometric tests conducted on the held-out test set (this table shows 6 of 24; remaining tests cover within-category and regression comparisons). Bold rows survive correction. Oppositeness excluded due to instability under corpus re-embedding (Appendix~\ref {app:embedding-robustness}). Mixtral: $n_{\text {fixed}} = 47$, $n_{\text {broken}} = 6$. Llama: $n_{\text {fixed}} = 17$, $n_{\text {broken}} = 9$}{table.caption.32}{}}
+\citation{lin2022truthfulqa}
+\@writefile{toc}{\contentsline {section}{\numberline {6.4}Generalization Evidence}{81}{section.6.4}\protected@file@percent }
+\newlabel{sec:generalization}{{6.4}{81}{Generalization Evidence}{section.6.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4.1}Cross-Domain Transfer: TruthfulQA}{81}{subsection.6.4.1}\protected@file@percent }
+\newlabel{sec:truthfulqa}{{6.4.1}{81}{Cross-Domain Transfer: TruthfulQA}{subsection.6.4.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.12}{\ignorespaces TruthfulQA results (817 questions). McNemar's tests with Bonferroni correction for 4 tests (${"α}= 0.05/4 = 0.0125$). Models were fine-tuned on entity-fabrication data only and have never seen TruthfulQA during training. Bold indicates significance after correction.}}{82}{table.caption.33}\protected@file@percent }
+\newlabel{tab:truthfulqa}{{6.12}{82}{TruthfulQA results (817 questions). McNemar's tests with Bonferroni correction for 4 tests ($\alpha = 0.05/4 = 0.0125$). Models were fine-tuned on entity-fabrication data only and have never seen TruthfulQA during training. Bold indicates significance after correction}{table.caption.33}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4.2}Template Invariance}{82}{subsection.6.4.2}\protected@file@percent }
+\newlabel{sec:template-ablation}{{6.4.2}{82}{Template Invariance}{subsection.6.4.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.13}{\ignorespaces Template diversity ablation on the 449-prompt held-out test set. T5/T10 use 5/10 templates; R$\{N\}$ uses all 194 templates but matches T5's dataset size (isolating diversity from size). McNemar $p$-values test each condition against T-all (the full training set). No condition is significantly worse than T-all.}}{83}{table.caption.34}\protected@file@percent }
+\newlabel{tab:template-ablation}{{6.13}{83}{Template diversity ablation on the 449-prompt held-out test set. T5/T10 use 5/10 templates; R$\{N\}$ uses all 194 templates but matches T5's dataset size (isolating diversity from size). McNemar $p$-values test each condition against T-all (the full training set). No condition is significantly worse than T-all}{table.caption.34}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4.3}Cross-Category Generalization}{83}{subsection.6.4.3}\protected@file@percent }
+\newlabel{sec:cross-category}{{6.4.3}{83}{Cross-Category Generalization}{subsection.6.4.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6.14}{\ignorespaces Cross-category generalization ablation on the 449-prompt held-out test set. Entity-dependent = nonexistent, plausible-but-fake, obscure-but-real. Entity-independent = factual, ambiguous, impossible, edge factual. R$_{\text  {entity-dep}}$ is a size-matched random sample from all categories (isolates category composition from dataset size). Bold: Llama entity-dep \emph  {exceeds} the full training set.}}{84}{table.caption.35}\protected@file@percent }
+\newlabel{tab:cross-category}{{6.14}{84}{Cross-category generalization ablation on the 449-prompt held-out test set. Entity-dependent = nonexistent, plausible-but-fake, obscure-but-real. Entity-independent = factual, ambiguous, impossible, edge factual. R$_{\text {entity-dep}}$ is a size-matched random sample from all categories (isolates category composition from dataset size). Bold: Llama entity-dep \emph {exceeds} the full training set}{table.caption.35}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.4.4}Convergence of Evidence}{85}{subsection.6.4.4}\protected@file@percent }
+\newlabel{sec:convergence}{{6.4.4}{85}{Convergence of Evidence}{subsection.6.4.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.5}Discussion}{85}{section.6.5}\protected@file@percent }
+\newlabel{sec:ch7-discussion}{{6.5}{85}{Discussion}{section.6.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{The precision-recall tradeoff.}{86}{section.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{What the model learned.}{86}{section.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Hyperparameter overrides.}{87}{section.6.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Scope and limitations.}{87}{section.6.5}\protected@file@percent }
 \@setckpt{chapters/geo-guide-intervention}{
-\setcounter{page}{64}
+\setcounter{page}{88}
 \setcounter{equation}{0}
-\setcounter{enumi}{5}
+\setcounter{enumi}{4}
 \setcounter{enumii}{0}
 \setcounter{enumiii}{0}
 \setcounter{enumiv}{0}
@@ -15,22 +101,22 @@
 \setcounter{mpfootnote}{0}
 \setcounter{part}{0}
 \setcounter{chapter}{6}
-\setcounter{section}{0}
+\setcounter{section}{5}
 \setcounter{subsection}{0}
 \setcounter{subsubsection}{0}
 \setcounter{paragraph}{0}
 \setcounter{subparagraph}{0}
-\setcounter{figure}{0}
-\setcounter{table}{0}
+\setcounter{figure}{1}
+\setcounter{table}{14}
 \setcounter{DefaultLines}{2}
 \setcounter{DefaultDepth}{0}
 \setcounter{L@lines}{0}
 \setcounter{L@depth}{0}
 \setcounter{section@level}{0}
-\setcounter{Item}{23}
+\setcounter{Item}{30}
 \setcounter{Hfootnote}{0}
 \setcounter{Hy@AnnotLevel}{0}
-\setcounter{bookmark@seq@number}{69}
+\setcounter{bookmark@seq@number}{94}
 \setcounter{parentequation}{0}
 \setcounter{eu@}{0}
 \setcounter{eu@i}{0}
@@ -43,5 +129,15 @@
 \setcounter{@ppsavesec}{0}
 \setcounter{@ppsaveapp}{0}
 \setcounter{NAT@ctr}{0}
-\setcounter{float@type}{4}
+\setcounter{float@type}{16}
+\setcounter{tcbbreakpart}{0}
+\setcounter{tcblayer}{0}
+\setcounter{tcolorbox@number}{0}
+\setcounter{tcbrastercolumn}{1}
+\setcounter{tcbrasterrow}{1}
+\setcounter{tcbrasternum}{1}
+\setcounter{tcbraster}{0}
+\setcounter{lstnumber}{1}
+\setcounter{tcblisting}{0}
+\setcounter{lstlisting}{0}
 }

@@ -7,19 +7,19 @@ All models are wrong, but some are useful.
 \chapter{Can Geometry Predict Hallucinations?}
 \label{ch:geo-predict-hallucination}
 
-If geometric properties of prompt embeddings carry information about hallucination risk, a pre-generation risk estimate could be computed from the question text alone, before any model generates a response and independent of which model will answer. Such a signal would be theoretically interesting (suggesting that hallucination risk is partly a property of the question's position in embedding space, not just of model-internal processing) and practically useful (enabling risk-aware routing or flagging without running inference).
+A language model that fabricates a fact is doing something different from one that retrieves it correctly. But what is different from the model's perspective? If a model's knowledge is organized in an embedding space, then the position of a prompt in that space might carry information about whether the model can answer it reliably---before it even generates the first token. 
 
-This chapter investigates whether such a signal exists. We begin by establishing how often frontier models hallucinate on our benchmark and validating the consensus labels that all subsequent analysis depends on. We then test whether five geometric features of the embedding space differ between hallucinated and correctly answered prompts, and critically examine how much of any observed signal reflects category structure versus genuine within-category geometric variation. We synthesize which features survive these controls and discuss the implications and limitations of the findings.
+This chapter investigates whether that information exists. And if so, what form it takes.
 
 \section{Baseline Hallucination Rates}
 \label{sec:baseline-rates}
 
-Chapter~\ref{ch:setup} describes the experimental infrastructure: a 2,879-prompt benchmark spanning seven categories of knowledge failure, a 10-model cross-model benchmark suite, a three-judge consensus evaluation pipeline, and a geometric feature extraction approach based on external embeddings. We now turn to results. This section establishes the baseline: how often do frontier language models hallucinate on our benchmark, how consistent are these failures across models, and can we trust the labels that all subsequent analysis depends on?
+How often do frontier models hallucinate on our benchmark, how consistent are these failures across models, and can we trust the consensus labels?
 
 \subsection{Cross-Model Benchmark}
 \label{sec:cross-model}
 
-We evaluated all 10 models on the 449-prompt initial benchmark using the consensus judging pipeline described in Section~\ref{sec:judging}. Table~\ref{tab:10-model-rates} reports the results.
+We evaluated all 10 models on the 449-prompt initial benchmark using the judge panel (Section~\ref{sec:judging}). Table~\ref{tab:10-model-rates} reports the results.
 
 \begin{table}[ht]
 \centering
@@ -44,20 +44,18 @@ GPT-4o-mini & OpenAI & 17.82 & 10 \\
 \label{tab:10-model-rates}
 \end{table}
 
-Hallucination rates vary by a factor of 13, from 1.34\% (Claude Haiku 4.5) to 17.82\% (GPT-4o-mini). The ranking does not follow a simple parameter-count ordering: Claude Haiku, the most lightweight model in the Anthropic family, outperforms Claude Opus and all GPT variants, suggesting that parameter count alone does not determine hallucination resistance. Grouping by provider, Anthropic models exhibit the lowest hallucination rates (1.3--2.5\%), OpenAI models span the full range (5.6--17.8\%), and the two open-weight models---Mixtral 8x7B and Llama 4 Maverick---fall in the middle-to-high range (11.8\% and 5.8\%, respectively). These two open-weight models serve as the intervention targets for the prompting and fine-tuning experiments in Chapters~\ref{ch:prefixes} and~\ref{ch:finetuning}, spanning the difficulty spectrum from moderate to high baseline hallucination rates.
+Hallucination rates vary by a factor of 13, from 1.34\% (Claude Haiku 4.5) to 17.82\% (GPT-4o-mini). The ranking does not follow a simple parameter-count ordering: Claude Haiku, the most lightweight model in the Anthropic family, outperforms Claude Opus and all GPT variants, suggesting that parameter count alone does not determine hallucination resistance. Grouping by provider, Anthropic models exhibit the lowest hallucination rates (1.3--2.5\%), OpenAI models span the full range (5.6--17.8\%), and the two open-weight models---Mixtral 8x7B and Llama 4 Maverick---fall in the middle-to-high range (11.8\% and 5.8\%, respectively). 
 
-To assess whether certain prompts are universally difficult or whether hallucination patterns are model-specific, we compute pairwise Kendall's $\tau$ rank correlations between the 10 models' per-prompt binary hallucination indicators (1 if hallucinated, 0 otherwise), yielding 45 model pairs. Kendall's $\tau$ is a nonparametric measure of ordinal association, where $\tau = 1$ indicates perfect agreement and $\tau = 0$ indicates no association. The mean correlation is $\tau = 0.319$ (median 0.303, range 0.068--0.617), indicating moderate cross-model consistency. Some prompts are hard for many models, but substantial model-specific variance remains. Same-family pairs show stronger correlations: GPT-4.1-mini and GPT-4o-mini ($\tau = 0.617$), GPT-4.1 and GPT-4.1-mini ($\tau = 0.524$), and---perhaps surprisingly---Claude Sonnet 4.5 and GPT-5.1 ($\tau = 0.590$), suggesting shared training-data effects that cross provider boundaries. Cross-family correlations are weaker, with several near zero: Qwen 3 Next and Claude Sonnet ($\tau = 0.068$), Qwen 3 Next and GPT-4.1 ($\tau = 0.068$). This moderate consistency is a prerequisite for the geometric analysis that follows: if hallucination were entirely model-specific, a model-agnostic geometric predictor computed from prompt text alone would have nothing to learn. The fact that prompts carry a shared difficulty signal, even if partial, motivates the search for geometric correlates. The full $10 \times 10$ correlation matrix is reported in Appendix~\ref{app:kendall-matrix}.
-% TODO: Create appendix section \label{app:kendall-matrix} with the full Kendall's tau
-% heatmap or table. Source: results/v3/multi_model/stats/kendall_tau_matrix.csv
+To assess whether hallucination patterns are prompt-driven or model-specific, we compute pairwise Kendall's $\tau$ rank correlations between the 10 models' per-prompt binary hallucination indicators, yielding 45 model pairs. The mean correlation is $\tau = 0.319$ (median 0.303, range 0.068--0.617), indicating moderate cross-model consistency: some prompts are hard for many models, but substantial model-specific variance remains. Same-family pairs correlate more strongly (e.g., GPT-4.1-mini and GPT-4o-mini at $\tau = 0.617$), while cross-family pairs are weaker (several near zero). This moderate consistency is a prerequisite for the geometric analysis: if hallucination were entirely model-specific, a model-agnostic geometric predictor would have nothing to learn. The full correlation matrix is in Appendix~\ref{app:kendall-matrix}.
 
 \subsection{Expanded Benchmark Baselines}
 \label{sec:expanded-baselines}
 
-The initial benchmark establishes cross-model patterns but is limited to 449 prompts, which is insufficient for the fine-tuning experiments in Chapter~\ref{ch:finetuning} and for within-category statistical analysis across all seven categories. We therefore evaluate the two intervention target models on the expanded benchmark of 2,430 prompts (Section~\ref{sec:scaling}), which serves as the primary dataset for the geometric analyses in this chapter.
+We evaluate the two intervention target models on the expanded benchmark of 2,430 prompts (Section~\ref{sec:scaling}), which serves as the primary dataset for the geometric analyses in this chapter.
 
-Mixtral 8x7B achieves 82.5\% correctness with a 14.8\% hallucination rate; Llama 4 Maverick achieves 87.9\% correctness with a 9.7\% hallucination rate. Both hallucination rates are higher than on the initial benchmark (Mixtral: 11.8\% $\rightarrow$ 14.8\%; Llama: 5.8\% $\rightarrow$ 9.7\%). This increase is expected, not a replication failure: the expanded benchmark draws from deeper, more diverse entity pools and deliberately scales up the hardest sub-categories---by design, it probes harder regions of the knowledge space.
+Mixtral 8x7B achieves 82.5\% correctness with a 14.8\% hallucination rate (the remainder are partial or refused responses); Llama 4 Maverick achieves 87.9\% correctness with a 9.7\% hallucination rate. Both hallucination rates are higher than on the initial benchmark (Mixtral: 11.8\% $\rightarrow$ 14.8\%; Llama: 5.8\% $\rightarrow$ 9.7\%). This increase is expected and is not a replication failure: the expanded benchmark draws from deeper, more diverse entity pools and deliberately scales up the hardest sub-categories. By design, it probes harder regions of the knowledge space.
 
-Table~\ref{tab:category-rates} breaks down hallucination rates by category. Rates vary sharply, from below 2\% on ambiguous prompts to 43.5\% on borderline plausible fakes (Mixtral) and 30.0\% (Llama). This category-level difficulty gradient---spanning more than a 60$\times$ range---will become central to the analysis in Sections~\ref{sec:between-category}--\ref{sec:within-category}, where we test whether geometric features predict hallucination beyond what category membership alone explains.
+Table~\ref{tab:category-rates} breaks down hallucination rates by category. Rates vary sharply, from below 2\% on ambiguous prompts to 43.5\% on borderline plausible fakes (Mixtral) and 30.0\% (Llama)---a 60$\times$ range that raises an immediate question about any geometric predictor: how much of its signal reflects this category-level gradient versus genuine within-category structure?
 
 \begin{table}[ht]
 \centering
@@ -92,22 +90,19 @@ Before analyzing what predicts hallucination, we verify the labels themselves. S
 
 \paragraph{Judge removal.} Removing any single judge and recomputing consensus from the remaining two changes only 3.0--3.5\% of labels. The three judges differ in strictness: GPT-5.1 is the strictest (removing it decreases the hallucination rate to 10.3\%), Claude Opus 4.5 is near-neutral (removing it shifts the rate negligibly, from 12.2\% to 11.9\%), and Llama 4 Maverick is the most lenient (removing it increases the rate to 14.1\%). The spread is modest, and no single judge drives the results.
 
-\paragraph{Self-evaluation bias.} Llama 4 Maverick serves as both a judge and an intervention target, creating a potential self-preference conflict \citep{wataoka2024selfpreference}. To quantify this, we compare the accuracy gap that Llama assigns to its own responses versus Mixtral's responses, and compare this to the same gap under full consensus. The self-preference gap---how much more favorably Llama rates its own responses versus Mixtral's, beyond what the consensus differential predicts---is $-2.3$ percentage points, meaning Llama is \emph{slightly stricter} on its own outputs than the consensus would suggest. Therefore, self-preference bias is negligible.
+\paragraph{Self-evaluation bias.} Llama 4 Maverick serves as both a judge and an intervention target, thus creating a potential self-preference conflict \citep{wataoka2024selfpreference}. To quantify this, we compare the accuracy gap that Llama assigns to its own responses versus Mixtral's responses, and compare this to the same gap under full consensus. The self-preference gap---how much more favorably Llama rates its own responses versus Mixtral's, beyond what the consensus differential predicts---is $-2.3$ percentage points, meaning Llama is actually \emph{slightly stricter} on its own outputs than the consensus would suggest. We consequently rule out self-preference bias.
 
 \paragraph{Three-way splits.} Genuine three-way splits---where all three judges assign different labels---occur in 88 of 4,860 entries (1.8\%). The default tiebreaker assigns the label of the first judge in the panel ordering (GPT-5.1), which tends conservative: switching to a confidence-based tiebreaker would change 48 labels, of which 46 reclassify hallucination as correct. We retain the default tiebreaker for consistency and note that this introduces a small conservative bias.
 
 % TODO: Human validation n is being increased from 50 to 150. Update numbers below once complete.
 \paragraph{Human validation.} Using the three-annotator panel described in Section~\ref{sec:human-validation}, human labels agree with consensus labels 90\% of the time (45 of 50). Of the 5 disagreements, 3 involve the consensus labeling a response as hallucinated where the human panel judged it correct---again consistent with a conservative bias that overcounts hallucination.
 
-Based on these checks, we use majority-vote consensus labels throughout the remainder of this thesis. With validated labels and established baselines in hand, we now turn to the central question of this chapter: do geometric features of the embedding space predict which prompts will trigger hallucination?
+Based on these checks, we use majority-vote consensus labels throughout the remainder of this thesis.
 
 \section{Between-Category Geometric Analysis}
 \label{sec:between-category}
 
-We begin with the broadest test: do geometric features differ between prompts that elicit hallucination and those answered correctly, across the full benchmark, without controlling for category? An initial analysis on the 449-prompt benchmark found that they do, with a train-set AUC of 0.86. That analysis computed geometry on the four main categories (factual, nonexistent, impossible, ambiguous; 368 of 449 prompts---the three borderline sub-categories were not yet embedded) and pooled binary hallucination labels across all 10 models (${\sim}3{,}680$ model--prompt observations), using balanced class weighting and evaluating on the training set without cross-validation. Centrality was the strongest predictor ($\beta = -3.62$, $p < 0.001$), followed by curvature ($\beta = -1.21$, $p < 0.001$); density and local intrinsic dimension were not significant. However, this analysis included only four features---oppositeness was not yet measured---and applied no category-level controls.
-
-% Figure~\ref{fig:v3-geometry-heatmaps} visualizes the five geometric features projected onto a two-dimensional UMAP (Uniform Manifold Approximation and Projection \citep{mcinnes2018umap}) embedding of the 449 prompts, illustrating how geometric properties vary across the embedding space. We now replicate on the expanded benchmark with stricter methodology: per-model analysis, five-fold stratified cross-validation, all five geometric features, and no class reweighting.
-We now replicate on the expanded benchmark with stricter methodology: per-model analysis, five-fold stratified cross-validation, all five geometric features, and no class reweighting.
+We begin with the broadest test: do geometric features differ between hallucinated and correctly answered prompts across the full expanded benchmark, without controlling for category? An initial analysis on the smaller benchmark achieved a train-set AUC of 0.86, but it pooled across models without cross-validation or category controls. We now apply stricter methodology: per-model analysis, five-fold stratified cross-validation, all five geometric features, and no class reweighting.
 
 % \begin{figure}[H]
 % \centering
@@ -117,29 +112,24 @@ We now replicate on the expanded benchmark with stricter methodology: per-model 
 % \label{fig:v3-geometry-heatmaps}
 % \end{figure}
 
-\subsection{Statistical Methods}
-\label{sec:stat-methods}
-
-We use two complementary approaches throughout this chapter. First, for each geometric feature, we apply the \emph{Mann-Whitney $U$ test}, a nonparametric test of whether two independent groups---here, hallucinated versus correct prompts---are drawn from the same distribution. The Mann-Whitney test assumes neither normality nor equal variance, making it appropriate for the geometric features, which exhibit skewed distributions and unequal group sizes (e.g., 360 hallucinated versus 2,004 correct for Mixtral). We report the rank-biserial effect size $r = 1 - 2U/(n_1 \cdot n_2)$, where $|r| < 0.1$ is negligible, $0.1$--$0.3$ is small, $0.3$--$0.5$ is medium, and $> 0.5$ is large. For the Mann-Whitney tests, partial and refused responses are excluded; only hallucinated (label $= 2$) and correct (label $= 0$) prompts are compared.
-
-Second, to assess the combined predictive power of all five features, we fit logistic regression models with standardized features (\texttt{StandardScaler}) and evaluate via five-fold stratified cross-validation, reporting area under the receiver operating characteristic curve (AUC). The logistic regression uses a binary outcome (hallucinated vs.\ all non-hallucinated responses, including partial and refused), as the smaller within-category samples benefit from retaining all available observations. Intuitively, AUC is the probability that a randomly chosen hallucinated prompt receives a higher predicted risk score than a randomly chosen correct prompt; 0.5 indicates chance-level prediction and 1.0 indicates perfect discrimination.
-
 \subsection{Univariate Feature Differences}
 \label{sec:univariate-features}
 
-Table~\ref{tab:mann-whitney} reports the Mann-Whitney $U$ test results for all five geometric features on the expanded benchmark. Two features show consistent, significant differences across both models: \emph{oppositeness} and \emph{density}. Hallucinated prompts have higher oppositeness (their embeddings are farther from any ``opposite'' direction in PCA space) and lower density (their embedding neighborhoods are sparser). Both directions are consistent across models.
+For each geometric feature, we test whether hallucinated and correct prompts differ using the \emph{Mann-Whitney $U$ test}, a nonparametric test that assumes neither normality nor equal variance. This test is appropriate here given the skewed feature distributions and unequal group sizes. We report the rank-biserial effect size $r = 1 - 2U/(n_1 \cdot n_2)$, where $|r| < 0.1$ is negligible, $0.1$--$0.3$ small, $0.3$--$0.5$ medium, and $> 0.5$ large. We apply Bonferroni correction for multiple comparisons. Partial and refused responses are excluded; only hallucinated (label $= 2$) and correct (label $= 0$) prompts are compared.
+
+Table~\ref{tab:mann-whitney} reports results for all five features. Two show consistent, significant differences across both models: \emph{oppositeness} and \emph{density}. Hallucinated prompts have higher oppositeness and lower density. Both directions are consistent across models.
 
 \begin{table}[ht]
 \centering
 \small
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Feature} & \textbf{Hall.\ mean} & \textbf{Correct mean} & $\boldsymbol{p}$ & $\boldsymbol{|r|}$ \\
+\textbf{Feature} & \textbf{Halluc.\ mean} & \textbf{Correct mean} & $\boldsymbol{p}$ & $\boldsymbol{|r|}$ \\
 \midrule
 \multicolumn{5}{l}{\textbf{Mixtral 8x7B} ($n_{\text{hall}} = 360$, $n_{\text{correct}} = 2{,}004$)} \\
 \addlinespace
-Oppositeness    & 0.513 & 0.492 & $4.5 \times 10^{-11}$ & 0.218 \\
-Density         & 2.018 & 2.085 & $1.7 \times 10^{-5}$  & 0.142 \\
+\textbf{Oppositeness}    & \textbf{0.513} & \textbf{0.492} & $\boldsymbol{4.5 \times 10^{-11}}$ & \textbf{0.218} \\
+\textbf{Density}         & \textbf{2.018} & \textbf{2.085} & $\boldsymbol{1.7 \times 10^{-5}}$  & \textbf{0.142} \\
 Centrality      & 0.707 & 0.714 & 0.093                  & 0.056 \\
 Curvature       & 0.361 & 0.356 & 0.854                  & 0.006 \\
 Local intr.\ dim. & 55.1  & 45.6  & 0.864                  & 0.006 \\
@@ -147,29 +137,29 @@ Local intr.\ dim. & 55.1  & 45.6  & 0.864                  & 0.006 \\
 \midrule
 \multicolumn{5}{l}{\textbf{Llama 4 Maverick} ($n_{\text{hall}} = 235$, $n_{\text{correct}} = 2{,}137$)} \\
 \addlinespace
-Oppositeness    & 0.526 & 0.492 & $2.5 \times 10^{-20}$ & 0.367 \\
-Centrality      & 0.698 & 0.715 & $2.0 \times 10^{-4}$  & 0.147 \\
+\textbf{Oppositeness}    & \textbf{0.526} & \textbf{0.492} & $\boldsymbol{2.5 \times 10^{-20}}$ & \textbf{0.367} \\
+\textbf{Centrality}      & \textbf{0.698} & \textbf{0.715} & $\boldsymbol{2.0 \times 10^{-4}}$  & \textbf{0.147} \\
 Density         & 2.015 & 2.079 & 0.017                  & 0.095 \\
 Curvature       & 0.356 & 0.356 & 0.739                  & 0.013 \\
 Local intr.\ dim. & 22.5  & 46.9  & 0.812                  & 0.009 \\
 \bottomrule
 \end{tabular}
-\caption{Mann-Whitney $U$ test results comparing hallucinated versus correct prompts on the expanded benchmark (between-category). Features are sorted by $|r|$ within each model panel. Direction: hallucinated prompts have higher oppositeness and lower density than correct prompts. All significant results except Llama density ($p = 0.017$) survive Bonferroni correction for 10 comparisons ($\alpha = 0.005$).}
+\caption{Mann-Whitney $U$ test results comparing hallucinated versus correct prompts on the expanded benchmark (between-category). Features are sorted by $|r|$ within each model panel. Direction: hallucinated prompts have higher oppositeness and lower density than correct prompts. Bold rows survive Bonferroni correction for 10 comparisons ($\alpha = 0.005$); Llama density ($p = 0.017$) shows the same directional pattern but does not reach the corrected threshold.}
 \label{tab:mann-whitney}
 \end{table}
 
 Oppositeness shows the largest effect: $|r| = 0.218$ (Mixtral) and $0.367$ (Llama), both highly significant ($p < 10^{-10}$). Density shows a smaller but consistent effect: $|r| = 0.142$ (Mixtral, $p < 10^{-4}$) and $0.095$ (Llama, $p = 0.017$). All significant results survive Bonferroni correction for 10 comparisons ($\alpha = 0.005$), with the exception of Llama's density effect, which shows the same directional pattern as Mixtral but does not reach the corrected threshold.
 
-Centrality is inconsistent across models: not significant for Mixtral ($p = 0.093$) but significant for Llama ($p = 0.0002$, $|r| = 0.147$). The direction---hallucinated prompts have lower centrality, meaning they sit closer to the corpus centroid---is consistent with the initial analysis, where the negative centrality coefficient ($\beta = -3.62$) likewise indicated that lower centrality predicts hallucination. This direction likely reflects corpus composition rather than a meaningful geometric signal: the two largest categories (nonexistent and ambiguous, 720 prompts each) sit nearest the corpus centroid (mean centrality $\approx 0.665$ vs.\ $0.710$ corpus-wide) yet have very different hallucination rates (${\sim}30\%$ and ${<}1\%$, respectively), making centrality a weak proxy for category membership. Centrality was the dominant predictor in the initial analysis; here, it is at best a weak third. Section~\ref{sec:feature-synthesis} discusses why the feature hierarchy shifted. Curvature and local intrinsic dimension show no significant differences for either model (all $p > 0.7$, $|r| < 0.02$), despite curvature and centrality being the two strongest predictors in the initial analysis.
+Centrality is inconsistent across the two models: not significant for Mixtral ($p = 0.093$), but significant for Llama ($p = 0.0002$, $|r| = 0.147$). Hallucinated prompts have lower centrality, meaning they sit closer to the corpus centroid. This is consistent with the initial analysis, where centrality was the dominant predictor ($\beta = -3.62$). This direction likely reflects corpus composition rather than a meaningful geometric signal: the two largest categories (nonexistent and ambiguous, 720 prompts each) sit nearest the corpus centroid (mean centrality $\approx 0.665$ vs.\ $0.710$ corpus-wide) yet have very different hallucination rates (${\sim}30\%$ and ${<}1\%$, respectively), making centrality a weak proxy for category membership. Curvature and local intrinsic dimension show no significant differences for either model (all $p > 0.7$, $|r| < 0.02$), despite curvature and centrality being the two strongest predictors in the initial analysis.
 
 \subsection{Multivariate Prediction}
 \label{sec:multivariate-prediction}
 
-To assess the combined predictive power of all five features, we fit logistic regression models predicting binary hallucination status from standardized geometric features, evaluated via five-fold stratified cross-validation. The cross-validated AUC is $0.645 \pm 0.027$ for Mixtral and $0.726 \pm 0.024$ for Llama (train-set AUC: 0.655 and 0.729, respectively; $\pm$ values are standard deviations across five folds). The small train--CV gaps indicate minimal overfitting.
+To assess combined predictive power, we fit logistic regression models predicting binary hallucination status from standardized geometric features. Models are evaluated via five-fold stratified cross-validation. AUC---the probability that a randomly chosen hallucinated prompt receives a higher predicted risk score than a randomly chosen correct prompt---is $0.645 \pm 0.027$ for Mixtral and $0.726 \pm 0.024$ for Llama (train-set AUC: 0.655 and 0.729, respectively; $\pm$ values are standard deviations across five folds). The small train--CV gaps indicate minimal overfitting.
 
-Table~\ref{tab:logistic-comparison} compares the logistic regression results from the initial analysis with the expanded benchmark analysis. The feature hierarchy has shifted markedly: centrality and curvature, which dominated the initial analysis, are no longer the leading predictors. Instead, oppositeness---which was not measured in the initial analysis---emerges as the strongest predictor for both models, and density rises from non-significant to second. Notably, local intrinsic dimension receives a large standardized coefficient for Llama ($-0.49$) despite showing no univariate signal ($p = 0.81$), a hallmark of multicollinearity redistributing weight among correlated predictors. Individual coefficients should therefore be interpreted with caution: oppositeness, density, and centrality share moderate pairwise correlations ($|r| = 0.38$--$0.54$), which can redistribute weight without affecting overall discriminative performance.
+Table~\ref{tab:logistic-comparison} compares the logistic regression results from the initial analysis with the expanded benchmark analysis. The feature hierarchy has shifted markedly: centrality and curvature, which dominated the initial analysis, are no longer the leading predictors. Instead, oppositeness---which was not measured in the initial analysis---emerges as the strongest predictor for both models, and density rises from non-significant to second. Notably, local intrinsic dimension receives a large standardized coefficient for Llama ($-0.49$) despite showing no univariate signal ($p = 0.81$). This is a hallmark of multicollinearity redistributing weight among correlated predictors. Individual coefficients are unreliable here: oppositeness, density, and centrality share moderate pairwise correlations ($|r| = 0.38$--$0.54$), which redistribute weight among correlated predictors without affecting overall discriminative performance.
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \small
 \begin{tabular}{lcccc}
@@ -191,35 +181,24 @@ Oppositeness    & ---     & ---        & $+0.55$ & $+0.85$ \\
 \label{tab:logistic-comparison}
 \end{table}
 
-The cross-validated AUC of 0.64--0.73 represents a substantial drop from the initial analysis's train-set AUC of 0.86. Section~\ref{sec:decomposition} reconciles these numbers, identifying methodological differences (cross-validation, per-model analysis, category-level controls) that account for the gap.
+The cross-validated AUC of 0.64--0.73 represents a substantial drop from the initial analysis's train-set AUC of 0.86. The drop is not primarily overfitting---the small train-CV gap rules that out---but rather category structure absorbing most of the signal. The next section formalizes this decomposition.
 
 \subsection{The Role of Category Structure}
 \label{sec:category-confound-preview}
 
-The results above are real---hallucinated prompts genuinely occupy geometrically distinct regions of embedding space. But they may be partly circular. Our seven categories span a deliberate difficulty gradient (Table~\ref{tab:category-rates}): the highest-hallucination category exceeds 40\% (Mixtral), while the lowest falls below 1\%. If these categories also differ in their geometric properties---and they do, as categories with higher hallucination rates tend toward lower density and higher oppositeness---then a classifier could achieve decent AUC by implicitly detecting category membership rather than fine-grained geometric structure within a category.
+The results above are real: hallucinated prompts genuinely occupy geometrically distinct regions of embedding space. But they may be partly circular. Our seven categories span a deliberate difficulty gradient (Table~\ref{tab:category-rates}): the highest-hallucination category exceeds 40\% (Mixtral), while the lowest falls below 1\%. If these categories themselves also differ in their geometric properties---and they do, as categories with higher hallucination rates tend toward lower density and higher oppositeness---then a classifier could achieve decent AUC by implicitly detecting category membership rather than fine-grained geometric structure within a category.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/v3_category_manifolds_umap_a.png}\\[0.5em]
-\includegraphics[width=\textwidth]{figures/v3_category_manifolds_umap_b.png}
-\caption{UMAP (Uniform Manifold Approximation and Projection \citep{mcinnes2018umap}) projection of the 449-prompt initial benchmark, separated by category. Light blue points are correct responses; red crosses are hallucinations (rates pooled across all 10 models, shown in parentheses). Top row: Factual (2\%) and Impossible (33\%). Bottom row: Nonexistent (86\%) and Ambiguous (0\%). Categories occupy distinct regions of embedding space, and hallucination rates vary dramatically across them. A classifier need only detect which cluster a prompt falls in to achieve high AUC, without learning any within-category geometric signal.}
-\label{fig:v3-category-manifolds}
+\includegraphics[width=\textwidth]{figures/v5_category_umap_combined.png}
+\caption{UMAP (Uniform Manifold Approximation and Projection \citep{mcinnes2018umap}) projection of the 2,430-prompt expanded benchmark, colored by category. Categories form distinct clusters in the embedding space. Hallucination rates (in parentheses in the legend, computed from Mixtral baseline labels) vary dramatically across clusters: nonexistent (29.5\%) and plausible fake (43.5\%) versus ambiguous (0.7\%) and edge factual (3.1\%). A classifier need only detect which cluster a prompt falls in---without learning any within-category geometric structure---to achieve substantial predictive power.}
+\label{fig:category-umap}
 \end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/v5_category_manifolds_umap_mixtral_a.png}\\[0.5em]
-\includegraphics[width=0.85\textwidth]{figures/v5_category_manifolds_umap_mixtral_b.png}
-\caption{UMAP projection of the 2,430-prompt expanded benchmark (Mixtral), separated by all seven categories. Categories are ordered by increasing hallucination rate. Top row: low-hallucination categories (Ambiguous ${\approx}$1\%, Edge Factual ${\approx}$3\%, Factual ${\approx}$9\%). Bottom rows: higher-hallucination categories (Impossible ${\approx}$10\%, Obscure Real ${\approx}$12\%, Nonexistent ${\approx}$30\%, Plausible Fake ${\approx}$44\%). Exact rates are given in Table~\ref{tab:category-rates}. The same category-clustering pattern from the initial benchmark (Figure~\ref{fig:v3-category-manifolds}) persists at larger scale. Categories with higher hallucination rates are visually separable from low-rate categories, reinforcing the concern that a geometric classifier may partly be detecting category membership.}
-\label{fig:v5-category-manifolds}
-\end{figure}
-
-The question is not whether geometry predicts hallucination---Table~\ref{tab:mann-whitney} shows it does---but how much of that prediction is genuinely geometric versus a proxy for category labels. The next section addresses this decomposition directly.
 
 \section{Decomposing Category vs.\ Geometric Signal}
 \label{sec:decomposition}
 
-Section~\ref{sec:category-confound-preview} raised the concern that geometric prediction may partly reflect category structure. To quantify this potential confound, we compare three nested logistic regression models that progressively isolate geometry's contribution beyond category membership.
+To quantify how much of the geometric signal reflects category structure rather than within-category variation, we compare three nested logistic regression models that progressively isolate geometry's contribution.
 
 \paragraph{Three-model decomposition.} We fit three logistic regression models predicting binary hallucination status (hallucinated vs.\ all non-hallucinated responses, including partial and refused):
 
@@ -244,59 +223,38 @@ Category + Geometry (11 features)   & 0.800 & 0.814 \\
 Geometry increment                  & $+$0.018 & $+$0.041 \\
 \bottomrule
 \end{tabular}
-\caption{Decomposing predictive signal: five-fold stratified cross-validated AUC for predicting binary hallucination status on the expanded benchmark. Geometry features are $z$-scored; category indicators use one-hot encoding with one category dropped. The geometry increment is the difference between the category+geometry and category-only AUCs.}
+\caption{Decomposing predictive signal: five-fold stratified cross-validated (CV) AUC for predicting binary hallucination status on the expanded benchmark. Geometry features are $z$-scored; category indicators use one-hot encoding with one category dropped. The geometry increment is the difference between the category+geometry and category-only AUCs.}
 \label{tab:decomposition}
 \end{table}
 
-Category membership alone is a strong predictor, achieving AUC 0.782 (Mixtral) and 0.773 (Llama)---unsurprising given the deliberate difficulty gradient built into our benchmark design. The geometry-only model falls well below the category-only baseline for Mixtral (0.645 vs.\ 0.782) and moderately below for Llama (0.726 vs.\ 0.773), indicating that the five geometric features, operating without category labels, are less informative than knowing which category a prompt belongs to. Adding geometry to category yields an increment of $+$0.018 for Mixtral and $+$0.041 for Llama: most of the geometric signal identified in Section~\ref{sec:between-category}---the lower density and higher oppositeness of hallucinated prompts---tracks category membership rather than within-category variation. The larger Llama increment is consistent with Llama's stronger between-category oppositeness effect ($|r| = 0.367$ vs.\ $0.218$ for Mixtral; Table~\ref{tab:mann-whitney}), suggesting that geometry captures more model-specific signal for Llama beyond what category labels provide. Figure~\ref{fig:decomposition-auc} visualizes this comparison.
+Category membership alone is a strong predictor, achieving AUC 0.782 (Mixtral) and 0.773 (Llama), which is not surprising given the deliberate difficulty gradient built into our benchmark design. The geometry-only model falls well below the category-only baseline for Mixtral (0.645 vs.\ 0.782) and moderately below for Llama (0.726 vs.\ 0.773), indicating that the five geometric features, operating without category labels, are less informative than knowing which category a prompt belongs to. Adding geometry to category yields an increment of $+$0.018 for Mixtral and $+$0.041 for Llama. Most of the geometric signal identified in Section~\ref{sec:between-category}---the lower density and higher oppositeness of hallucinated prompts---tracks category membership rather than within-category variation. The larger Llama increment is consistent with Llama's stronger between-category oppositeness effect ($|r| = 0.367$ vs.\ $0.218$ for Mixtral; Table~\ref{tab:mann-whitney}), suggesting that geometry captures more model-specific signal for Llama beyond what category labels provide.
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/ch5_decomposition_auc.png}
-\caption{Three-model AUC comparison for predicting hallucination on the expanded benchmark. Category-only prediction (orange) substantially outperforms geometry-only (gray) for both models. Adding geometry to category (green) yields a modest increment: $+$0.018 for Mixtral and $+$0.041 for Llama. The dashed line indicates chance-level prediction (AUC $= 0.5$).}
-\label{fig:decomposition-auc}
-\end{figure}
+\paragraph{Why this is not a negative result.} These results should not be dismissed as purely circular. The embedding space independently recovers a difficulty gradient that aligns with our human-designed taxonomy---categories were defined semantically, not geometrically, yet a geometry-only classifier achieves AUC 0.65--0.73 without category labels. The nonzero increment means that, conditional on category membership, prompts with different geometry carry different hallucination risk. And the aggregate increment understates within-category effects by construction. Pooling $+$0.02--0.04 AUC over seven categories---four of which have hallucination rates below 10\%---could mask larger effects within high-hallucination categories.
 
-\paragraph{Why this is not a negative result.} The modest increment invites a skeptical reading, but three observations argue against dismissing the geometric analysis.
+\paragraph{Reconciling with the initial analysis.} The initial AUC of 0.86 drops to 0.645--0.726 under cross-validation. Three methodological differences account for this: (a)~train-set evaluation without cross-validation; (b)~pooling across 10 models, conflating model-level tendencies with prompt-level geometry; and (c)~no separation of category-level from within-category signal. The decomposition above (Table~\ref{tab:decomposition}) shows that category alone achieves AUC 0.77--0.78, absorbing most of the initial analysis's discriminative power. The initial result correctly detected that geometric features carry hallucination information; the expanded analysis decomposes this into a dominant category-level component and a more modest within-category component.
 
-First, category structure is itself a geometric phenomenon. The seven categories were defined by semantic content---factual vs.\ nonexistent vs.\ impossible, and so on---not by any geometric criterion. That a geometry-only classifier achieves AUC 0.65--0.73 \emph{without access to category labels} means the embedding space independently recovers a difficulty gradient that aligns with our human-designed taxonomy. This is a finding, not a confound: the embedding geometry reflects meaningful structure in the knowledge space.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{figures/ch5_signal_decomposition.png}
+% \caption{Reconciling the initial analysis with the expanded analysis. The initial analysis's train-set AUC of 0.86 (purple) substantially exceeds the cross-validated, per-model AUCs on the expanded benchmark. The decomposition reveals that category membership alone (orange) accounts for most predictive power (AUC 0.77--0.78); geometry adds a modest increment (green annotations on the right). The gap between the initial analysis and the expanded analysis reflects methodological refinements: cross-validation, per-model analysis, and category-level controls.}
+% \label{fig:signal-decomposition}
+% \end{figure}
 
-Second, the nonzero geometry increment means that, conditional on category membership, prompts with different geometry carry different hallucination risk. If geometry were purely a proxy for category, this increment would be zero. It is small because the aggregate averages across all seven categories, including those where hallucinations are too rare to predict (ambiguous at ${<}1\%$, edge factual at ${<}3\%$) and those where geometry may carry no within-category signal.
-
-Third, and most importantly, the aggregate increment understates within-category effects by construction. An improvement of $+$0.02--0.04 AUC pooled over seven categories---four of which have hallucination rates below 10\%---could mask a substantially larger effect within the high-hallucination categories where statistical power exists. The proper test is within-category analysis, which we present in Section~\ref{sec:within-category}.
-
-\paragraph{Reconciling with the initial analysis.} The initial analysis (Section~\ref{sec:between-category}) reported a train-set AUC of 0.86 from four geometric features on 368 prompts pooled across 10 models. The cross-validated, per-model AUCs of 0.645--0.726 on the expanded benchmark represent a substantial reduction. Three methodological differences account for this gap.
-
-First, the initial analysis reported train-set AUC without cross-validation. On the expanded benchmark, train-set AUCs (0.655 for Mixtral, 0.729 for Llama) are only marginally above cross-validated AUCs, so overfitting per se is not the primary driver---but with fewer observations and pooled models, train-set inflation was more plausible in the initial analysis.
-
-Second, pooling across 10 models treated each model--prompt pair as an independent observation. This conflates model-level hallucination tendencies with prompt-level geometry: a feature correlated with which models hallucinate more would appear predictive even if it carried no per-prompt signal. Per-model analysis eliminates this inflation.
-
-Third, the initial analysis did not separate category-level from within-category signal. With seven categories (two---nonexistent and plausible fake---containing the majority of hallucinations), the classifier was partly learning category membership---a genuinely informative but coarser signal than within-category geometric prediction. The decomposition above (Table~\ref{tab:decomposition}) shows that category alone achieves AUC 0.77--0.78, absorbing most of the initial analysis's discriminative power.
-
-The initial result was not wrong: it correctly detected that geometric features carry information about hallucination risk. The expanded analysis decomposes this signal into a dominant category-level component and a more modest within-category component. Figure~\ref{fig:signal-decomposition} summarizes this decomposition visually. Section~\ref{sec:feature-synthesis} discusses the accompanying shift in which individual features dominate between the two analyses.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/ch5_signal_decomposition.png}
-\caption{Reconciling the initial analysis with the expanded analysis. The initial analysis's train-set AUC of 0.86 (purple) substantially exceeds the cross-validated, per-model AUCs on the expanded benchmark. The decomposition reveals that category membership alone (orange) accounts for most predictive power (AUC 0.77--0.78); geometry adds a modest increment (green annotations on the right). The gap between the initial analysis and the expanded analysis reflects methodological refinements: cross-validation, per-model analysis, and category-level controls.}
-\label{fig:signal-decomposition}
-\end{figure}
-
-\paragraph{The critical test.} The decomposition shows that most aggregate predictive power overlaps with category structure, while the nonzero geometry increment and the theoretical motivation---categories were defined semantically, not geometrically---suggest genuine within-category signal. The critical test is whether geometric features predict hallucination \emph{within} individual categories, controlling entirely for category-level confounds. If, among hundreds of prompts that share the same category, the same prompt structure, and the same type of knowledge failure, the ones in sparser embedding neighborhoods hallucinate more, that signal cannot be attributed to category membership.
+\paragraph{The critical test.} The decomposition shows that most aggregate predictive power overlaps with category structure. But the nonzero geometry increment, together with the fact that categories were defined semantically rather than geometrically, suggests genuine within-category signal. The critical test is whether geometric features predict hallucination \emph{within} individual categories, controlling entirely for category-level confounds. If, among hundreds of prompts that share the same category, the same prompt structure, and the same type of knowledge failure, the ones in sparser embedding neighborhoods hallucinate more, that signal cannot be attributed to category membership.
 
 Figure~\ref{fig:within-cat-auc-preview} previews where this signal exists. Within-category logistic regression AUC varies dramatically: the nonexistent category (the largest, with the most hallucinations) shows the strongest within-category geometric signal for both models, while categories with few hallucinations fall at or below chance. Section~\ref{sec:within-category} analyzes these patterns in detail.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/ch5_within_category_auc_dots.png}
-\caption{Within-category cross-validated AUC for predicting hallucination from geometric features alone, by category. Error bars show standard deviation across five folds; $n$ labels indicate the number of hallucinated prompts in each category. The nonexistent category shows the strongest geometric signal for both models (AUC $\approx 0.67$). Categories with fewer hallucinations (Factual, Obscure Real) have wide error bars or fall near chance. Crosses indicate categories excluded from logistic regression due to insufficient hallucination counts.}
+\caption{Within-category cross-validated AUC for predicting hallucination from geometric features alone, by category. Error bars show standard deviation across five folds; $n$ labels indicate the number of hallucinated prompts for Mixtral / Llama, respectively (dashes indicate insufficient counts for logistic regression). The nonexistent category shows the strongest geometric signal for both models (AUC $\approx 0.67$). Categories with fewer hallucinations have wide error bars or fall near chance. Crosses indicate categories excluded due to insufficient hallucination counts.}
 \label{fig:within-cat-auc-preview}
 \end{figure}
 
 \section{Within-Category Geometric Analysis}
 \label{sec:within-category}
 
-The decomposition in Section~\ref{sec:decomposition} showed that a nonzero geometry increment persists after controlling for category membership, but the aggregate effect is modest. The critical test is whether geometric features predict hallucination \emph{within} individual categories, where category membership is held constant and cannot inflate prediction. We apply the same statistical framework from Section~\ref{sec:stat-methods}---Mann-Whitney $U$ tests for univariate feature comparisons and logistic regression with five-fold stratified cross-validation for multivariate prediction---separately within each category.
+The decomposition showed that a nonzero geometry increment persists after controlling for category membership, but the aggregate effect is modest. The critical test is whether geometric features predict hallucination \emph{within} individual categories, where category membership is held constant and cannot inflate prediction. We apply the same Mann-Whitney $U$ tests and logistic regression methodology from the between-category analysis, now separately within each category.
 
 \subsection{Within-Category Predictive Power}
 \label{sec:within-cat-auc}
@@ -310,7 +268,7 @@ Table~\ref{tab:within-category-auc} reports the within-category cross-validated 
 \toprule
 & \multicolumn{2}{c}{\textbf{Mixtral}} & \multicolumn{2}{c}{\textbf{Llama}} \\
 \cmidrule(lr){2-3} \cmidrule(lr){4-5}
-\textbf{Category} & $n_{\text{hall}}$ & \textbf{CV AUC $\pm$ SD} & $n_{\text{hall}}$ & \textbf{CV AUC $\pm$ SD} \\
+\textbf{Category} & $n_{\text{hall}}$ & \textbf{AUC $\pm$ SD} & $n_{\text{hall}}$ & \textbf{AUC $\pm$ SD} \\
 \midrule
 Nonexistent         & 177 & $\mathbf{0.665 \pm 0.066}$ & 114 & $\mathbf{0.678 \pm 0.042}$ \\
 Plausible fake      &  87 & $0.492 \pm 0.102$          &  60 & $0.643 \pm 0.057$ \\
@@ -321,7 +279,7 @@ Ambiguous           &   4 & ---                        &   9 & --- \\
 Edge factual        &   4 & ---                        &   1 & --- \\
 \bottomrule
 \end{tabular}
-\caption{Within-category cross-validated AUC ($\pm$ standard deviation across five folds) for predicting hallucination from five geometric features. Dashes indicate categories excluded due to insufficient hallucination counts for five-fold stratified cross-validation. Bold indicates the category with AUC reliably above chance for both models. Categories are sorted by Mixtral $n_{\text{hall}}$.}
+\caption{Within-category AUC ($\pm$ standard deviation across five cross-validation folds) for predicting hallucination from five geometric features. Dashes indicate categories excluded due to insufficient hallucination counts for five-fold stratified cross-validation. Bold indicates the category with AUC reliably above chance for both models. Categories are sorted by decreasing sample size.}
 \label{tab:within-category-auc}
 \end{table}
 
@@ -329,24 +287,24 @@ The results are strikingly heterogeneous. The nonexistent category---the largest
 
 Other categories show weaker or inconsistent signal. Llama's plausible fake category reaches AUC $0.643$, but Mixtral falls to chance ($0.492$) on the same category. Llama's factual category shows AUC $0.653$, but with only 13 hallucinated prompts and a standard deviation of $0.141$, this estimate is unreliable. Mixtral's impossible category shows moderate signal ($0.617$, $n_{\text{hall}} = 19$), but Llama's impossible category falls below chance ($0.411$). Categories with hallucination rates below 3\%---ambiguous and edge factual---lack sufficient positive cases for within-category analysis entirely.
 
-The pattern is clear: within-category geometric prediction works where there are enough hallucinations to predict. The nonexistent category, with 177 and 114 hallucinated prompts for the two models, provides the statistical power that other categories lack. Whether the absence of signal in smaller categories reflects genuine null effects or merely insufficient power cannot be determined from these data.
+The pattern is clear: within-category geometric prediction works where there are enough hallucinations to predict. The nonexistent category, with 177 and 114 hallucinated prompts for the two models, provides the statistical power that other categories lack. The absence of signal in smaller categories likely reflects insufficient power rather than a genuine null: even the enrichment of nominally significant results across all categories (11 of 55 tests reach $p < 0.05$, versus ${\sim}2.8$ expected by chance) suggests signal beyond nonexistent.
 
 \subsection{Density as the Consistent Within-Category Predictor}
 \label{sec:within-cat-density}
 
-To identify which features drive the within-category signal, we examine Mann-Whitney $U$ results within the nonexistent category---the only category with sufficient power for robust inference across all five features and both models. Table~\ref{tab:within-cat-nonexistent} reports the results.
+To identify which features drive the within-category signal, we examine Mann-Whitney $U$ results within the nonexistent category, as it is the only category with sufficient power for robust inference across all five features and both models. Table~\ref{tab:within-cat-nonexistent} reports the results.
 
 \begin{table}[ht]
 \centering
 \small
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Feature} & \textbf{Hall.\ mean} & \textbf{Correct mean} & $\boldsymbol{p}$ & $\boldsymbol{|r|}$ \\
+\textbf{Feature} & \textbf{Halluc.\ mean} & \textbf{Correct mean} & $\boldsymbol{p}$ & $\boldsymbol{|r|}$ \\
 \midrule
 \multicolumn{5}{l}{\textbf{Mixtral 8x7B} ($n_{\text{hall}} = 177$, $n_{\text{correct}} = 419$)} \\
 \addlinespace
-Density         & 2.165 & 2.316 & $5.7 \times 10^{-7}$ & 0.259 \\
-Oppositeness    & 0.532 & 0.520 & $4.6 \times 10^{-3}$ & 0.147 \\
+\textbf{Density}         & \textbf{2.165} & \textbf{2.316} & $\boldsymbol{5.7 \times 10^{-7}}$ & \textbf{0.259} \\
+\textbf{Oppositeness}    & \textbf{0.532} & \textbf{0.520} & $\boldsymbol{4.6 \times 10^{-3}}$ & \textbf{0.147} \\
 Centrality      & 0.680 & 0.665 & $0.011$               & 0.132 \\
 Local intr.\ dim. & 23.4  & 37.5  & $0.612$               & 0.026 \\
 Curvature       & 0.352 & 0.355 & $0.974$               & 0.002 \\
@@ -354,44 +312,42 @@ Curvature       & 0.352 & 0.355 & $0.974$               & 0.002 \\
 \midrule
 \multicolumn{5}{l}{\textbf{Llama 4 Maverick} ($n_{\text{hall}} = 114$, $n_{\text{correct}} = 484$)} \\
 \addlinespace
-Density         & 2.132 & 2.303 & $3.4 \times 10^{-5}$ & 0.249 \\
+\textbf{Density}         & \textbf{2.132} & \textbf{2.303} & $\boldsymbol{3.4 \times 10^{-5}}$ & \textbf{0.249} \\
 Centrality      & 0.680 & 0.668 & $0.029$               & 0.131 \\
 Oppositeness    & 0.533 & 0.522 & $0.037$               & 0.126 \\
 Local intr.\ dim. & 27.7  & 34.5  & $0.075$               & 0.107 \\
 Curvature       & 0.313 & 0.364 & $0.085$               & 0.103 \\
 \bottomrule
 \end{tabular}
-\caption{Within-category Mann-Whitney $U$ test results for the nonexistent category (600 prompts). Features sorted by $|r|$ within each model. Hallucinated prompts occupy sparser neighborhoods (lower density) and show higher oppositeness. Density survives Bonferroni correction for 10 comparisons ($\alpha = 0.005$) for both models; Mixtral oppositeness narrowly survives ($p = 0.0046$). Llama oppositeness does not survive ($p = 0.037$).}
+\caption{Within-category Mann-Whitney $U$ test results for the nonexistent category (600 prompts). Features sorted by $|r|$ within each model. Hallucinated prompts occupy sparser neighborhoods (lower density) and show higher oppositeness. Bold rows survive Bonferroni correction for 10 comparisons ($\alpha = 0.005$). Density also survives the study-wide correction across all within-category comparisons ($\alpha = 0.05/70 = 0.0007$).}
 \label{tab:within-cat-nonexistent}
 \end{table}
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.95\textwidth]{figures/ch5_within_category_density_nonexistent.pdf}
+\includegraphics[width=0.95\textwidth]{figures/ch5_within_category_density_nonexistent.png}
 \caption{Density distributions for hallucinated versus correctly answered prompts within the nonexistent category. Hallucinated prompts occupy sparser embedding neighborhoods (lower density) for both models. Mann-Whitney $U$ $p$-values survive Bonferroni correction ($\alpha = 0.005$). Box plots show median, interquartile range, and $1.5\times$ IQR whiskers; circles denote outliers.}
 \label{fig:within-cat-density}
 \end{figure}
 
-Density is the dominant within-category predictor for both models (Figure~\ref{fig:within-cat-density}). Among the 600 nonexistent prompts, those that trigger hallucination have substantially lower density---their embedding neighborhoods are sparser---than those answered correctly. The effect sizes ($|r| = 0.259$ and $0.249$) are small-to-medium by conventional thresholds and are the largest for any feature in either model. Both $p$-values survive Bonferroni correction for 10 comparisons ($\alpha = 0.005$), and Mixtral's density result ($p = 5.7 \times 10^{-7}$) survives even the most conservative study-wide correction across all within-category tests.
+Density is the dominant within-category predictor for both models (Figure~\ref{fig:within-cat-density}). Among the 600 nonexistent prompts, those that trigger hallucination have substantially lower density---meaning their embedding neighborhoods are sparser---than those answered correctly. The effect sizes ($|r| = 0.259$ and $0.249$) are small to medium by conventional thresholds and are the largest for any feature in either model. Both $p$-values survive Bonferroni correction for 10 comparisons ($\alpha = 0.005$), and Mixtral's density result ($p = 5.7 \times 10^{-7}$) survives even the most conservative study-wide correction across all within-category tests.
 
-The direction is consistent with the between-category finding (Table~\ref{tab:mann-whitney}): sparser embedding neighborhoods predict hallucination at both levels of analysis. This consistency strengthens the interpretation that density captures a genuine geometric correlate of hallucination risk, not a statistical artifact of category structure.
+The direction is consistent with the between-category finding (Table~\ref{tab:mann-whitney}): sparser embedding neighborhoods predict hallucination at both levels of analysis.
 
-Oppositeness and centrality show suggestive effects ($p < 0.05$, uncorrected) but are not consistently significant across both models after correction. Mixtral's within-category oppositeness narrowly survives Bonferroni correction ($p = 0.0046$ vs.\ $\alpha = 0.005$); Llama's does not ($p = 0.037$). Centrality shows nominally significant effects for both models ($p = 0.011$ and $0.029$), but the within-category direction \emph{reverses} from the between-category analysis: within the nonexistent category, hallucinated prompts have \emph{higher} centrality (farther from the corpus centroid), whereas between categories, hallucinated prompts have lower centrality (closer to the corpus centroid). This reversal is an instance of Simpson's paradox---a phenomenon in which a trend that appears in aggregated data reverses when the data are partitioned into subgroups: the high-hallucination categories happen to sit closer to the corpus centroid in this embedding space, but within the nonexistent category, prompts farther from the centroid hallucinate more. Since neither within-category centrality effect survives Bonferroni correction, we do not interpret this reversal further.
+Oppositeness and centrality show suggestive effects ($p < 0.05$, uncorrected), but are not consistently significant across both models after correction. Mixtral's within-category oppositeness narrowly survives Bonferroni correction ($p = 0.0046$ vs.\ $\alpha = 0.005$); Llama's does not ($p = 0.037$). Centrality shows nominally significant effects for both models ($p = 0.011$ and $0.029$), but the within-category direction \emph{reverses} from the between-category analysis: within the nonexistent category, hallucinated prompts have \emph{higher} centrality (farther from the corpus centroid), whereas between categories, hallucinated prompts have lower centrality (closer to the corpus centroid). This reversal is an instance of Simpson's paradox---a phenomenon in which a trend that appears in aggregated data reverses when the data are partitioned into subgroups. The reversal is consistent with two different forces operating at different scales: category composition drives the aggregate direction (high-hallucination categories happen to sit closer to the corpus centroid), while within-category isolation may drive the local signal. That the within-category direction aligns with the density finding---peripheral, less-connected prompts hallucinate more---suggests both features capture aspects of the same underlying structure. Neither within-category centrality effect survives Bonferroni correction, so this interpretation remains tentative.
 
 Curvature and local intrinsic dimension show no within-category signal (all $p > 0.07$), consistent with their null results in the between-category analysis.
 
-\paragraph{Signal in other categories.} Beyond the nonexistent category, two results merit brief mention. Llama's borderline plausible fake category shows a significant oppositeness effect ($p = 0.003$, $|r| = 0.268$, $n_{\text{hall}} = 60$), consistent with this category's moderate within-category AUC of 0.643 for Llama. Mixtral's impossible category shows a density effect ($p = 0.014$, $|r| = 0.345$, $n_{\text{hall}} = 19$) with the same direction as the nonexistent finding---sparser neighborhoods predict hallucination---but the small sample limits confidence. Neither result survives correction for the full set of within-category comparisons.
+\paragraph{Signal in other categories.} Beyond the nonexistent category, two results merit brief mention. Llama's borderline plausible fake category shows a significant oppositeness effect ($p = 0.003$, $|r| = 0.268$, $n_{\text{hall}} = 60$), consistent with this category's moderate within-category AUC of 0.643 for Llama. Mixtral's impossible category shows a density effect ($p = 0.014$, $|r| = 0.345$, $n_{\text{hall}} = 19$) with the same direction as the nonexistent finding---sparser neighborhoods predict hallucination. Neither result survives correction for the full set of within-category comparisons.
 
 \paragraph{Interpretation.} The within-category density finding is the central result of this chapter. It establishes that, among hundreds of prompts that share the same category label, the same type of knowledge failure, and similar prompt structures, the ones whose embeddings fall in sparser neighborhoods of the embedding space are more likely to trigger hallucination. This signal cannot be attributed to category membership.
 
-Why might density predict within-category hallucination? Sparse embedding neighborhoods may reflect entities or concepts that are underrepresented in the embedding model's training data. Among nonexistent entities, some are ``more nonexistent'' than others: a fabricated name that resembles many real names (high density, many similar embeddings) may be easier for the model to flag, while a more exotic fabrication that sits in an isolated region of the embedding space (low density, few neighbors) may lack the nearby reference points needed to trigger appropriate uncertainty. The model, encountering a prompt in uncharted territory, defaults to generation rather than refusal.
-
-This interpretation is speculative---density is a correlate, not a verified causal mechanism---but it aligns with the finding that oppositeness, which measures semantic isolation along principal component directions, shows a consistent (if weaker) within-category signal in the same direction. Both features capture aspects of how ``alone'' a prompt's embedding is in the representational space. Section~\ref{sec:feature-synthesis} synthesizes the feature hierarchy across all analyses in this chapter.
+Why density carries this signal---and what it means mechanistically---is discussed in Section~\ref{sec:ch5-discussion}. Section~\ref{sec:feature-synthesis} first synthesizes the feature hierarchy across all analyses in this chapter.
 
 \section{Feature Synthesis}
 \label{sec:feature-synthesis}
 
-Sections~\ref{sec:between-category}--\ref{sec:within-category} tested five geometric features at three levels of analysis: univariate between-category (Table~\ref{tab:mann-whitney}), multivariate with and without category controls (Tables~\ref{tab:logistic-comparison} and~\ref{tab:decomposition}), and univariate within-category (Table~\ref{tab:within-cat-nonexistent}). This section synthesizes the results into a per-feature assessment, with particular attention to why the feature hierarchy reversed between the initial analysis and the expanded analysis.
+The preceding sections tested five geometric features at three levels: univariate between-category, multivariate with and without category controls, and univariate within-category. The feature hierarchy reversed between the initial and expanded analyses. This section synthesizes the evidence into a per-feature assessment.
 
 \subsection{Per-Feature Assessment}
 
@@ -400,13 +356,13 @@ Table~\ref{tab:feature-synthesis} summarizes the evidence across all three level
 \begin{table}[ht]
 \centering
 \small
-\begin{tabular}{p{2.1cm}p{2.6cm}p{3.0cm}p{3.0cm}p{2.5cm}}
+\begin{tabular}{@{}p{2.0cm}p{2.5cm}p{3.2cm}p{3.2cm}p{2.8cm}@{}}
 \toprule
-\textbf{Feature} & \textbf{Initial analysis} \newline (368 prompts) & \textbf{Between-cat.} \newline (expanded, 2{,}430) & \textbf{Within-cat.} \newline (nonexistent, 600) & \textbf{Assessment} \\
+\textbf{Feature} & \textbf{Initial analysis} \newline (368 prompts) & \textbf{Between-cat.} \newline (expanded, 2{,}430; M/L) & \textbf{Within-cat.} \newline (nonexistent, 600; M/L) & \textbf{Assessment} \\
 \midrule
 Oppositeness & Not measured & Strongest: $|r|{=}0.218$/$0.367$, $p < 10^{-10}$ & $p{=}0.0046$/$0.037$; plaus.\ fake (Llama): $p{=}0.003$ & Strong between-cat.; mixed within-cat. \\
 \addlinespace
-Density & Non-sig.\ ($\beta{=}{-}0.15$, $p{=}0.48$) & Second: $|r|{=}0.142$/$0.095$, $p < 10^{-4}$/$0.017$ & $p{=}5.7{\times}10^{-7}$/$3.4{\times}10^{-5}$ (\textbf{Bonf.}) & \textbf{The robust signal} \\
+\textbf{Density} & Non-sig.\ ($\beta{=}{-}0.15$, $p{=}0.48$) & Second: $|r|{=}0.142$/$0.095$, $p < 10^{-4}$/$0.017$ & $p{=}5.7{\times}10^{-7}$ / \newline $p{=}3.4{\times}10^{-5}$ (\textbf{Bonf.}) & \textbf{Survives all controls} \\
 \addlinespace
 Centrality & Strongest ($\beta{=}{-}3.62$, $p{<}0.001$) & Weak: $|r|{=}0.056$/$0.147$, $p{=}0.093$/$0.0002$ & Direction reverses; $p{=}0.011$/$0.029$ (uncorr.) & Downgraded --- was proxying for category \\
 \addlinespace
@@ -422,22 +378,13 @@ Local intr.\ dim. & Null ($\beta{\approx}0$, $p{=}0.98$) & Null: $|r|{<}0.01$, $
 \subsection{Why Centrality and Curvature Were Downgraded}
 \label{sec:centrality-curvature}
 
-Centrality dominated the initial analysis with the largest coefficient ($\beta = -3.62$). But centrality measures distance from the global corpus centroid. Categories with higher hallucination rates---nonexistent at 30\% (Mixtral) and plausible fake at 44\%---sit in geometrically distinct, peripheral positions in the embedding space (visible in the UMAP projections, Figures~\ref{fig:v3-category-manifolds} and~\ref{fig:v5-category-manifolds}). On the four categories for which geometry was computed in the initial analysis (368 of 449 prompts), centrality was an effective proxy for ``is this a hard category?'' rather than a fine-grained geometric predictor.
-
-The Simpson's paradox identified in Section~\ref{sec:within-cat-density} confirms this interpretation. Between categories, hallucinated prompts have lower centrality---they sit closer to the corpus centroid (Table~\ref{tab:mann-whitney}). This is consistent with the initial analysis's negative centrality coefficient: the high-hallucination categories (nonexistent, plausible fake) happen to lie closer to the corpus centroid than low-hallucination categories in this embedding space. But within the nonexistent category, the direction \emph{reverses}: hallucinated prompts have \emph{higher} centrality, meaning they sit farther from the corpus centroid ($p = 0.011$ and $0.029$, uncorrected). The between-category signal reflected category positioning; the within-category direction, while not surviving correction, tells a geometrically distinct story. Since neither within-category centrality effect survives Bonferroni correction, we do not build on this reversal, but it illustrates why the initial analysis's centrality finding did not generalize.
-
-Curvature follows a similar pattern: significant in the initial analysis ($\beta = -1.21$, $p < 0.001$) but null in the expanded analysis at both levels---all $|r| < 0.02$ between categories, all $p > 0.07$ within categories. With only 449 prompts and four features, the initial logistic regression had limited ability to distinguish feature-level from category-level signal. Additionally, the initial analysis used balanced class weighting, which upweights the minority (hallucinated) class. Combined with pooling across 10 models, this gave curvature's category-correlated variance more leverage than it warranted.
+Centrality dominated the initial analysis ($\beta = -3.62$) because high-hallucination categories (nonexistent, plausible fake) happen to cluster closer to the corpus centroid than low-hallucination categories. It was proxying for ``which category is this?'' rather than fine-grained geometry. The Simpson's paradox in Section~\ref{sec:within-cat-density} confirms this: between categories, hallucinated prompts have lower centrality, but within the nonexistent category the direction reverses (hallucinated prompts sit farther from the centroid, $p = 0.011$/$0.029$, uncorrected). Curvature follows a similar pattern: significant in the initial analysis ($\beta = -1.21$) but null at both levels in the expanded analysis (all $|r| < 0.02$ between categories, all $p > 0.07$ within). Both features' initial significance reflected category-correlated variance amplified by balanced class weighting and 10-model pooling.
 
 \subsection{Density as the Robust Signal}
 \label{sec:density-robust}
 
-Density tells the opposite story: non-significant in the initial analysis ($\beta = -0.15$, $p = 0.48$) but the most robust predictor in the expanded analysis. It is significant between categories ($p < 10^{-4}$ for Mixtral), significant within the nonexistent category for both models independently ($p = 5.7 \times 10^{-7}$ and $3.4 \times 10^{-5}$---the only results surviving study-wide Bonferroni correction), and shows consistent direction at both levels: sparser embedding neighborhoods predict hallucination.
-
-Why was density non-significant in the initial analysis? Two factors converge. First, the initial analysis had only 449 prompts with four features, limiting statistical power for detecting modest effects. Second, centrality was absorbing overlapping variance---centrality and density share a pairwise correlation of $r = -0.509$ on the full corpus---and centrality's stronger category-level signal dominated in the smaller dataset. Once the expanded benchmark provided sufficient power and within-category controls removed the category confound, density's genuine per-prompt signal emerged.
-
-Density is the one feature that survives every test in this chapter: between-category significance, within-category significance, Bonferroni correction, and consistency across both models. It is the feature we carry forward as the primary geometric predictor.
-
-\subsection{Oppositeness: Strong but Ambiguous}
+Density was non-significant in the initial analysis ($\beta = -0.15$, $p = 0.48$), but it is the most robust predictor in the expanded analysis: significant between categories ($p < 10^{-4}$ for Mixtral), significant within the nonexistent category for both models ($p = 5.7 \times 10^{-7}$ and $3.4 \times 10^{-5}$---the only results surviving study-wide Bonferroni correction), and consistent in direction at both levels. Its initial non-significance reflects centrality absorbing overlapping variance ($r = -0.509$ between the two features) in the smaller dataset.
+\subsection{Oppositeness: Between Category but Not Within}
 \label{sec:oppositeness-assessment}
 
 Oppositeness is the strongest between-category discriminator ($|r| = 0.218$ for Mixtral, $0.367$ for Llama), but its within-category evidence is mixed. Within the nonexistent category, Mixtral shows a borderline effect ($p = 0.0046$, just below the within-table Bonferroni threshold of $0.005$) while Llama's effect is weaker ($p = 0.037$, not surviving correction). Llama's plausible fake category shows a notable within-category oppositeness effect ($p = 0.003$, $|r| = 0.268$), but this does not replicate in Mixtral's plausible fake results ($p = 0.264$).
@@ -447,41 +394,21 @@ Whether oppositeness captures genuine within-category signal or residual between
 \subsection{Feature Correlations and Multicollinearity}
 \label{sec:feature-correlations}
 
-The five features are not independent. Pairwise Pearson correlations on the full 2,879-prompt corpus reveal a cluster of moderate associations: oppositeness--centrality ($r = -0.539$), density--centrality ($r = -0.509$), and oppositeness--density ($r = 0.384$). All other pairs show weak correlations ($|r| < 0.15$), including local intrinsic dimension and curvature ($r = -0.143$).
+The five features are not independent. Moderate pairwise correlations exist among oppositeness, centrality, and density ($|r| = 0.38$--$0.54$); all other pairs are weak ($|r| < 0.15$). This explains the instability of logistic regression coefficients (e.g., Llama's anomalous local intrinsic dimension coefficient of $\beta_z = -0.49$ despite a null univariate signal). The Mann-Whitney effect sizes, which evaluate each feature independently, provide a more reliable per-feature ranking than the logistic regression coefficients.
 
-This correlation structure explains the instability of individual logistic regression coefficients noted in Section~\ref{sec:multivariate-prediction}. Llama's anomalously large local intrinsic dimension coefficient ($\beta_z = -0.49$) despite a null univariate signal is a hallmark of multicollinearity redistributing weight among correlated predictors. The overall cross-validated AUC remains stable across folds, but individual coefficients should not be over-interpreted. The Mann-Whitney effect sizes (Tables~\ref{tab:mann-whitney} and~\ref{tab:within-cat-nonexistent}), which evaluate each feature independently, provide a more reliable per-feature ranking.
-
-\subsection{Methodological Lesson}
-\label{sec:methodological-lesson}
-
-The feature hierarchy reversal carries a broader lesson for geometric approaches to hallucination prediction. On small benchmarks with few categories, logistic regression conflates category-level and feature-level signal---centrality's strong initial coefficient was real but was measuring ``which category is this prompt in?'' rather than ``among similar prompts, which ones will hallucinate?'' Cross-validated, within-category analysis is necessary to disentangle the two.
-
-This observation applies beyond our specific features. Any study that defines prompt categories with different difficulty levels and shows that embedding features predict difficulty should test whether prediction survives within-category controls. Without this test, the contribution of prompt geometry versus prompt content remains ambiguous. We now step back from the per-feature details to interpret the chapter's findings as a whole.
+\paragraph{Methodological implication.} The feature hierarchy reversal illustrates a broader point: on benchmarks with category-level difficulty gradients, cross-validated within-category analysis is necessary to distinguish genuine geometric signal from category proxies.
 
 \section{Discussion}
 \label{sec:ch5-discussion}
 
-This chapter established that geometric properties of prompt embeddings predict hallucination at two levels of granularity. Between categories, category membership alone achieves AUC 0.77--0.78 (Table~\ref{tab:decomposition}), capturing the observation that categories defined semantically---not geometrically---are nevertheless geometrically separable in the embedding space. Geometry adds a modest increment (+0.018 for Mixtral, +0.041 for Llama) on top of category structure. Within categories, density provides fine-grained signal that cannot be attributed to category membership: AUC $0.665 \pm 0.066$ and $0.678 \pm 0.042$ within the nonexistent category (Table~\ref{tab:within-cat-nonexistent}), with Mann-Whitney $p$-values surviving study-wide Bonferroni correction ($p = 5.7 \times 10^{-7}$ and $3.4 \times 10^{-5}$). The embedding space encodes hallucination risk at two granularities, and the within-category signal is the genuinely geometric contribution of this chapter.
+The central finding of this chapter is that hallucination prediction is almost entirely a category-level phenomenon---and the modest within-category signal that survives controls is concentrated in a single feature. Category membership alone explains most of the predictive power (AUC 0.77--0.78). The genuinely geometric contribution is within-category: embedding density distinguishes hallucinated from correct prompts among structurally identical nonexistent-entity prompts, surviving Bonferroni correction for both models. This is a narrower claim than the initial analysis's AUC of 0.86 suggested, but it is a more honest one, and it points to a specific mechanism.
 
-\paragraph{Why density.} Sparser embedding neighborhoods correspond to prompts that sit farther from other questions in the corpus---regions where the embedding model has fewer similar training examples to anchor the representation. Among nonexistent entities, for instance, some fabricated names closely resemble many real entities (high density, more reference points to signal unfamiliarity) while more exotic fabrications sit in isolated regions (low density, fewer contextual anchors). This interpretation aligns with findings that entity popularity predicts hallucination risk: \citet{sun2024entity} show that LLM accuracy degrades monotonically from head to tail entities, and \citet{mallen2023when} find that question-answering accuracy drops sharply for entities below a frequency threshold. Density may capture a geometric analogue of this frequency gradient, computed from embedding structure rather than external frequency counts.
+\paragraph{Why density.} Sparse embedding neighborhoods may reflect entities that are underrepresented in the embedding model's training data. Among nonexistent entities, some fabricated names closely resemble many real names (high density, many nearby reference points) while more exotic fabrications sit in isolated regions (low density, few contextual anchors). A model encountering a prompt in uncharted representational territory may default to generation rather than refusal. This interpretation aligns with the finding that entity popularity predicts hallucination risk: \citet{sun2024entity} show that LLM accuracy degrades monotonically from head to tail entities, and \citet{mallen2023when} find that question-answering accuracy drops sharply below a frequency threshold. Density may capture a geometric analogue of this frequency gradient, computed from embedding structure rather than external frequency counts. It is a correlational proxy, not a verified causal mechanism---but it outperforms surface-level text properties such as entity name length, confirming that the signal reflects geometric structure beyond lexical features.
 
-We emphasize that density is a correlational proxy, not a verified causal mechanism. To assess whether a simpler text-level property captures the same signal, we test two surface features within the nonexistent category: question length (in words) and entity name length (in characters). Question word count shows no significant association with hallucination for either model (Mixtral $p = 0.67$, Llama $p = 0.06$)---unsurprising given the template-controlled prompt structure. Entity name length shows a model-specific effect: significant for Mixtral ($p = 0.002$, $|r| = 0.162$) but not for Llama ($p = 0.93$). By comparison, density is significant for both models with larger effect sizes ($|r| = 0.259$ and $0.249$). Entity name length and density are modestly correlated (Spearman $r = -0.186$): longer entity names tend to sit in sparser neighborhoods, but density captures substantially more variance than name length alone. These comparisons suggest that the density signal reflects genuine geometric structure beyond surface-level text properties, though a more comprehensive comparison against frequency-based proxies (e.g., entity frequency in pre-training data) remains an open question for future work.
+\paragraph{Why external embeddings work.} A notable feature of these results is that the geometric signal comes from an external embedding model applied to the question text alone---not from the target model's internal representations during generation. Hallucination risk, at least in part, is a property of the question's position in semantic space, not only of model-internal processing. The moderate cross-model consistency (mean Kendall's $\tau = 0.319$ across 45 model pairs) corroborates this: some prompts carry a shared difficulty signal across model families. This finding complements internal representation probing \citep{marks2023geometry, li2024inferencetime}, which captures model-specific patterns. External embeddings capture shared, question-level structure that is detectable before the model processes the question---a pre-generation risk signal that is model-agnostic by construction.
 
-\paragraph{Why external embeddings work.} A notable feature of these results is that the geometric signal comes from an external embedding model (\texttt{text-embedding-3-large}) applied to the question text alone---not from the target model's internal representations during generation. This means hallucination risk is partly a property of the question's position in semantic space, not only of the model's processing. One might expect hallucination to depend entirely on model-internal factors: attention patterns, weight distributions, or decoding dynamics. The moderate cross-model consistency established in Section~\ref{sec:baseline-rates} (mean Kendall's $\tau = 0.319$ across 45 model pairs) corroborates this: some prompts carry a shared difficulty signal across model families, and this difficulty is legible from the question text's embedding geometry.
+\paragraph{Scope of the signal.} The within-category density signal is robust within the nonexistent category, which is the largest and most hallucination-prone in our benchmark. As noted in Section~\ref{sec:within-cat-auc}, the enrichment of significant results across all categories suggests density signal beyond nonexistent, but no individual result outside that category survives correction.
 
-This finding complements prior work on representation probing. \citet{marks2023geometry} and \citet{li2024inferencetime} examine model-internal activations to detect truthfulness and hallucination, respectively. Our approach is closer to dataset-level difficulty estimation: it tests whether hallucination risk is detectable \emph{before} the model processes the question. The two approaches are not competing---internal probes capture model-specific patterns while external embeddings capture shared, question-level structure.
+\paragraph{Modest effect sizes.} The within-category rank-biserial effect size is $|r| \approx 0.25$ for density (a small to medium effect) and the within-category logistic regression AUC of $0.67$ is above chance but modest. Geometry provides a \emph{signal}, not a solution; practical applications would likely require combining geometric features with other indicators. That said, the signal is consistent across both models, survives stringent correction, and---as Chapter~\ref{ch:finetuning} shows---extends to predicting intervention resistance, suggesting it captures genuine structure rather than noise.
 
-\subsection{Limitations}
-\label{sec:ch5-limitations}
-
-\paragraph{Single embedding model.} All geometric features in this chapter depend on \texttt{text-embedding-3-large} (Section~\ref{sec:embedding-model}). A preliminary robustness check on the initial benchmark compared three embedding models (\texttt{text-embedding-3-small} at 1,536 dimensions, \texttt{text-embedding-3-large} at 3,072, and the open-source \texttt{all-mpnet-base-v2} at 768); results are reported in Appendix~\ref{app:embedding-robustness}. However, that comparison was conducted on the initial benchmark (368 prompts, four categories) using Spearman rank correlations pooled across 10 models---a methodology that predates the within-category Mann-Whitney tests on the expanded benchmark. The central finding of this chapter (within-category density prediction on 2,430 prompts with category controls) has been validated only with \texttt{text-embedding-3-large}. Whether the within-category density signal generalizes to other embedding spaces is an open question.
-
-\paragraph{Within-category signal concentrated in one category.} Density's Bonferroni-surviving significance comes from the nonexistent category ($n = 600$; hallucination rates of 29.5\% for Mixtral and 19.0\% for Llama). Other categories either have too few hallucinations for adequate statistical power (e.g., ambiguous: 4 hallucinations for Mixtral; edge factual: 4 and 1) or show weaker effects that do not survive correction. We cannot determine whether the absence of within-category signal in smaller categories reflects genuine null effects or insufficient power. The enrichment of nominally significant results---11 of 55 Mann-Whitney tests reach $p < 0.05$, versus ${\sim}2.8$ expected by chance---suggests signal beyond the nonexistent category, but no individual result outside that category is individually reliable. Future work with larger per-category samples could resolve this ambiguity.
-
-\paragraph{Modest effect sizes, corpus self-reference, and two-model scope.} The within-category rank-biserial effect size is $|r| \approx 0.25$ for density---a small-to-medium effect. The within-category logistic regression AUC of $0.67$ is above chance but far from sufficient for deployment as a standalone classifier. Geometry provides a \emph{signal}, not a \emph{solution}; practical applications would require combining geometric features with other indicators.
-
-All features are computed relative to the benchmark corpus itself (Section~\ref{sec:corpus-construction}): density uses $k$-nearest neighbors within the corpus, centrality measures distance to the corpus mean. Adding or removing prompts changes all feature values. The features characterize a prompt's position \emph{relative to this benchmark}, not an absolute property of the question. A deployment system would need to define an appropriate reference distribution.
-
-Finally, the within-category analysis covers only Mixtral and Llama. The 10-model cross-model benchmark (Section~\ref{sec:baseline-rates}) establishes that hallucination rates vary across model families, but within-category geometric prediction has not been tested beyond two architectures.
-
-\paragraph{Looking forward.} Density survives scrutiny as a genuine geometric correlate of within-category hallucination risk. The natural next question is whether this signal can inform \emph{intervention}: if we know which prompts are geometrically at risk, can targeted prompting reduce their hallucination rates? And does geometry predict which hallucinations resist mitigation? Chapters~\ref{ch:prefixes} and~\ref{ch:finetuning} address these questions.
+\paragraph{Scope.} The within-category analysis has been validated only with {\texttt{text-\allowbreak embedding-\allowbreak 3-\allowbreak large}} (a preliminary multi-model robustness check is reported in Appendix~\ref{app:embedding-robustness}), only on two target models (Mixtral and Llama), and only relative to the benchmark's own corpus (Section~\ref{sec:embedding-limitations}). Whether the density signal generalizes to other embedding spaces, model architectures, or reference distributions remains open. But density predicts which prompts will hallucinate. The natural next question is whether it also predicts which hallucinations can be \emph{fixed}---and whether that prediction can guide intervention.

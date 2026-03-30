@@ -10,20 +10,20 @@
       "hallucination_rate": 0.11804008908685969
     },
     "best_prefix": {
-      "name": "entity_aware",
+      "name": "structured_caution",
       "total": 449,
-      "correct": 409,
-      "partial": 4,
-      "hallucination": 3,
-      "refusal": 33,
-      "accuracy": 0.910913140311804,
-      "hallucination_rate": 0.0066815144766146995
+      "correct": 426,
+      "partial": 1,
+      "hallucination": 8,
+      "refusal": 14,
+      "accuracy": 0.9487750556792873,
+      "hallucination_rate": 0.017817371937639197
     },
     "oracle": {
       "total": 449,
-      "correct": 431,
+      "correct": 441,
       "hallucination": 1,
-      "accuracy": 0.9599109131403119
+      "accuracy": 0.9821826280623608
     },
     "finetuned": {
       "configA": {
@@ -108,10 +108,10 @@
           "p_value": 2.1153804263818188e-09
         },
         "mcnemar_vs_best_prefix": {
-          "ft_fixes": 19,
-          "prefix_fixes": 9,
-          "chi2": 2.892857142857143,
-          "p_value": 0.08897301170181326
+          "ft_fixes": 7,
+          "prefix_fixes": 14,
+          "chi2": 1.7142857142857142,
+          "p_value": 0.19043026382552408
         }
       },
       "configB": {
@@ -196,10 +196,10 @@
           "p_value": 3.446307794696679e-09
         },
         "mcnemar_vs_best_prefix": {
-          "ft_fixes": 17,
-          "prefix_fixes": 8,
-          "chi2": 2.56,
-          "p_value": 0.10959858339911566
+          "ft_fixes": 9,
+          "prefix_fixes": 17,
+          "chi2": 1.8846153846153846,
+          "p_value": 0.1698105050855213
         }
       },
       "configC": {
@@ -284,10 +284,10 @@
           "p_value": 1.829629781013864e-10
         },
         "mcnemar_vs_best_prefix": {
-          "ft_fixes": 19,
-          "prefix_fixes": 4,
-          "chi2": 8.521739130434783,
-          "p_value": 0.0035092897047450666
+          "ft_fixes": 9,
+          "prefix_fixes": 11,
+          "chi2": 0.05,
+          "p_value": 0.8230632737581214
         }
       }
     }
@@ -303,20 +303,20 @@
       "hallucination_rate": 0.05790645879732739
     },
     "best_prefix": {
-      "name": "entity_aware",
+      "name": "structured_caution",
       "total": 449,
-      "correct": 422,
-      "partial": 14,
-      "hallucination": 11,
-      "refusal": 2,
-      "accuracy": 0.9398663697104677,
-      "hallucination_rate": 0.024498886414253896
+      "correct": 430,
+      "partial": 1,
+      "hallucination": 6,
+      "refusal": 12,
+      "accuracy": 0.9576837416481069,
+      "hallucination_rate": 0.013363028953229399
     },
     "oracle": {
       "total": 449,
-      "correct": 440,
+      "correct": 442,
       "hallucination": 0,
-      "accuracy": 0.9799554565701559
+      "accuracy": 0.9844097995545658
     },
     "finetuned": {
       "configA": {
@@ -401,10 +401,10 @@
           "p_value": 0.0035092897047450666
         },
         "mcnemar_vs_best_prefix": {
-          "ft_fixes": 8,
-          "prefix_fixes": 8,
-          "chi2": 0.0625,
-          "p_value": 0.8025873486341526
+          "ft_fixes": 7,
+          "prefix_fixes": 15,
+          "chi2": 2.227272727272727,
+          "p_value": 0.13559300126630158
         }
       }
     }

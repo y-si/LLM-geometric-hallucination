@@ -65,6 +65,21 @@ data/logs/
 .DS_Store
 Thumbs.db
 
+# Thesis and private documents
+thesis/
+thesis_reference/
+THESIS_WRITING.md
+JUDGE_CONTAMINATION_ISSUE.md
+NEXT_STEPS.md
+OLD_COMPREHENSIVE_FINAL_PAPER.md
+FINAL_PROJECT_SUBMISSION.md
+BOAZ.md
+results/v4_prefix_experiment/EXPERIMENT_LOG.md
+
+# Claude Code project memory
+.claude/
+memory/
+
 # Temporary files
 *.tmp
 *.bak

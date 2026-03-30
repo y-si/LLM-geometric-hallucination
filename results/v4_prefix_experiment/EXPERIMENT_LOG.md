@@ -982,55 +982,56 @@ results/v5_prefixes/analysis/
 └── v5_bridge_llama-4-maverick-17b.png
 ```
 
-**Results** (run Mar 2026):
+**Results** (run Mar 2026; **re-run Mar 22 after CoT exclusion fix** — original run included CoT as a 5th prefix, inflating fix rates by counting CoT refusals as "fixes"):
 
-**Outcome distribution**:
+**Outcome distribution** (post-CoT-exclusion, 4 prefixes only):
 | Model | Already Correct | Fixed | Still Broken | Regressed | Other |
 |---|---|---|---|---|---|
-| Mixtral | 1,813 | 333 | 15 | 173 | 96 |
-| Llama | 2,046 | 227 | 5 | 70 | 82 |
+| Mixtral | 1,868 | 333 | 27 | 136 | 66 |
+| Llama | 2,073 | 211 | 24 | 64 | 58 |
 
-Prefixes fix 95.7% (Mixtral) and 97.8% (Llama) of baseline hallucinations.
+Prefixes fix 92.5% (Mixtral) and 89.8% (Llama) of baseline hallucinations. (Original run with CoT showed 95.7%/97.8% — inflated because 12 Mixtral and 19 Llama prompts were "fixed" only by CoT refusals, all label=3.)
 
 **Fixed vs Correct (Mann-Whitney U)**:
 | Model | Feature | Fixed Mean | Correct Mean | p-value | Effect |
 |---|---|---|---|---|---|
-| Mixtral | oppositeness | 0.5134 | 0.4916 | 8.71e-11 | r=-0.223 |
-| Mixtral | density | 2.027 | 2.087 | 8.04e-5 | r=0.136 |
-| Llama | oppositeness | 0.5265 | 0.4922 | 1.21e-19 | r=-0.366 |
-| Llama | centrality | 0.6968 | 0.7142 | 3.47e-4 | r=0.145 |
-| Llama | density | 2.021 | 2.086 | 0.014 | r=0.099 |
+| Mixtral | oppositeness | 0.513 | 0.491 | 2.05e-10 | r=-0.218 |
+| Mixtral | density | 2.025 | 2.084 | 6.92e-5 | r=0.137 |
+| Llama | oppositeness | 0.525 | 0.492 | 8.42e-17 | r=-0.347 |
+| Llama | centrality | 0.697 | 0.714 | 7.17e-4 | r=0.141 |
+| Llama | density | 2.033 | 2.084 | 0.084 | r=0.072 |
 
 **Oppositeness** is the strongest predictor of fixability — prompts with high oppositeness (opposing semantic associations) are more likely to hallucinate at baseline but get fixed by prefixes. This is consistent with the V4 finding.
 
 **Logistic regression AUC (fixed vs still_broken)**:
 | Model | n(fixed) | n(broken) | AUC (train) | AUC (5-fold CV) |
 |---|---|---|---|---|
-| Mixtral | 333 | 15 | 0.660 | 0.593 |
-| Llama | 227 | 5 | 0.763 | 0.427 |
+| Mixtral | 333 | 27 | 0.653 | 0.573 |
+| Llama | 211 | 24 | 0.768 | 0.712 |
 | V4 Mixtral | — | — | 0.860 | N/A |
 | V4 Llama | — | — | 0.830 | N/A |
 
-V5 AUC is substantially lower than V4. **Why**: V5 `still_broken` is tiny (15 and 5 prompts) because we aggregate across ALL 5 prefixes — any single non-hallucination counts as "fixed." V4 computed per-prefix outcomes, giving larger groups. The class imbalance (333:15, 227:5) makes logistic regression unreliable. **The risk check was prescient**: we predicted n(still_broken) could be as low as 20-35, and the actual numbers are even smaller.
+Llama's CV AUC of 0.712 indicates genuine predictive signal. Mixtral's 0.573 is weaker, reflecting the more imbalanced class ratio (333:27 vs 211:24). Both are lower than V4's train-only AUC, reflecting cross-validation and any-prefix aggregation.
 
 **Within-category analysis (the strongest V5 bridge finding)**:
 
 Among **nonexistent** prompts (the largest hallucinating category):
-| Model | Feature | Broken Mean | Fixed Mean | p-value |
-|---|---|---|---|---|
-| Mixtral | density | 1.937 | 2.180 | 0.034* |
-| Llama | density | 1.877 | 2.144 | 0.047* |
-| Llama | centrality | 0.740 | 0.677 | 0.013* |
+| Model | Feature | Broken Mean | Fixed Mean | n(broken) | n(fixed) | p-value |
+|---|---|---|---|---|---|---|
+| Mixtral | density | 1.959 | 2.181 | 13 | 164 | 0.046* |
+| Llama | density | 1.877 | 2.149 | 7 | 107 | 0.012* |
 
-This is the **non-circular test** — same category (same prompt structure), geometry varies — and density significantly predicts fixability for both models. Unfixable nonexistent prompts live in sparser embedding regions. This replicates the V4 finding and confirms the thesis's core claim.
+Among **plausible_fake** prompts (new finding post-CoT-exclusion):
+| Model | Feature | Broken Mean | Fixed Mean | n(broken) | n(fixed) | p-value |
+|---|---|---|---|---|---|---|
+| Mixtral | density | 1.689 | 1.826 | 7 | 80 | 0.059 |
+| Llama | oppositeness | 0.556 | 0.522 | 14 | 46 | 0.009** |
 
-**Unfixable profile**: All 5 Llama unfixable prompts and 11/15 Mixtral unfixable prompts are **nonexistent** category. They have higher centrality (0.73-0.74), lower density (1.88-1.99), and lower curvature (0.22-0.25) than fixed prompts. Direction matches V4 (high centrality, low density = unfixable), but sample sizes are too small for statistical significance on their own.
+This is the **non-circular test** — same category (same prompt structure), geometry varies — and density significantly predicts fixability within nonexistent for both models. Llama's plausible_fake oppositeness effect is a new finding. Unfixable prompts live in sparser embedding regions. 24 within-category tests total; Bonferroni α=0.0021 — no individual result survives correction. Effect sizes are medium-to-large (|r|=0.33–0.56), suggesting power limitation rather than absent signal.
 
-**Interpretation for thesis**: The aggregate AUC drop from 0.86 to 0.59-0.66 is NOT a failure to replicate. It reflects a different experimental design:
-- V4: per-prefix classification → larger still_broken group → higher AUC
-- V5: any-prefix classification → tiny still_broken group → unstable logistic regression
-- The *within-category* analysis (which is methodologically stronger because it controls for category confounds) shows significant geometric predictors of fixability in both datasets.
-- Report V4 AUC=0.86 as the discovery result, V5 within-category density p-values as the confirmation.
+**Unfixable profile**: Unfixable prompts cluster in entity-dependent categories. Mixtral: 13 nonexistent, 7 plausible_fake, 5 factual, 2 other. Llama: 14 plausible_fake, 7 nonexistent, 3 impossible. At the aggregate level, Llama density is significant (p=0.008, r=0.334); Mixtral aggregate tests all p>0.08 (descriptively consistent direction).
+
+**Interpretation for thesis**: The aggregate AUC drop from V4's 0.86 to V5's 0.57-0.71 reflects methodological improvements (cross-validation) and design differences (any-prefix aggregation). Llama's 0.712 is a meaningful result. The *within-category* analysis remains the methodologically strongest finding. Frame: "We discovered the signal in V4, confirmed the mechanism in V5."
 
 ---
 
@@ -1040,7 +1041,7 @@ The Step 8A/8B results reshape several thesis claims. Recording these now so the
 
 **1. The replication story is strong but nuanced.** V4 patterns replicate at 5x scale: same best prefixes per model, all statistically significant. But the *magnitude* of effect is smaller (V4 Entity-Aware: 0.7% residual → V5: 5.2%). This is actually the more interesting finding — it shows V4 may have overstated prefix effectiveness because those 449 prompts were easier. The thesis should frame V5 as the definitive result and V4 as a pilot.
 
-**2. The bridge analysis must be reframed.** V4's AUC=0.86 was compelling but methodologically problematic (train-only, per-prefix classification inflated n(still_broken)). V5's honest cross-validated AUC (0.59-0.66) is not thesis-worthy as a standalone claim. BUT the within-category density tests (p=0.034/0.047) are methodologically stronger because they control for category confounds. The thesis should lead with the within-category result and relegate the aggregate AUC to supplementary. Frame: "We discovered the signal in V4, confirmed the mechanism in V5."
+**2. The bridge analysis must be reframed.** V4's AUC=0.86 was compelling but methodologically problematic (train-only, per-prefix classification inflated n(still_broken)). V5's honest cross-validated AUC is 0.573 (Mixtral) and 0.712 (Llama) — Llama's is meaningful, Mixtral's is weak. The within-category density tests (p=0.046/0.012 post-CoT-exclusion) are methodologically stronger because they control for category confounds. The thesis should lead with the within-category result. Frame: "We discovered the signal in V4, confirmed the mechanism in V5."
 
 **3. CoT Verification must be discussed seriously.** The 62-68% refusal rate is not just a "bad prefix" — it reveals a fundamental tension in LLM safety. Telling a model to self-verify makes it refuse rather than correct. This connects to the "alignment tax" literature (Askell et al., 2021) and the refusal-helpfulness tradeoff (Bai et al., 2022). Implications:
    - Exclude CoT from best-per-prompt training data (Step 9) — refusals aren't useful fine-tuning targets
@@ -1049,7 +1050,7 @@ The Step 8A/8B results reshape several thesis claims. Recording these now so the
 
 **4. Oppositeness deserves its own thesis subsection.** It's the strongest bridge feature (p < 1e-10 for both models) and has a clean mechanistic story: high-oppositeness entities have contradictory semantic associations, making the model uncertain → prefixes help by giving it permission to express that uncertainty. This was not prominent in V4 analysis (which focused on centrality/density). The V5 finding elevates oppositeness to a first-class predictor.
 
-**5. The "unfixable" profile holds but with caveats.** V4's unfixable profile (centrality=0.73, density=1.55) partially replicates: V5 unfixable prompts have high centrality (0.73-0.74), low density (1.88-1.99). Direction matches. But n=15/5 is too small for individual feature significance. The thesis should present the profile descriptively, not as a statistical claim. The within-category density test (p=0.034/0.047) is the statistically defensible version of this claim.
+**5. The "unfixable" profile holds but with caveats.** V4's unfixable profile (centrality=0.73, density=1.55) partially replicates: V5 unfixable prompts have lower density and cluster in entity-dependent categories (nonexistent + plausible_fake = 74-88% of unfixable). With 27/24 broken prompts (post-CoT-exclusion), Llama shows significant aggregate density effect (p=0.008). Mixtral's aggregate tests are non-significant but directionally consistent. The within-category density tests (p=0.046/0.012) are the strongest evidence.
 
 ---
 
@@ -1534,14 +1535,18 @@ This is publishable on its own — it reveals:
 3. The inherent tension between safety and knowledge coverage
 4. A potential role for geometry: can density distinguish obscure-real from plausible-fake? (Future analysis for Ch 7)
 
-##### What this means for the thesis
+##### What this means for the thesis (UPDATED Mar 23 — all corrections applied)
 
-1. **Fine-tuning successfully distills prefix behavior into weights** — no system prompt needed at inference time
-2. **Mixtral configC statistically matches the best prefix** (p=0.84) — the "cure" is as good as the "treatment"
-3. **~89% hallucination reduction for both models** (Mixtral 11.8%→1.3%, Llama 5.8%→0.7%)
-4. **The borderline_obscure_real regression** reveals the precision-recall structure of learned caution — a finding, not a failure
+The thesis makes three claims, all of which survive every correction:
+
+1. **Geometry predicts hallucination difficulty** — within-category density predicts both hallucination (Ch 5) and fixability (Ch 7, FT bridge Mixtral density p=0.0017, |r|=0.80, survives Bonferroni)
+2. **Prompting reduces hallucination** — four prefixes achieve 68–69% relative reduction (Ch 6), replicated at 5× scale
+3. **Prompt behavior can be made permanent through fine-tuning** — Mixtral ConfigC matches best single prefix (Structured Caution) in accuracy (94.4% vs 94.9%, p=0.82) while halving hallucination rate further (1.3% vs 1.8%). Llama falls slightly short in accuracy (94.0% vs 95.8%, p=0.14) but also hallucinates less (1.1% vs 1.3%). Practical value: no runtime prompt engineering.
+4. **89%/81% hallucination reduction** baked into weights (Mixtral 11.8%→1.3%, Llama 5.8%→1.1%)
 5. **No overfitting** despite aggressive LoRA rank — more epochs helped
-6. **The full pipeline works**: geometry predicts hallucination → prefixes reduce it → fine-tuning internalizes it
+6. **Precision-recall tradeoff**: increased factual refusals (5→15 for both models), NOT obscure_real regressions (which improved post-fix). 70% of regressions are refusals, not new hallucinations — model errs toward caution.
+
+**Correction log**: Old narrative said "matches Entity-Aware (91.1%, p=0.84)" and "obscure_real regression (-7 to -13%)." Both were from pre-V4-fix data. Post-fix: best prefix = Structured Caution, obscure_real improved. comparison_analysis.json re-generated Mar 23.
 
 ##### Remaining analysis TODO
 - Step 11B: Overfitting check (run FT models on V5 training sample)
@@ -3121,7 +3126,7 @@ All four contributions have experimental evidence, and TruthfulQA generalization
 | Mar 2026 | Fix judge infrastructure bugs (4 issues) | Type coercion + range validation in judge_client.py, required-key check raises instead of pass, 3-attempt retry in all 4 judging scripts, periodic save moved outside retry loop. Post-hoc audit confirmed zero corruption in existing 29,159 judged entries |
 | Mar 2026 | Add Step 8 (V5 Analysis) before Step 9 | Repurposed superseded Step 8. V5 prefix summary (8A) validates data before training set construction. V5 bridge analysis (8B) tests the thesis's most novel contribution at 5.4x scale. Both are zero-cost local analysis on existing data |
 | Mar 2026 | Step 8A complete: V5 prefix summary | All 5 prefixes significant (p<0.001). Entity-Aware best Mixtral (5.2%), Structured Caution best Llama (3.6%). CoT catastrophic (62-68% refusal). V5 rates higher than V4 (expected — harder prompts) |
-| Mar 2026 | Step 8B complete: V5 bridge analysis | Within-category density predicts fixability (p=0.034/0.047) — strongest V5 bridge finding. Aggregate AUC 0.59-0.66 (class imbalance: 333:15 Mixtral, 227:5 Llama). Oppositeness strongest overall discriminator (p<1e-10). Reframe thesis: lead with within-category, relegate aggregate AUC |
+| Mar 2026 | Step 8B complete: V5 bridge analysis | Initial run included CoT (5 prefixes). Re-run Mar 22 with CoT excluded (4 prefixes): within-category density predicts fixability (p=0.046/0.012) — strongest finding. 27/24 still_broken (was 15/5 with CoT). Llama CV AUC=0.712. Llama plausible_fake oppositeness p=0.009. No result survives Bonferroni (24 tests). |
 | Mar 2026 | Align V5 `fixed` definition with V4 | V4 code defined `fixed = baseline_hall and not prefix_hall` (any non-hallucination including refusals). Step 8B plan originally said "correct with at least 1 prefix" (label 0 only). Aligned to V4 definition for direct AUC comparison. Rationale: a refusal IS a successful fix — the model stopped hallucinating |
 | Mar 2026 | Exclude CoT Verification from Step 9 training data | 62-68% refusal rate makes CoT responses useless as fine-tuning targets. Refusals teach the model to refuse, not to answer correctly. Use 4 non-CoT prefixes for best-per-prompt selection |
 | Mar 2026 | Include baseline as 5th candidate source in Step 9 | 4 Mixtral / 2 Llama prompts correct at baseline but ALL 4 non-CoT prefixes hallucinate. Without baseline, these get hallucinated training targets. Including baseline: +9 correct Mixtral, +3 correct Llama, unfixable drops 34→28 / 29→24. No downside — training format is (question, answer) pairs regardless of source |
@@ -3129,7 +3134,7 @@ All four contributions have experimental evidence, and TruthfulQA generalization
 | Mar 2026 | Step 9 complete: best-per-prompt selection | Mixtral: 2,402 training (97.7% correct), 28 unfixable. Llama: 2,406 training (98.2% correct), 24 unfixable. All unfixable verified label=2 across all 5 sources. Source selection uses judge_confidence tiebreaker for quality. Entity-aware provides most unique saves (34/10) |
 | Mar 2026 | Step 10 complete: LoRA fine-tuning | 4 jobs via Together AI (3 Mixtral configs + 1 Llama). Together overrode lora_r 16→64, alpha 32→128, dropout removed. Llama used QLoRA (4-bit). Total cost: $22.42 |
 | Mar 2026 | All fine-tuned models require dedicated endpoints | Together serverless LoRA doesn't support Mixtral or Llama 4 Maverick. Dedicated endpoints: Mixtral $0.13/min, Llama $0.53/min. Script updated with `--endpoint` flag |
-| Mar 2026 | Step 11 complete: fine-tuning evaluation | **Strong success (Mixtral), moderate success (Llama)**. Mixtral configC matches best prefix (91.1%, p=0.84). Both models ~89% hallucination reduction. borderline_obscure_real regression (-7 to -13%) reveals precision-recall tradeoff in learned caution. Bug fix: V3 baseline deduplicated (538→449 entries, 85 duplicate borderline IDs with 8 inconsistent labels) |
+| Mar 2026 | Step 11 complete: fine-tuning evaluation | Both models ~89%/81% hallucination reduction baked into weights. **Updated Mar 23**: comparison_analysis.json re-generated with post-V4-fix prefix data. Best prefix = Structured Caution (not Entity-Aware). Mixtral ConfigC matches best prefix (94.4% vs 94.9%, p=0.82); Llama ConfigA falls slightly short (94.0% vs 95.8%, p=0.14). FT has lower hallucination rates than prefix (1.3% vs 1.8%, 1.1% vs 1.3%) but higher refusals. Practical value: no runtime prompt engineering. Old "obscure_real regression" narrative was pre-fix; post-fix obscure_real improved. Regressions are factual refusals (70% of 10 total regressions). |
 | Mar 2026 | Step 11B complete: overfitting check | **No overfitting.** Mixtral configC: 93.0% train vs 91.1% test (+1.9pp). Llama configA: 96.5% train vs 92.4% test (+4.1pp). Both gaps under 5pp despite aggressive LoRA rank (64) and no dropout. Fine-tuning learned genuine caution, not memorization. Clears 12A bridge analysis for uncontaminated interpretation |
 | Mar 2026 | Reframe Step 12 into 12A (analytical) + 12B (figures) | Original "Step 12: Final figures, takes minutes" undersold what's needed. 12A contains substantive research questions: fine-tuning bridge analysis, borderline geometric distinction, regression geometric profile. 12B is production work organized by thesis chapter. Split clarifies that 12A is research, 12B is engineering |
 | Mar 2026 | Thesis framing: contributions are ideas, not pipeline | Inspired by reference theses (Angela Li, Tarun Prasad). The four contributions are theoretical findings (geometric difficulty prediction, within-category density signal, precision-recall tradeoff, prompt distillation). Fine-tuning is the method, not the finding. No V3/V4/V5 labels in thesis — use descriptive terms |
