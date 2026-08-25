@@ -102,9 +102,45 @@ objection. The forced swap strengthens the ordering-invariance test rather than
 weakening it. `gpt-oss-20b` is available as a within-family scale pair if Phase 1
 wants one.
 
-Decoding: temperature 0.7, top_p 1.0, max_tokens 256, no system prompt beyond the
-benchmark's standard instruction. **P̂ is defined relative to this decoding
-config** — a scope statement to carry into the paper, not a flaw.
+Decoding: temperature 0.7, top_p 1.0, **max_tokens 2048**, no system prompt beyond
+the benchmark's standard instruction. **P̂ is defined relative to this decoding
+config** — a scope statement to carry into the paper, not a flaw. The generation
+script writes the config to `results/phase05/decoding_config.json` and refuses to
+resume across a change, because appending completions from a different config to the
+same file would silently mix two populations.
+
+### 3.2 max_tokens is set from measurement, and the two models differ ~7×
+
+Probing both models at a generous 1536-token cap (2026-08-25, 15 prompts each spread
+across categories) gave:
+
+| | Llama-3.3-70B | gpt-oss-120b |
+|---|---|---|
+| p50 completion tokens | **96** | **699** |
+| p90 | 555 | 1536 |
+| max | 595 | 1536 |
+| Still hit the 1536 cap | 0/15 | **3/15** |
+
+**max_tokens=2048** covers gpt-oss's p90 with headroom and leaves Llama untouched.
+The original 256 truncated gpt-oss mid-sentence on most prompts; because the judge
+scores a truncated answer *as* the model's answer, and the two models truncate at
+different rates, that error lands asymmetrically and corrupts the ranking comparison.
+A single shared value is deliberate — an identical decoding config across models is
+what makes the two P̂ estimates comparable.
+
+**The ~7× verbosity gap is a confound in its own right, not just a sizing problem.**
+A longer answer has more opportunities to trip the judge's hallucination rule, so
+gpt-oss's P̂ may be inflated by verbosity rather than by worse factual reliability.
+If verbosity were constant per model this would shift *rates* and leave *ordering*
+intact — which is all the paper's claim needs. It is not constant: on `nonexistent`
+prompts (a primary decision-surface category) Llama wrote ~90 tokens both times while
+gpt-oss wrote 1536 and 1533, and both models scale length by category differently.
+Prompt-dependent, model-specific verbosity can therefore distort the ordering itself.
+Checked in §6.5.4; logged as limitation §9.13.
+
+`finish_reason` and `output_tokens` are recorded per completion so truncation is
+**measured**, not inferred. `MultiModelClient.generate()` discards both, which is why
+`generate_with_meta()` exists.
 
 ---
 
@@ -467,6 +503,21 @@ agreeing in *ordering* — the evidence for the §1 rephrasing.
    on each model's own refusal rate. If the ordering agreement is substantially
    carried by shared refusal behaviour rather than shared hallucination behaviour,
    that is a different (weaker) claim and must be reported as such.
+4. **Completion-length confound.** The two models differ ~7× in natural completion
+   length, and the gap varies by prompt *within* category (§3.2). A longer answer has
+   more opportunities to trip the judge's hallucination rule, so length may be driving
+   labels rather than prompt difficulty. Three reports:
+   - Per model, within category: correlation between a completion's `output_tokens`
+     and its hallucination label (Spearman ρ; point-biserial as a cross-check).
+   - Per (prompt, model): mean `output_tokens`, and blocked τ_b between the two
+     models' per-prompt mean lengths. High length-agreement plus high P̂-agreement is
+     ambiguous; the next item disambiguates.
+   - **τ_cross recomputed on P̂ residualized on each model's own per-prompt mean
+     completion length.** If τ_corr collapses under this control, the headline result
+     is about verbosity rather than prompt difficulty, and must be reported that way.
+   - Truncation rate per model (`finish_reason == "length"`). A gap above 5 points is
+     treated as a confound requiring either regeneration at a higher `max_tokens` or
+     explicit reporting — the generation script prints this and warns.
 
 ### 6.6 Confidence intervals
 
@@ -530,19 +581,31 @@ judge-bound (260), and secondary (431) sets, which overlap (§4.4) — × 20 sam
 
 | Stage | Provider | Estimate |
 |---|---|---|
-| Generation (2 models × 28,160 completions, ~240 tok each ≈ 6.8M tokens) | Together, open-model rates | **~$4** |
-| Judging (28,160 calls, ~350 in / ~120 out ≈ 9.9M + 3.4M tokens on `claude-haiku-4-5` at $1/$5 per M) | Anthropic | **~$27** |
-| | | **~$31 total** |
+| Generation (28,160 completions; Llama ~160 tok avg, gpt-oss ~800 tok avg ≈ 13M output tokens) | Together, open-model rates | **~$5–9** |
+| Judging (28,160 calls. Input = 628-token judge system prompt + ~55 prompt/ground-truth + the completion ≈ 33M input; output ~3.4M. `claude-haiku-4-5` at $1/$5 per M) | Anthropic | **~$50** |
+| | | **~$55–60 total** |
 
 **Two separate bills.** The $56 Together balance covers generation with wide margin;
 the judge bills to the Anthropic account. Verify per-token pricing before the run.
 
-**Optional 50% saving on the judge:** the Anthropic Batch API halves token cost and
-this workload is entirely offline, which would bring judging to ~$13. It is not in
-the current design because it changes the failure-handling shape — batch results
-arrive asynchronously and the §5.1 per-call retry contract has to be reworked around
-them. Worth doing if judge cost becomes a constraint at Phase 1 volume; not worth the
-added complexity for a one-off pilot.
+This is roughly double the earlier estimate, for two reasons, both worth stating:
+`max_tokens` rose from 256 to 2048 so completions are much longer (§3.2), and the
+earlier figure omitted the **628-token judge system prompt, which is re-sent on all
+28,160 calls** — about 17.7M input tokens on its own.
+
+**The Anthropic Batch API is now worth considering rather than not:** 50% off token
+cost, and this workload is entirely offline, which would bring judging to ~$25 and the
+total to ~$32. It is still not in the design because batch results arrive
+asynchronously and the §5.1 per-call retry contract has to be reworked around them —
+but at Phase 1 volume that rework pays for itself.
+
+**Prompt caching remains unavailable.** The judge system prompt is identical across
+all calls, but at 628 tokens it is far below Haiku 4.5's 4096-token minimum cacheable
+prefix, so a `cache_control` marker would silently do nothing.
+
+**Wall clock.** The 256-token smoke test sustained 1.2 completions/sec (8 workers).
+Throughput scales roughly inversely with output length, so at `max_tokens=2048` expect
+substantially slower — plan an overnight run for the full 28,160, not an afternoon.
 
 **Cost is not the binding constraint on this pilot.** The earlier
 100-prompt/k=10 design sacrificed statistical power for savings that do not exist.
@@ -592,6 +655,12 @@ State these before she finds them:
 12. **The judge is a different vendor from both evaluated models, but is also the
     cheapest model in its line.** Independence is bought at the cost of judge
     capability; §5.2 is the check on whether that trade held.
+13. **The two models differ ~7× in natural completion length** (§3.2), and the gap is
+    prompt-dependent within category. A verbose model has more chances to trip the
+    judge's hallucination rule, so part of the measured P̂ difference — and possibly
+    part of the ordering — may be a verbosity artifact. §6.5.4 tests this; if τ_corr
+    survives length residualization the claim stands, and if it does not the honest
+    report is that the pilot measured verbosity agreement.
 ---
 
 ## 10. Amendment log
@@ -672,3 +741,41 @@ pre-registration.
   from the models actually present in the completions file rather than a hardcoded
   list, so it cannot drift out of sync with §3 again. Still no data collected; the §7
   go/no-go rule is unchanged.
+- 2026-08-25 (after a 400-completion smoke test; **no pilot data**) — **§3 decoding
+  config corrected from measurement.** A 10-prompt smoke test showed completions being
+  truncated mid-sentence at `max_tokens=256`. Probing both models at a 1536-token cap
+  established why: natural completion length differs ~7× at the median (Llama p50=96,
+  gpt-oss p50=699, gpt-oss still hitting the cap on 3/15). `max_tokens` raised
+  **256 → 2048**, set from gpt-oss's p90 plus headroom, kept as a single shared value
+  so the decoding config stays identical across models.
+
+  Two errors of mine are recorded here because both distorted the earlier reading.
+  First, `--limit N` took the first N of a `(category, id)`-sorted manifest, so the
+  smoke test drew **100% `ambiguous`** prompts — one of seven categories, and Llama's
+  most verbose one. That made a gpt-oss-specific truncation problem look symmetric and
+  led me to report Llama as "pinned at the cap on 76% of prompts" when its overall
+  natural median is 96 tokens. `--limit` now samples round-robin across categories.
+  Second, truncation was being *inferred* from trailing punctuation because
+  `MultiModelClient.generate()` discards `finish_reason`; a new `generate_with_meta()`
+  records `finish_reason` and `output_tokens` per completion, and the generation script
+  reports truncation rate per model and warns above a 5-point gap.
+
+  New confound check **§6.5.4** covers the verbosity asymmetry, which is a threat in
+  its own right and not merely a sizing problem: a longer answer has more chances to
+  trip the judge's hallucination rule, and the length gap varies by prompt *within*
+  category (on `nonexistent`, Llama ~90 tokens vs gpt-oss ~1535). The check
+  residualizes P̂ on per-prompt mean completion length and recomputes τ_cross; if
+  τ_corr collapses, the honest report is that the pilot measured verbosity agreement
+  rather than prompt-difficulty agreement. Logged as limitation §9.13.
+
+  A decoding-config fingerprint (`results/phase05/decoding_config.json`) is now written
+  and checked, so resuming across a config change fails loudly instead of appending a
+  second population to the same file. The 400 smoke-test completions were generated at
+  `max_tokens=256` and have been deleted rather than resumed across.
+
+  Cost estimate updated (§8): ~$55–60, roughly double the prior figure — longer
+  completions plus the 628-token judge system prompt re-sent on all 28,160 calls,
+  which the earlier estimate omitted. Progress reporting cadence made adaptive so short
+  runs report and a slow run is distinguishable from a wedged one.
+
+  **No pilot data has been collected.** The §7 go/no-go rule is unchanged.

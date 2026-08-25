@@ -45,6 +45,7 @@ from src.utils.env import load_env_file  # noqa: E402
 MANIFEST_PATH = BASE_DIR / "data" / "prompts" / "phase05_manifest.jsonl"
 OUTPUT_DIR = BASE_DIR / "results" / "phase05"
 OUTPUT_PATH = OUTPUT_DIR / "completions.jsonl"
+CONFIG_PATH = OUTPUT_DIR / "decoding_config.json"
 
 # §3 — the two evaluated models. Keys resolve via experiments/multi_model_config.yaml.
 # Availability verified 2026-08-25 by probing with real 1-token requests: Together's
@@ -56,16 +57,66 @@ OUTPUT_PATH = OUTPUT_DIR / "completions.jsonl"
 # shared-pretraining critique. See PHASE_0.5_SPEC.md §3.1 and §9.
 MODELS = ["llama-3.3-70b-turbo", "gpt-oss-120b"]
 
-# §6.1 / §3 — pre-registered decoding config. Do not change mid-run.
+# §6.1 / §3 — pre-registered decoding config. Do not change mid-run; the fingerprint
+# check below refuses to resume across a change.
+#
+# max_tokens=2048 is set from measurement, not intuition. Probing both models at a
+# 1536-token cap (2026-08-25) found natural completion lengths differ ~7x at the
+# median: Llama p50=96 / max=595, gpt-oss p50=699 / p90=1536 with 3/15 still hitting
+# the cap. At the original 256 that truncated gpt-oss mid-sentence on most prompts,
+# and the judge scores a truncated answer as the model's answer — an error that lands
+# asymmetrically across the two models and therefore corrupts the ranking comparison.
+# A single shared value keeps the decoding config identical across models, which is
+# what makes the two P-hat estimates comparable.
 K_SAMPLES = 20
 TEMPERATURE = 0.7
 TOP_P = 1.0
-MAX_TOKENS = 256
+MAX_TOKENS = 2048
 
 MAX_WORKERS = 8
 MAX_ATTEMPTS = 3
 
 write_lock = threading.Lock()
+
+
+def decoding_config():
+    return {"k_samples": K_SAMPLES, "temperature": TEMPERATURE, "top_p": TOP_P,
+            "max_tokens": MAX_TOKENS, "models": sorted(MODELS)}
+
+
+def check_decoding_config():
+    """Refuse to resume across a decoding-config change (§3).
+
+    P-hat is defined relative to one decoding config. Appending completions generated
+    under different settings to the same file would silently mix two populations, and
+    the resume logic would skip the old rows rather than flag them.
+    """
+    current = decoding_config()
+    if not CONFIG_PATH.exists():
+        if OUTPUT_PATH.exists() and OUTPUT_PATH.stat().st_size > 0:
+            sys.exit(
+                f"REFUSING TO RUN: {OUTPUT_PATH.name} has data but no "
+                f"{CONFIG_PATH.name} recording the decoding config it was generated "
+                "under. It predates this check and may not match the current config. "
+                f"Delete both files and regenerate:\n  rm {OUTPUT_PATH} "
+                f"{OUTPUT_DIR / 'judgments.jsonl'}"
+            )
+        with open(CONFIG_PATH, "w") as f:
+            json.dump(current, f, indent=1, sort_keys=True)
+        return
+
+    with open(CONFIG_PATH) as f:
+        stored = json.load(f)
+    if stored != current:
+        diffs = [f"{k}: file={stored.get(k)!r} now={current[k]!r}"
+                 for k in current if stored.get(k) != current[k]]
+        sys.exit(
+            "REFUSING TO RUN: the decoding config changed since these completions "
+            "were generated.\n  " + "\n  ".join(diffs)
+            + "\n\nP-hat is defined relative to one decoding config (§3). Either "
+            "restore the old settings, or delete the results and regenerate:\n"
+            f"  rm {OUTPUT_PATH} {CONFIG_PATH} {OUTPUT_DIR / 'judgments.jsonl'}"
+        )
 
 
 def read_jsonl(path):
@@ -82,8 +133,30 @@ def load_manifest(limit=None):
                  "Run scripts/build_phase05_manifest.py first.")
     prompts.sort(key=lambda r: (r["category"], str(r["id"])))
     if limit:
-        prompts = prompts[:limit]
+        prompts = stratified_sample(prompts, limit)
     return prompts
+
+
+def stratified_sample(prompts, limit):
+    """Round-robin across categories, deterministically.
+
+    A plain prompts[:limit] takes the first N of a (category, id)-sorted manifest,
+    which means a 10-prompt smoke test draws entirely from `ambiguous` (the first
+    category, 120 entries). That produced a smoke test that validated one of seven
+    categories and made a model-specific truncation problem look symmetric.
+    """
+    by_cat = defaultdict(list)
+    for r in prompts:
+        by_cat[r["category"]].append(r)
+    cats = sorted(by_cat)
+    picked, depth = [], 0
+    while len(picked) < limit and depth < max(len(v) for v in by_cat.values()):
+        for cat in cats:
+            if depth < len(by_cat[cat]) and len(picked) < limit:
+                picked.append(by_cat[cat][depth])
+        depth += 1
+    picked.sort(key=lambda r: (r["category"], str(r["id"])))
+    return picked
 
 
 def existing_keys(path):
@@ -111,21 +184,27 @@ def generate_one(client, prompt_row, model_key, sample_idx):
     last_error = None
     for attempt in range(MAX_ATTEMPTS):
         try:
-            text = client.generate(
+            result = client.generate_with_meta(
                 prompt_row["question"],
                 max_tokens=MAX_TOKENS,
                 temperature=TEMPERATURE,
                 top_p=TOP_P,
             )
-            if text is None:
-                raise ValueError("provider returned None")
+            if not result.get("text"):
+                raise ValueError(f"empty completion "
+                                 f"(finish_reason={result.get('finish_reason')})")
             return {
                 "prompt_id": prompt_row["id"],
                 "category": prompt_row["category"],
                 "model": model_key,
                 "sample_idx": sample_idx,
                 "question": prompt_row["question"],
-                "completion": text,
+                "completion": result["text"],
+                # Recorded so truncation is MEASURED, not inferred from punctuation.
+                # "length" means the completion hit max_tokens and is cut mid-answer;
+                # the judge would score a truncated answer as the model's answer.
+                "finish_reason": result.get("finish_reason"),
+                "output_tokens": result.get("output_tokens"),
             }
         except Exception as e:  # noqa: BLE001 — record, do not crash the run
             last_error = str(e)
@@ -176,6 +255,7 @@ def main():
     load_env_file(required=["TOGETHER_API_KEY"])
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    check_decoding_config()
 
     clients = {key: get_model_client(key, str(BASE_DIR / "experiments" / "multi_model_config.yaml"))
                for key in MODELS}
@@ -216,6 +296,9 @@ def main():
     completed, failed = 0, 0
     buffer = []
     start = time.time()
+    # Report often enough that a short run shows progress and a slow run is
+    # distinguishable from a wedged one.
+    report_every = max(20, min(500, len(tasks) // 20))
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {
@@ -234,12 +317,13 @@ def main():
                 append_rows(OUTPUT_PATH, buffer)
                 buffer = []
 
-            if completed % 500 == 0 or completed == len(tasks):
+            if completed % report_every == 0 or completed == len(tasks):
                 elapsed = time.time() - start
                 rate = completed / elapsed if elapsed else 0
                 remaining = (len(tasks) - completed) / rate if rate else 0
+                eta = f"{remaining / 3600:.1f}h" if remaining > 5400 else f"{remaining / 60:.0f}m"
                 print(f"  {completed}/{len(tasks)}  failed={failed}  "
-                      f"{rate:.1f}/s  eta={remaining / 60:.0f}m")
+                      f"{rate:.1f}/s  eta={eta}", flush=True)
 
     if buffer:
         append_rows(OUTPUT_PATH, buffer)
@@ -266,6 +350,31 @@ def main():
     for model_key in MODELS:
         print(f"  {model_key:24s} {per_model[model_key]}")
     print(f"  (prompt, model) pairs below k={K_SAMPLES}: {short}")
+
+    # Truncation report (§6.5.4). A completion cut off at max_tokens is judged as if
+    # it were the model's answer, so an asymmetric truncation rate between models
+    # produces asymmetric judge error — which does not average out in a ranking
+    # comparison. Measured from finish_reason, not inferred.
+    print("\ntruncation (finish_reason == 'length'):")
+    rates = {}
+    for model_key in MODELS:
+        ok = [r for r in rows if r["model"] == model_key and not r.get("generation_failed")]
+        if not ok:
+            continue
+        cut = sum(1 for r in ok if r.get("finish_reason") == "length")
+        toks = [r["output_tokens"] for r in ok if r.get("output_tokens") is not None]
+        rates[model_key] = cut / len(ok)
+        median = sorted(toks)[len(toks) // 2] if toks else None
+        print(f"  {model_key:24s} {cut:6d}/{len(ok):<6d} = {cut / len(ok):6.1%}"
+              + (f"   median {median} output tokens" if median else ""))
+    if len(rates) == 2:
+        gap = abs(list(rates.values())[0] - list(rates.values())[1])
+        print(f"  asymmetry between models: {gap:.1%}")
+        if gap > 0.05:
+            print("  WARNING: >5 point truncation gap. The judge scores truncated "
+                  "answers as answers, so this biases one model's P-hat relative to "
+                  "the other. Raise MAX_TOKENS and regenerate, or report it as a "
+                  "confound (PHASE_0.5_SPEC.md §6.5.4).")
 
 
 if __name__ == "__main__":

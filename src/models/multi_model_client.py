@@ -104,6 +104,64 @@ class MultiModelClient:
             print(f"Error generating with {self.provider}/{self.model_name}: {e}")
             raise
     
+    def generate_with_meta(self, prompt: str, max_tokens: int = 200, temperature: float = 0.0,
+                           system_prompt: str = None, top_p: float = None) -> Dict[str, Any]:
+        """Generate a completion and return provider metadata alongside the text.
+
+        Same arguments as generate(). Returns a dict with:
+            text          — the completion string
+            finish_reason — why generation stopped, normalized to the OpenAI vocabulary
+                            ("stop" | "length" | ...). Anthropic's "max_tokens" is
+                            mapped to "length" and "end_turn" to "stop".
+            output_tokens — completion token count as reported by the provider, or None
+
+        generate() discards this metadata, which makes truncation unmeasurable — a
+        caller cannot tell a complete answer from one cut off at max_tokens. Any
+        experiment whose results depend on complete answers should use this instead.
+        """
+        if self.provider == 'anthropic':
+            kwargs = {
+                "model": self.model_name,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            if system_prompt:
+                kwargs["system"] = system_prompt
+            if top_p is not None:
+                kwargs["top_p"] = top_p
+            response = self.client.messages.create(**kwargs)
+            stop_map = {"max_tokens": "length", "end_turn": "stop", "stop_sequence": "stop"}
+            return {
+                "text": response.content[0].text if response.content else "",
+                "finish_reason": stop_map.get(response.stop_reason, response.stop_reason),
+                "output_tokens": getattr(response.usage, "output_tokens", None),
+            }
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        extra = {}
+        if top_p is not None:
+            extra["top_p"] = top_p
+
+        response = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            **extra
+        )
+        choice = response.choices[0]
+        usage = getattr(response, "usage", None)
+        return {
+            "text": choice.message.content or "",
+            "finish_reason": choice.finish_reason,
+            "output_tokens": getattr(usage, "completion_tokens", None) if usage else None,
+        }
+
     def __repr__(self):
         return f"MultiModelClient(provider='{self.provider}', model='{self.model_name}')"
 
