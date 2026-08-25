@@ -1,0 +1,75 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage{graphicx}
+\usepackage{fontspec}
+\usepackage{tikz}
+
+% ── Clean light theme ──────────────────────────────────────
+\definecolor{bglight}{HTML}{FAFAFA}
+\definecolor{titlecolor}{HTML}{1A1A2E}
+\definecolor{subtitlecolor}{HTML}{555566}
+\definecolor{accent}{HTML}{D6364B}
+\definecolor{accentblue}{HTML}{4A90D9}
+\definecolor{footercolor}{HTML}{888899}
+
+\setbeamercolor{background canvas}{bg=bglight}
+\setbeamercolor{normal text}{fg=titlecolor}
+
+% Remove all beamer navigation/chrome
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{frametitle}{}
+
+% Use a clean sans-serif
+\setsansfont{Helvetica Neue}[
+  UprightFont = *,
+  BoldFont = * Bold,
+  ItalicFont = * Italic,
+]
+
+\begin{document}
+
+\begin{frame}
+\begin{tikzpicture}[remember picture, overlay]
+
+  % ── Title ──
+  \node[anchor=north west]
+    at ([xshift=0.7cm, yshift=-0.4cm]current page.north west) {
+      {\fontsize{18}{22}\selectfont\bfseries\color{titlecolor}%
+        The Geometry of Language Model Hallucination}
+  };
+
+  % ── Subtitle ──
+  \node[anchor=north west]
+    at ([xshift=0.7cm, yshift=-1.15cm]current page.north west) {
+      {\fontsize{10.5}{13}\selectfont\color{subtitlecolor}\itshape%
+        Can we tell from the question alone whether an AI will fabricate its answer?}
+  };
+
+  % ── Main figure ──
+  \node[anchor=center]
+    at ([yshift=0.05cm]current page.center) {
+      \includegraphics[width=14.5cm]{thesis/Dissertate-Harvard-LaTeX/figures/v3_category_manifolds_umap.png}
+  };
+
+  % ── Footer: single centered line ──
+  \node[anchor=south]
+    at ([yshift=0.3cm]current page.south) {
+      {\fontsize{8}{10}\selectfont\color{footercolor}%
+        Sein Coray%
+        \hspace{0.12cm}{\color{footercolor!35}|}\hspace{0.12cm}%
+        Computer Science%
+        \hspace{0.12cm}{\color{footercolor!35}|}\hspace{0.12cm}%
+        Advisor: Boaz Barak%
+        \hspace{0.6cm}%
+        Each dot = one question.%
+        \hspace{0.12cm}%
+        {\color{accent}\bfseries Red} = fabricated.%
+        \hspace{0.12cm}%
+        {\color{accentblue}\bfseries Blue} = correct.}
+  };
+
+\end{tikzpicture}
+\end{frame}
+
+\end{document}
