@@ -153,6 +153,19 @@ There's been a burst of "geometry meets hallucination" papers. **None are pre-ge
 - Must have baselines to beat: "here are existing approaches, here's something better"
 
 ### Key new experiment: "Hallucination is a property of the prompt, not the model"
+
+> **⚠️ Superseded 2026-08-24 — historical record, do not use as the current design.**
+> This section preserves Boaz's May 1 wording verbatim. Both the *claim* and the
+> *estimator* below have since been corrected:
+> - **Claim**: use "prompt difficulty ordering is largely model-invariant." The
+>   wording in this heading is false as stated — models differ substantially in
+>   absolute hallucination *rate*.
+> - **Estimator**: pooled Kendall's tau across heterogeneous categories mostly
+>   measures benchmark stratification, not model agreement. Use blocked
+>   within-category τ_b, attenuation-corrected against a measured noise ceiling.
+>
+> Current design: `PHASE_0.5_SPEC.md`. Summary: `PLAN.md` §2.
+
 - Take 100-1000 prompts, 5-10 models
 - For each prompt, sample multiple times per model → compute P(hallucinate) per prompt per model
 - Sort prompts by hallucination probability for each model

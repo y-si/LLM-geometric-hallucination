@@ -26,16 +26,22 @@ Consequences for the existing thesis material:
 
 ## 2. The load-bearing experiment
 
-**"Hallucination is a property of the prompt, not the model."**
+**"Prompt difficulty ordering is largely model-invariant."** Rank prompts by their probability of eliciting a hallucination, and different models produce substantially the same ranking.
 
-Design (Boaz's spec):
+Do **not** write this as "hallucination is a property of the prompt, not the model." That version is false as stated — models differ substantially in absolute hallucination *rate*, and a reviewer will quote it back at you. Rate-level divergence coexists with ordering agreement; the paper's prediction story needs only the latter, and we report the rate differences explicitly.
+
+Design (Boaz's spec, corrected for the confounds in `PHASE_0.5_SPEC.md` §2):
 1. Take 100–1000 prompts, 5–10 models
 2. For each (prompt, model) pair: sample multiple completions → estimate *P(hallucinate)* per prompt per model
 3. For each model: sort prompts by hallucination probability
-4. Compute pairwise **Kendall's tau** between model orderings
-5. **High tau ⇒ hallucination propensity is prompt-driven, not model-driven**
+4. Compute pairwise **blocked within-category Kendall's τ_b** between model orderings, attenuation-corrected against a measured within-model noise ceiling
 
-This is the load-bearing claim for the entire paper. If tau is low, the "predict-before-generate" framing collapses and we need to reframe. **Run this first**, on existing infrastructure (2 models) before scaling.
+Three corrections to Boaz's sketch, all load-bearing:
+- **Within-category, not pooled.** Pooled tau across heterogeneous categories mostly measures benchmark stratification — every model agrees that impossible prompts are harder than factual ones. Report pooled tau for transparency, never as the test.
+- **τ_b, not τ_a.** P̂ takes at most k+1 distinct values, so ties are pervasive.
+- **Correct for finite-k attenuation.** Sampling noise biases observed tau downward, so absolute thresholds are uninterpretable without a measured ceiling.
+
+This is the load-bearing claim for the entire paper. If corrected tau is low, the "predict-before-generate" framing collapses and we need to reframe. **Run this first**, as the 2-model Phase 0.5 pilot, before scaling.
 
 ## 3. What needs to be built
 
@@ -63,10 +69,10 @@ This is the load-bearing claim for the entire paper. If tau is low, the "predict
 
 ## 4. Logistics
 
-- [x] Boaz credits received — **Codex (coding agent), NOT OpenAI API platform**. Helps build the experiment faster (Phase 0–3 development) but does not pay for GPT-5.5 inference calls.
+- [~] Boaz credits received — **deduced to be Codex (coding agent), NOT OpenAI API platform. UNCONFIRMED.** The inference is from the product name plus typical OpenAI billing structure; Boaz has not confirmed it. If correct, credits help build the experiment faster (Phase 0–3 development) but do not pay for GPT-5.5 inference calls. Until confirmed, treat the entire closed-model panel as unfunded.
 - [x] **Sunny re-engagement email sent** (~Aug 24, 2026). Awaiting response.
 - [ ] **Send Boaz email about credits** (Codex vs. API platform; Anthropic/Google institutional access). Draft ready — see `CONTEXT.md`.
-- [ ] Venue: see `DEADLINES.md`. With end-of-August start, **ICML 2027 (~late Jan 2027) is now the realistic primary target**; ICLR 2027 (~early Oct 2026) is a stretch sprint contingent on Phase 1 landing fast.
+- [ ] Venue: see `DEADLINES.md`. **ICML 2027 (~late Jan 2027 est.) is the honest primary target.** ICLR 2027 was a stretch gated on Phase 0.5 + advisor replies landing in the first week of September; that didn't happen.
 
 ---
 
@@ -81,6 +87,8 @@ Phases are sequenced by dependency, not by calendar. Phases 3 and 4 can parallel
 - [ ] Verify actual venue deadlines (see `DEADLINES.md`)
 - [ ] Lock the model panel (proposal below; **may need to drop OpenAI models if API access isn't covered**)
 - [ ] Pick the external dataset to port to — leading candidate: **PopQA** (matches our entity-obscurity framing)
+
+**Currently funded panel: Mixtral 8x7B + Llama 4 Maverick (Together AI). That is two models.** All other panel members below are gated on the Boaz credit reply and on any Harvard institutional API access. The 8-model table is a proposal, not a plan of record.
 
 **Working model panel proposal (8 models, June 2026 SOTA):**
 
@@ -104,35 +112,40 @@ Notes:
 ### Phase 0.5 — Kendall's tau pilot (2-model sanity check)
 *Goal: cheap early signal on whether the paper's premise holds. Runs while waiting on Sunny + Boaz.*
 
+**Full design is pre-registered in `PHASE_0.5_SPEC.md` (2026-08-24, written before any data exists). That document is authoritative; this is a summary.**
+
 Uses only existing infrastructure (Mixtral 8x7B + Llama 4 Maverick via Together AI). No new credits, no sign-off needed.
 
-- 100 prompts from V5 test set, stratified across the 7 categories (~15 per category)
-- k=10 samples per (prompt, model) at temperature 0.7
-- Judge: single-judge proxy (GPT-5.5-mini) for cost — this is a pilot, not final numbers
-- Per-prompt P(hallucinate) = fraction of k=10 completions judged hallucination
-- Rank prompts by P(hallucinate) per model
-- Compute Kendall's tau + Spearman between the two orderings; bootstrap 1000× for 95% CI
+- **Claim under test**: *prompt difficulty ordering is largely model-invariant.* (NOT "hallucination is a property of the prompt, not the model" — that version is false as stated; models differ substantially in absolute rate, and the pilot measures that too.)
+- **Prompts**: 331 from the two viable borderline categories (`obscure_real` n=162, `plausible_fake` n=169), drawn from V3 (the held-out test set, 431 unique, verified zero overlap with V5 train) plus V5-train-clean top-up from the standalone pool files. Deduplicated on question text. `borderline_edge_factual` is excluded from the decision surface (n_eff=5 unique in V3, 85% of its pool file is in V5 train, floor effect) and retained only as a documented degenerate-variance control.
+- **k=20** samples per (prompt, model) at T=0.7 — attenuation is driven by k, and cost is not the constraint.
+- **Judge**: a funded third-family open model on Together (candidate `Qwen/Qwen2.5-72B-Instruct`). NOT a Llama-family judge — that shares a family with Model B and would bias its P̂ asymmetrically. Inherits the March 2026 failure rule: failed judge calls are never assigned a label and never counted.
+- **Primary statistic**: blocked **within-category** τ_b (only same-category prompt pairs counted; 27,237 pairs), attenuation-corrected against a within-model split-half noise ceiling. Nested bootstrap over prompts *and* completions, 1000×.
+- **Reported alongside**: pooled τ_b on all 7 V3 categories, explicitly labelled stratification-inflated and excluded from the decision. The pooled-vs-blocked gap is a candidate paper figure.
 
-**Interpretation** (guides Phase 1 decision):
-- τ > 0.7: strong signal — invest in 8-model scale-up confidently
-- τ 0.4–0.7: moderate — proceed but frame more carefully
-- τ 0.2–0.4: weak — flag for Sunny, may need to reframe
-- τ < 0.2: red flag — reframe before spending real money
+**Pre-registered decision rule** (binding; see spec §7 for the derivation of the thresholds):
+- **GO** to Phase 1 if τ_corr ≥ 0.50 **and** bootstrap 95% CI lower bound ≥ 0.30 — i.e. at least half the variance in prompt-level difficulty is model-invariant.
+- **NO-GO** otherwise: take the result to Sunny and reframe before spending on the panel.
+- **MEASUREMENT FAILURE** if either model's split-half reliability ≤ 0.40 — inconclusive, *not* negative. Escalate k to 40 and re-run rather than concluding anything.
 
-Cost: under $100. Time: 1–2 days.
+Cost: ~$15–25. Time: 1–2 days, plus ~2h hand-labelling 150 completions for judge validation.
 
-**Deliberate caveats to acknowledge with Sunny**:
+**Why this replaced the earlier sketch**: pooled tau across 7 heterogeneous categories measures benchmark stratification, not model agreement; duplicate prompts inflate tau; the old 0.7/0.4/0.2 thresholds had no derivation and ignored finite-k attenuation; the specified judge (`GPT-5.5-mini`) does not exist and OpenAI access is unfunded; and the prompt source was wrong (V5 is train, V3 is test). Full reasoning in spec §2.
+
+**Deliberate caveats to acknowledge with Sunny** (full list in spec §9):
 - 2 open models trained with similar data may have inflated agreement (necessary-but-not-sufficient test)
 - Low tau on this pilot is more informative than high tau
 - Pilot is a sanity check, not a validation
+- Primary decision surface is 2 borderline categories only; generalization untested
 
 ### Phase 1 — Prompt-vs-model experiment at scale (load-bearing)
-*Goal: prove hallucination is prompt-driven across a heterogeneous panel.*
-- Extend the pilot to the full 5–10 model panel
-- 500 prompts (still stratified), k=10 samples
-- Full judge pipeline (3-judge consensus or single-judge — decide with Sunny)
-- Compute pairwise Kendall's tau matrix + bootstrap CIs
-- **Go/no-go decision**: if tau matrix is dominated by high values, proceed. If not, reframe.
+*Goal: establish that prompt difficulty ordering is largely model-invariant across a heterogeneous panel.*
+- **Entry condition: Phase 0.5 returned GO** under the pre-registered rule in `PHASE_0.5_SPEC.md` §7. Do not start otherwise.
+- Extend the pilot to the full 5–10 model panel (**funding-gated — currently 2 models**)
+- 500 prompts (still stratified), k=20 samples — inherit the pilot's estimator, not Boaz's original sketch
+- Full judge pipeline (3-judge consensus or single judge — decide with Sunny). Third-family judge requirement carries over: the judge must not share a model family with any panel member.
+- Compute the pairwise blocked within-category τ_b matrix, attenuation-corrected, with nested-bootstrap CIs
+- **Go/no-go decision rule must be pre-registered before the run**, the same way Phase 0.5's was. With an 8-model panel that means 28 pairs — state the aggregate statistic (e.g. minimum corrected pairwise tau, not mean) and the threshold *before* seeing data.
 
 ### Phase 2 — Geometric prediction at scale
 *Goal: show density predicts the prompt-level P(hallucinate) from Phase 1.*
@@ -163,7 +176,7 @@ Cost: under $100. Time: 1–2 days.
 - (Optional) Model routing: high-risk prompts → stronger model
 
 ### Phase 6 — Writing
-- 8-page NeurIPS-format draft (template in `thesis_reference/`)
+- 8-page NeurIPS-format draft (style files to be fetched from the official venue site — the old `thesis_reference/` pointer was stale, that directory is not in the repo)
 - Related work positioning vs. concurrent work
 - Sunny review pass
 - Boaz review pass
@@ -176,16 +189,19 @@ Cost: under $100. Time: 1–2 days.
 Today: **end of August 2026** (~Aug 24). We are ~4 months post-Boaz-meeting. Not "on schedule" but not catastrophic — post-grad summer lulls are normal. What matters is the reset from here.
 
 - **NeurIPS 2026 workshops**: most deadlines already passed or imminent. Check `DEADLINES.md` for any late ones. Not the primary target.
-- **ICLR 2027 main (~early Oct)**: ~5–6 weeks out. Aggressive sprint. Only realistic if Phase 0.5 pilot lands clean AND Sunny + Boaz respond in the next 2 weeks. Would require compressing Phases 3, 4, and 5.
-- **ICML 2027 main (~late Jan)**: ~22 weeks out. Comfortable, full experimental program. **This is now the realistic primary target.**
+- **ICLR 2027 main (~early Oct)**: **effectively off the table.** The sprint was gated on the pilot landing clean and both advisors replying within the first week of September. Neither happened. Retained only as an opportunistic option if the pilot returns a strong GO in the next few days.
+- **ICML 2027 main (~late Jan)**: ~22 weeks out. Comfortable, full experimental program. **This is the primary target.**
 
-What's NOT on the table: skipping Phase 0.5 or Phase 1's go/no-go decision. The Kendall's tau result has to land before we commit hard to the framing, regardless of deadline pressure.
+What's NOT on the table: skipping Phase 0.5, or overriding a NO-GO from its pre-registered decision rule because of deadline pressure. The corrected tau result has to land before we commit hard to the framing.
 
 ## 7. Open questions to resolve before Phase 1
 
-- Sample budget per prompt (5? 10? 20?) — cost vs. statistical resolution
-- Final model panel composition (depends on Boaz credit clarification)
-- Hallucination judging at scale: reuse the 3-judge consensus or switch to a cheaper proxy?
+Resolved for the pilot in `PHASE_0.5_SPEC.md`; still open for Phase 1:
+
+- Sample budget per prompt — **pilot uses k=20** (attenuation is driven by k and cost is negligible on open models). Revisit for closed models where per-token cost actually binds.
+- Final model panel composition (depends on Boaz credit clarification + institutional access)
+- Hallucination judging at scale: reuse the 3-judge consensus or a single third-family judge? Whichever, the judge must not share a family with any panel member, and the failed-call contract in `CONTEXT.md` applies.
 - Which external dataset (PopQA leading, alternatives: SimpleQA, FreshQA)
 - Co-authorship: just Boaz + Sunny + me, or anyone else?
-- Venue commitment (ICML primary, ICLR stretch — decide after Phase 1 result)
+- Venue commitment (ICML primary — decide finally after Phase 1 result)
+- Phase 1's aggregate tau statistic and threshold, pre-registered before the run

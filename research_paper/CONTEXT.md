@@ -4,6 +4,11 @@
 
 Last updated: 2026-08-24
 
+> **Numbers in this file are not ground truth.** Several were copied verbatim from
+> local auto-memory and were wrong (the TruthfulQA count was off by 4×). Before
+> putting any number from this file into the paper, verify it against the repo.
+> Corrected values below are marked *(verified 2026-08-24)*.
+
 ---
 
 ## Communication style (ALWAYS APPLY)
@@ -34,11 +39,11 @@ Question everything. Double-check everything. Triple-check statistical claims.
 
 ## Project state at a glance
 
-- **Thesis**: FROZEN. Submitted Mar 27, 2026. Lives in `thesis/`. Do NOT edit unless explicitly asked.
+- **Thesis**: FROZEN. Submitted Mar 27, 2026. Gitignored — exists on the main machine only, not in any pulled checkout. Do NOT edit.
 - **Paper**: active. Lives in `research_paper/`. Reframed by Boaz on May 1, 2026.
-- **Current phase**: Phase 0 (Setup). See `PLAN.md` for the phased roadmap.
-- **Blocking**: Sunny response (email sent ~Aug 24, 2026), Boaz credit clarification (email draft below, unsent).
-- **Realistic primary venue target**: ICML 2027 (~late Jan 2027 deadline). ICLR 2027 is a stretch sprint.
+- **Current phase**: Phase 0 (Setup) → Phase 0.5 pilot design complete and pre-registered in `PHASE_0.5_SPEC.md`. Next: write pilot code.
+- **Blocking**: Sunny response (email sent ~Aug 24, 2026), Boaz credit clarification (email draft below, unsent). Neither blocks the Phase 0.5 pilot, which runs entirely on funded Together AI infrastructure.
+- **Venue**: ICML 2027 (~late Jan 2027 est.) is the honest primary target. ICLR 2027 was a stretch that was already gated on things that didn't happen — see `DEADLINES.md`.
 
 ---
 
@@ -50,7 +55,11 @@ Question everything. Double-check everything. Triple-check statistical claims.
 - Three contributions: (1) pre-generation prediction benchmark, (2) computationally cheap geometric method, (3) practical applications (inference-time flagging, training data curation, model routing).
 - Must beat or Pareto-dominate existing baselines (semantic entropy, P(true), self-consistency, probe-based).
 
-**Load-bearing claim** the paper depends on: *"Hallucination is a property of the prompt, not the model."* Operationalized by computing pairwise Kendall's tau between per-model rankings of prompt hallucination probability. High tau ⇒ prompt-driven. Low tau ⇒ paper's framing collapses.
+**Load-bearing claim** the paper depends on: *"Prompt difficulty ordering is largely model-invariant."* If you rank prompts by their probability of eliciting a hallucination, different models produce substantially the same ranking.
+
+Do **not** state this as "hallucination is a property of the prompt, not the model." That version is false as written — models differ substantially in absolute hallucination *rate*, and a reviewer will quote it back at you. Rate-level divergence is fully compatible with ordering agreement, and the paper's prediction story needs only the latter.
+
+Operationalized by blocked **within-category** Kendall's τ_b between per-model rankings of prompt hallucination probability, attenuation-corrected against a measured noise ceiling. Pooled-across-categories tau is *not* a test of the claim — it mostly measures benchmark stratification. Full estimator and pre-registered decision rule: `PHASE_0.5_SPEC.md`.
 
 The thesis's fine-tuning story (Ch 7) is demoted from co-equal claim to a downstream-application subsection.
 
@@ -58,9 +67,11 @@ The thesis's fine-tuning story (Ch 7) is demoted from co-equal claim to a downst
 
 ## Advisor context
 
-- **Boaz Barak** (primary faculty advisor): approved publication path May 1, 2026. Has limited time. Advises from a distance. Provided the reframe. Provided Codex credits.
+- **Boaz Barak** (primary faculty advisor): approved publication path May 1, 2026. Has limited time. Advises from a distance. Provided the reframe. Provided credits — **scope unconfirmed**, see below.
 - **Sunny Qin** (PhD student, advised by Sham Kakade + David Alvarez-Melis): primary technical advisor for the paper. Shaped the thesis experimental design substantially. Re-engagement email sent ~Aug 24, 2026, awaiting response.
 - **Co-authorship**: unresolved. Sunny should be co-author given her design contribution. Confirm with her.
+
+**Credit scope is deduced, not confirmed.** The inference that Boaz's credits cover Codex (the coding agent) but *not* OpenAI API platform access comes from the product name plus typical OpenAI billing structure — Boaz has not confirmed it. Until he does, treat the whole closed-model panel as unfunded. Email draft below.
 
 Detailed advisor conversation history is in local auto-memory: `~/.claude/projects/-Users-sein-.../memory/advisor_comms.md` (does NOT sync via git).
 
@@ -72,19 +83,27 @@ Detailed advisor conversation history is in local auto-memory: `~/.claude/projec
 |---|---|
 | `research_paper/CONTEXT.md` | This file — session entry point |
 | `research_paper/PLAN.md` | Phased roadmap for the paper |
-| `research_paper/DEADLINES.md` | Venue deadlines + working-backwards timelines |
+| `research_paper/PHASE_0.5_SPEC.md` | **Pre-registered** Phase 0.5 pilot design, estimator, and binding decision rule |
+| `research_paper/DEADLINES.md` | Venue deadlines + working-backwards timeline |
 | `research_paper/RESEARCH_PAPER.md` | Boaz meeting notes (May 1, 2026) — historical context for the reframe |
-| `JUDGE_CONTAMINATION_ISSUE.md` | Methodology bug caught + fixed in thesis; paper inherits clean data |
-| `thesis/` | FROZEN — do not edit |
+| `src/models/judge_client.py` | Single-judge client. **Canonical source** for the judge-failure contract (see cautions below) |
+| `src/models/consensus_judge.py` | Multi-judge majority vote with failed-judge exclusion |
+| `src/models/multi_model_client.py` | Together AI wiring (`TOGETHER_API_KEY`, `api.together.xyz/v1`) |
+| `data/prompts/prompts.jsonl` | **V3 — the held-out test set.** 449 rows / 431 unique questions *(verified 2026-08-24)* |
+| `data/prompts/v5_all.jsonl` | **V5 — the training set.** 2,430 prompts. Zero question overlap with V3 *(verified 2026-08-24)* |
 | `README.md` | Project-wide overview (from Dec 2025 class-project era, dated but still orients newcomers) |
+
+Not in any pulled checkout: the frozen thesis and the judge-contamination incident writeup are both gitignored ("Thesis and private documents") and exist only on the main machine. Their load-bearing content is inlined below, so no synced session needs them.
 
 ---
 
 ## Do NOT do
 
-- ❌ Edit any file in `thesis/` unless explicitly asked. The thesis is shipped.
-- ❌ Start expensive multi-model inference experiments before Sunny signs off on the design.
+- ❌ Edit the frozen thesis (gitignored; exists on the main machine only). The thesis is shipped.
+- ❌ Start expensive multi-model inference experiments before Sunny signs off on the design. (The Phase 0.5 pilot is exempt — it runs on already-funded Together AI infrastructure at ~$15–25.)
 - ❌ Chase GPT-5.6 / Llama 5 / other newer model releases — lock to current model versions.
+- ❌ Cite any number from this file without tracing it to a file in the repo. See the dataset table above for what happened last time.
+- ❌ Read `result["label"]` from a judge call without checking `result["failed"]`. See the judge contamination section.
 - ❌ Add features beyond what's asked. Bug fixes don't need surrounding cleanup. One-shot ops don't need helpers.
 - ❌ Over-apologize in advisor emails for the 4-month gap. One throwaway line max, then move on.
 - ❌ Commit `.env` or any file that might contain credentials.
@@ -107,11 +126,72 @@ Snapshot as of June 2026. Re-verify before committing model choices.
 
 ## Known methodology cautions (thesis-era, still relevant)
 
-**Judge API failure contamination** — Fixed Mar 11 and Mar 21, 2026. Silent judge failures used to inject fake "Refused" votes. Fixed in `judge_client.py` and `consensus_judge.py`. Full details in `JUDGE_CONTAMINATION_ISSUE.md`. Any new judge pipeline for the paper must exclude failed judges from the vote.
+### Judge API failure contamination — the incident and the contract
 
-**CoT contamination** — CoT Verification was excluded from the thesis (API failure artifact) but is STILL PRESENT in several scripts and CSVs. Before adding any number/figure/table: trace to source → verify it excludes `cot_verification`. Known contaminated: `scripts/analyze_v5_prefixes.py`, `src/evaluation/prefix_analysis.py`, `v5_prefix_metrics.csv`, `v5_category_metrics.csv`.
+Caught and fixed Mar 11 and Mar 21, 2026. **Silent judge-API failures defaulted to
+`label=3` (Refused) and were counted as votes**, injecting fabricated refusals into
+the results. The incident writeup is gitignored (main machine only); the
+load-bearing content is here, and the canonical source of truth for the fix is
+`src/models/judge_client.py` and `src/models/consensus_judge.py`.
 
-**Clean data**: V3 (449 prompts), TruthfulQA (3,268), cross-cat ablation (2,694) — verified 0 failures.
+**The contract any new judge pipeline must inherit: a failed judge call is never
+assigned a label and never counted.**
+
+How the tracked code implements it:
+- `judge_client.py` still *returns* `{"label": 3, ...}` on failure, but tags the
+  dict `"failed": True`. The label value is garbage; the flag is the guard.
+- `consensus_judge.py` filters on that flag (`real_results = [r for r in results if
+  not r.get("failed")]`) and votes only the survivors.
+
+**Two live footguns in that design — read before building on it:**
+
+1. **`judge_client.py` returns a plausible-looking label on failure.** Any consumer
+   that reads `result["label"]` without checking `result["failed"]` silently
+   reintroduces the original bug. The flag is opt-in, not enforced.
+2. **`consensus_judge.py:63` falls back to voting the failed results when *every*
+   judge fails** (`vote_results = real_results if real_results else results`), and
+   the returned dict carries no failure flag — so the caller cannot distinguish
+   "all judges errored" from "genuine consensus Refused." **With a single judge
+   this fires on every failure**, reproducing the original contamination exactly.
+   A single-judge pipeline must therefore *not* route through `ConsensusJudge`'s
+   fallback; it must treat `failed: True` as "no label exists" and reduce the
+   effective sample size. This is specified for the pilot in
+   `PHASE_0.5_SPEC.md` §5.1.
+
+### CoT contamination
+
+CoT Verification was excluded from the thesis (API failure artifact) but is STILL
+PRESENT in several scripts and CSVs. Before adding any number/figure/table: trace
+to source → verify it excludes `cot_verification`. Known contaminated:
+`scripts/analyze_v5_prefixes.py`, `src/evaluation/prefix_analysis.py`,
+`v5_prefix_metrics.csv`, `v5_category_metrics.csv`.
+
+### Datasets — corrected counts
+
+Previous versions of this file had these wrong. *(All verified against the repo 2026-08-24.)*
+
+| Set | File | Count | Role |
+|---|---|---|---|
+| **V3** | `data/prompts/prompts.jsonl` | 449 rows, **431 unique questions** | **Held-out test set.** Zero question overlap with V5 train |
+| **V5** | `data/prompts/v5_all.jsonl` | 2,430 prompts, all unique | **Training set** |
+| TruthfulQA | `data/prompts/truthfulqa.jsonl` | **817 prompts** | External comparison |
+| Borderline pool | `data/prompts/borderline_*.jsonl` | 400 (100/150/150) | Separate generation from V3's borderline prompts; partially inside V5 train |
+
+Corrections to note:
+- **TruthfulQA is 817 prompts, not 3,268.** The old figure was 817 × 4 = 3,268
+  *evaluations* from an earlier pipeline, mislabelled as prompts.
+- **V5 is the training set, V3 is the test set.** Earlier docs had this backwards.
+- **V3 contains duplicate questions.** 449 rows collapse to 431 unique.
+  `borderline_edge_factual` is the worst case: 20 rows, **5 unique questions**
+  (e.g. `borderline_edge_0/_5/_10/_15` are all "What celestial body do humans
+  primarily inhabit?"). Deduplicate on question text before any per-prompt
+  analysis — duplicates share an expected value under every model and will inflate
+  rank-correlation statistics.
+- **"Cross-cat ablation (2,694)"** from the old version of this file could not be
+  traced to any file in the repo. Treat as unverified until someone finds its
+  source; do not cite it.
+- Failure-rate claims ("verified 0 failures") were inherited from auto-memory and
+  have **not** been re-verified. Re-check before citing.
 
 ---
 
