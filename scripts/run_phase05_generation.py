@@ -40,6 +40,7 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from src.models.multi_model_client import get_model_client  # noqa: E402
+from src.utils.env import load_env_file  # noqa: E402
 
 MANIFEST_PATH = BASE_DIR / "data" / "prompts" / "phase05_manifest.jsonl"
 OUTPUT_DIR = BASE_DIR / "results" / "phase05"
@@ -168,6 +169,9 @@ def main():
     parser.add_argument("--retry-failed", action="store_true",
                         help="Also retry triples previously recorded as failed")
     args = parser.parse_args()
+
+    # Both models are Together-hosted, so that is the only credential needed.
+    load_env_file(required=["TOGETHER_API_KEY"])
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

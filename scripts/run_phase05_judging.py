@@ -53,6 +53,7 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from src.models.judge_client import JudgeClient  # noqa: E402
+from src.utils.env import load_env_file  # noqa: E402
 
 MANIFEST_PATH = BASE_DIR / "data" / "prompts" / "phase05_manifest.jsonl"
 OUTPUT_DIR = BASE_DIR / "results" / "phase05"
@@ -180,6 +181,9 @@ def main():
     parser.add_argument("--retry-failed", action="store_true",
                         help="Also retry completions whose judgment previously failed")
     args = parser.parse_args()
+
+    # The judge is Together-hosted (§5), so that is the only credential needed.
+    load_env_file(required=["TOGETHER_API_KEY"])
 
     check_judge_family()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
