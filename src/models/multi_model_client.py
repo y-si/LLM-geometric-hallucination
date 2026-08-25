@@ -5,7 +5,6 @@ Unified interface for OpenAI, Anthropic, and Together AI models.
 
 import os
 from typing import Optional, Dict, Any
-import anthropic
 from openai import OpenAI
 
 
@@ -27,6 +26,9 @@ class MultiModelClient:
         if self.provider == 'openai':
             self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'), timeout=60.0)
         elif self.provider == 'anthropic':
+            # Imported lazily: `anthropic` is not in requirements.txt, and
+            # Together-only / OpenAI-only callers must not need it installed.
+            import anthropic
             self.client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'), timeout=60.0)
         elif self.provider == 'together':
             # Together uses OpenAI-compatible API
@@ -38,7 +40,7 @@ class MultiModelClient:
         else:
             raise ValueError(f"Unknown provider: {provider}")
     
-    def generate(self, prompt: str, max_tokens: int = 200, temperature: float = 0.0, system_prompt: str = None) -> str:
+    def generate(self, prompt: str, max_tokens: int = 200, temperature: float = 0.0, system_prompt: str = None, top_p: float = None) -> str:
         """Generate text completion.
 
         Args:
@@ -46,6 +48,9 @@ class MultiModelClient:
             max_tokens: Maximum tokens in response.
             temperature: Sampling temperature.
             system_prompt: Optional system prompt prepended to the conversation.
+            top_p: Optional nucleus sampling parameter. Omitted from the request when
+                None, so provider defaults are unchanged for existing callers. Pass
+                explicitly when the decoding config is pre-registered.
         """
         try:
             if self.provider == 'anthropic':
@@ -57,6 +62,8 @@ class MultiModelClient:
                 }
                 if system_prompt:
                     kwargs["system"] = system_prompt
+                if top_p is not None:
+                    kwargs["top_p"] = top_p
                 response = self.client.messages.create(**kwargs)
                 return response.content[0].text
             else:
@@ -66,13 +73,18 @@ class MultiModelClient:
                     messages.append({"role": "system", "content": system_prompt})
                 messages.append({"role": "user", "content": prompt})
 
+                extra = {}
+                if top_p is not None:
+                    extra["top_p"] = top_p
+
                 # Newer OpenAI models (o1, gpt-4o) prefer max_completion_tokens
                 try:
                     response = self.client.chat.completions.create(
                         model=self.model_name,
                         messages=messages,
                         max_tokens=max_tokens,
-                        temperature=temperature
+                        temperature=temperature,
+                        **extra
                     )
                 except Exception as e:
                     if "max_tokens" in str(e) and "max_completion_tokens" in str(e):
@@ -81,7 +93,8 @@ class MultiModelClient:
                             model=self.model_name,
                             messages=messages,
                             max_completion_tokens=max_tokens,
-                            temperature=temperature
+                            temperature=temperature,
+                            **extra
                         )
                     else:
                         raise e
