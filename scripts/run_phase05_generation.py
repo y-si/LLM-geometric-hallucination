@@ -46,13 +46,15 @@ MANIFEST_PATH = BASE_DIR / "data" / "prompts" / "phase05_manifest.jsonl"
 OUTPUT_DIR = BASE_DIR / "results" / "phase05"
 OUTPUT_PATH = OUTPUT_DIR / "completions.jsonl"
 
-# §3 — the two funded models. Keys resolve via experiments/multi_model_config.yaml.
-# Maverick is the FP4 build: Together retired the FP8 serverless endpoint (verified
-# 2026-08-25, only -FP4 is served). The thesis ran FP8, so absolute hallucination
-# rates here are NOT comparable to thesis-era Maverick numbers. Tolerable because the
-# pilot's claim is about prompt-difficulty ORDERING, not rates — but logged in
-# PHASE_0.5_SPEC.md §9 as a limitation.
-MODELS = ["mixtral-8x7b", "llama-4-maverick-17b-fp4"]
+# §3 — the two evaluated models. Keys resolve via experiments/multi_model_config.yaml.
+# Availability verified 2026-08-25 by probing with real 1-token requests: Together's
+# serverless tier on this account serves exactly three chat models (these two plus
+# openai/gpt-oss-20b). Both thesis models — Mixtral-8x7B and every Llama-4-Maverick
+# build — are dedicated-endpoint-only, so NEITHER of these is a thesis model and no
+# thesis-era rate is comparable to this pilot's. Upside: Meta-dense vs OpenAI-MoE is
+# far more separated than the original Mixtral/Maverick pair, which weakens the
+# shared-pretraining critique. See PHASE_0.5_SPEC.md §3.1 and §9.
+MODELS = ["llama-3.3-70b-turbo", "gpt-oss-120b"]
 
 # §6.1 / §3 — pre-registered decoding config. Do not change mid-run.
 K_SAMPLES = 20

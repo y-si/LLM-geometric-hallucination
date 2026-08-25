@@ -259,5 +259,6 @@ Ready to send. Subject: "Quick question on the credits"
 
 - Auto-memory at `~/.claude/projects/.../memory/` does NOT sync via git. That content is mirrored here in CONTEXT.md and in the other repo docs. If you edit CONTEXT.md, also update `~/.claude/projects/.../memory/MEMORY.md` on this machine so the local auto-memory stays in sync.
 - Local `.env` with API keys must be reconfigured per machine (never committed).
-- Together AI is used for open-model inference (Mixtral, Llama). API key required.
+- Together AI is used for open-model inference. **Verified 2026-08-25: this account's serverless tier serves exactly three chat models** — `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`. Everything else, including both thesis models (Mixtral 8x7B, all Llama-4-Maverick builds) and every Qwen build, is dedicated-endpoint-only (bills per running minute). `/v1/models` lists dedicated-only models too, so it is **not** an availability check — probe with a real 1-token request instead.
+- Anthropic API is used for the Phase 0.5 judge (`claude-haiku-4-5`), because family independence from the evaluated models is unsatisfiable within Together's serverless tier. Requires `ANTHROPIC_API_KEY`; bills separately from Together.
 - `python3` not `python` on the main machine — verify on any new machine.

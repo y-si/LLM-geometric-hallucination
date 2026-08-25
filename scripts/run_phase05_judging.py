@@ -26,10 +26,16 @@ inference-time gate acts on. Dropping refusals would condition on the model havi
 attempted an answer and introduce a selection effect. P-hat is computed downstream in
 the analysis script, not here; this script only produces labels.
 
-Judge must be a THIRD-FAMILY model (§5): not Mistral (Model A) and not Llama
-(Model B), because family-level self-preference would bias one model's P-hat
-asymmetrically, and differential per-model judge error does not average out in a
-cross-model ranking comparison.
+Judge must share no family with EITHER evaluated model (§5), because family-level
+self-preference would bias one model's P-hat asymmetrically, and differential
+per-model judge error does not average out in a cross-model ranking comparison.
+Together's serverless tier on this account offers only Meta and OpenAI models, so that
+requirement is unsatisfiable there — the judge runs on the Anthropic API instead
+(claude-haiku-4-5, ~$27 for this run, billed separately from the Together balance).
+The guard derives forbidden family tokens from the models actually present in the
+completions file, so it tracks §3 automatically rather than drifting.
+
+Requires ANTHROPIC_API_KEY in .env and the `anthropic` package.
 
 Output is append-only JSONL at results/phase05/judgments.jsonl, resumable: re-running
 skips any (prompt_id, model, sample_idx) already judged successfully.
@@ -60,15 +66,33 @@ OUTPUT_DIR = BASE_DIR / "results" / "phase05"
 COMPLETIONS_PATH = OUTPUT_DIR / "completions.jsonl"
 OUTPUT_PATH = OUTPUT_DIR / "judgments.jsonl"
 
-# §5 — third-family judge. VERIFIED AVAILABLE on Together 2026-08-25 against the live
-# model list. Documented fallbacks if it is ever retired: DeepSeek V3 or Command R+
-# (both third-family relative to Mistral and Llama). Run --preflight after any change.
-JUDGE_MODEL = "Qwen/Qwen2.5-72B-Instruct-Turbo"
-JUDGE_PROVIDER = "together"
+# §5 — third-VENDOR judge on the Anthropic API, not Together. With only Meta and
+# OpenAI models on Together's serverless tier (verified 2026-08-25), family
+# independence is unsatisfiable there: every available judge would share a family with
+# one evaluated model. claude-haiku-4-5 is $1/$5 per M tokens, the cheapest Anthropic
+# model, ~$27 for this run — billed separately from the Together balance.
+# Do NOT add prompt caching: Haiku 4.5's minimum cacheable prefix is 4096 tokens and
+# the judge system prompt is well under that, so a marker would silently do nothing.
+JUDGE_MODEL = "claude-haiku-4-5"
+JUDGE_PROVIDER = "anthropic"
 JUDGE_TEMPERATURE = 0.0
 
-# Families of the evaluated models — the judge must not be one of these (§5).
-FORBIDDEN_JUDGE_SUBSTRINGS = ["mistral", "mixtral", "llama", "meta-llama"]
+# §5 — family tokens are DERIVED from the models actually present in the completions
+# file, not hardcoded, so this guard cannot drift out of sync with §3 when the model
+# panel changes. Maps a config key or model id to the vendor/family words that must
+# not appear in the judge id.
+FAMILY_TOKENS = {
+    "llama": ["llama", "meta"],
+    "meta": ["llama", "meta"],
+    "mistral": ["mistral", "mixtral"],
+    "mixtral": ["mistral", "mixtral"],
+    "gpt-oss": ["gpt-oss", "openai", "gpt"],
+    "openai": ["gpt-oss", "openai", "gpt"],
+    "qwen": ["qwen"],
+    "deepseek": ["deepseek"],
+    "gemma": ["gemma", "google"],
+    "claude": ["claude", "anthropic"],
+}
 
 K_SAMPLES = 20
 MAX_WORKERS = 8
@@ -91,17 +115,45 @@ def append_rows(path, rows):
                 f.write(json.dumps(row, sort_keys=True) + "\n")
 
 
-def check_judge_family():
-    """§5: refuse to run with a judge that shares a family with either model."""
-    lowered = JUDGE_MODEL.lower()
-    hits = [s for s in FORBIDDEN_JUDGE_SUBSTRINGS if s in lowered]
-    if hits:
-        sys.exit(
-            f"REFUSING TO RUN: judge {JUDGE_MODEL!r} matches {hits}, which shares a "
-            "model family with an evaluated model. Family self-preference biases that "
-            "model's P-hat asymmetrically and does not average out in a ranking "
-            "comparison. See PHASE_0.5_SPEC.md §5."
-        )
+def families_of(name):
+    """Vendor/family tokens implied by a model key or id."""
+    lowered = name.lower()
+    tokens = set()
+    for needle, family in FAMILY_TOKENS.items():
+        if needle in lowered:
+            tokens.update(family)
+    return tokens
+
+
+def check_judge_family(evaluated_models):
+    """§5: refuse to run if the judge shares a family with any evaluated model.
+
+    Derives families from the models actually present in the completions file, so the
+    guard tracks §3 automatically instead of relying on a hardcoded list.
+    """
+    judge_families = families_of(JUDGE_MODEL)
+    if not judge_families:
+        sys.exit(f"REFUSING TO RUN: cannot determine the family of judge "
+                 f"{JUDGE_MODEL!r}. Add it to FAMILY_TOKENS so the §5 independence "
+                 "check can be enforced rather than silently skipped.")
+
+    for model in sorted(evaluated_models):
+        model_families = families_of(model)
+        if not model_families:
+            sys.exit(f"REFUSING TO RUN: cannot determine the family of evaluated "
+                     f"model {model!r}. Add it to FAMILY_TOKENS.")
+        shared = judge_families & model_families
+        if shared:
+            sys.exit(
+                f"REFUSING TO RUN: judge {JUDGE_MODEL!r} shares family {sorted(shared)} "
+                f"with evaluated model {model!r}. Family self-preference biases that "
+                "model's P-hat asymmetrically, and differential per-model judge error "
+                "does not average out in a ranking comparison. See "
+                "PHASE_0.5_SPEC.md §5."
+            )
+
+    print(f"judge family check: {JUDGE_MODEL} ({sorted(judge_families)}) shares no "
+          f"family with {sorted(evaluated_models)}")
 
 
 def existing_keys(path):
@@ -158,8 +210,8 @@ def preflight(judge, completions, ground_truths):
     row = judge_one(judge, sample, ground_truths[sample["prompt_id"]])
     if row.get("judge_failed"):
         print(f"  FAIL  {row.get('error')}")
-        print("\nVerify the model ID and your access at together.ai/models. "
-              "Documented fallbacks: DeepSeek V3, Command R+.")
+        print("\nCheck that ANTHROPIC_API_KEY is set in .env and that the `anthropic` "
+              "package is installed (pip3 install anthropic).")
         return False
 
     print(f"  prompt   : {sample['question'][:70]}")
@@ -182,10 +234,9 @@ def main():
                         help="Also retry completions whose judgment previously failed")
     args = parser.parse_args()
 
-    # The judge is Together-hosted (§5), so that is the only credential needed.
-    load_env_file(required=["TOGETHER_API_KEY"])
+    # The judge runs on the Anthropic API (§5), not Together.
+    load_env_file(required=["ANTHROPIC_API_KEY"])
 
-    check_judge_family()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     manifest = read_jsonl(MANIFEST_PATH)
@@ -197,6 +248,9 @@ def main():
     if not completions:
         sys.exit(f"No completions at {COMPLETIONS_PATH}. "
                  "Run scripts/run_phase05_generation.py first.")
+
+    # §5 independence check, against the models actually generated — not a static list.
+    check_judge_family({r["model"] for r in completions})
 
     judge = JudgeClient(model_name=JUDGE_MODEL, provider=JUDGE_PROVIDER,
                         temperature=JUDGE_TEMPERATURE)

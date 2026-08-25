@@ -37,17 +37,29 @@ models:
     provider: "together"
     model_id: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
 
-  # Together retired the FP8 serverless endpoint; verified 2026-08-25 that only FP4
-  # is served. The FP8 entry above is kept as the record of what the thesis ran.
-  # Phase 0.5 and later use this FP4 entry. See PHASE_0.5_SPEC.md §3.
-  - name: "llama-4-maverick-17b-fp4"
+  # Together retired the FP8 serverless endpoint, and FP4 is dedicated-endpoint-only.
+  # Verified 2026-08-25 by probing with real requests: Together's serverless tier on
+  # this account serves exactly three chat models — the two below plus gpt-oss-20b.
+  # The Maverick entry above is kept as the record of what the thesis ran.
+  # Phase 0.5 uses the two entries below. See PHASE_0.5_SPEC.md §3.
+  - name: "llama-3.3-70b-turbo"
     provider: "together"
-    model_id: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP4"
+    model_id: "meta-llama/Llama-3.3-70B-Instruct-Turbo"
 
-  # Third-family judge for Phase 0.5 (§5) — not Mistral, not Meta.
-  - name: "qwen2.5-72b-instruct-turbo"
+  - name: "gpt-oss-120b"
     provider: "together"
-    model_id: "Qwen/Qwen2.5-72B-Instruct-Turbo"
+    model_id: "openai/gpt-oss-120b"
+
+  - name: "gpt-oss-20b"
+    provider: "together"
+    model_id: "openai/gpt-oss-20b"
+
+  # Phase 0.5 judge (§5) — third vendor relative to both evaluated models. Not on
+  # Together: with only Meta and OpenAI available there, family independence is
+  # unsatisfiable within Together's serverless tier.
+  - name: "claude-haiku-4-5"
+    provider: "anthropic"
+    model_id: "claude-haiku-4-5"
 
   # Mistral / Mixtral (via Together AI)
   - name: "mixtral-8x7b"

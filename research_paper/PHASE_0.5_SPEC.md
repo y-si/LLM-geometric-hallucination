@@ -69,34 +69,38 @@ Recorded so the reasoning isn't lost:
 
 ## 3. Models
 
-Both funded via Together AI ($56 balance as of 2026-08-25). No sign-off required, no
-new credits. Availability verified against the live model list 2026-08-25.
+Availability verified 2026-08-25 by probing each candidate with a real 1-token
+request. **`/v1/models` is not an availability check** — it lists every model
+Together knows about, including dedicated-endpoint-only ones.
 
-| Role | Model ID | Config key |
-|---|---|---|
-| Model A | `mistralai/Mixtral-8x7B-Instruct-v0.1` | `mixtral-8x7b` |
-| Model B | `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP4` | `llama-4-maverick-17b-fp4` |
-| Judge | `Qwen/Qwen2.5-72B-Instruct-Turbo` | `qwen2.5-72b-instruct-turbo` |
+| Role | Model ID | Family | Provider |
+|---|---|---|---|
+| Model A | `meta-llama/Llama-3.3-70B-Instruct-Turbo` | Meta | Together (serverless) |
+| Model B | `openai/gpt-oss-120b` | OpenAI open-weight | Together (serverless) |
+| Judge | `claude-haiku-4-5` | Anthropic | Anthropic API |
 
-**Model B is the FP4 build, not FP8.** Together has retired the FP8 serverless
-endpoint — verified 2026-08-25 that of the `meta-llama/Llama-4-*` family only
-`Llama-4-Maverick-17B-128E-Instruct-FP4` (plus Scout variants) is served. The thesis
-ran FP8.
+**Together's serverless tier on this account offers exactly three chat models:**
+`Llama-3.3-70B-Instruct-Turbo`, `gpt-oss-120b`, and `gpt-oss-20b`. Everything else
+probed — all Mistral/Mixtral builds, all Qwen builds, Gemma, GLM, DeepSeek,
+Llama-4-Maverick-FP4, Llama-4-Scout, and the older Llama-3.x Turbo builds — returns
+`400 model_not_available` requiring a paid dedicated endpoint. Dedicated endpoints
+bill per running minute, which is the wrong economics for 28,160 completions.
 
-Consequences, stated rather than buried:
-- FP4 is a more aggressive quantization than FP8, so Model B's absolute
-  hallucination rate here is **not comparable to thesis-era Maverick numbers**. Do
-  not cite them against each other.
-- Quantization primarily shifts absolute quality, and therefore *rates*. The pilot's
-  claim is about prompt-difficulty **ordering**, which is why this is tolerable
-  rather than disqualifying — a concrete instance of why the rate-vs-ordering
-  distinction in §1 earns its keep.
-- If Model B's split-half reliability τ_selfB comes back markedly worse than Model
-  A's, quantization noise is a candidate explanation and should be reported as such
-  before concluding anything about the claim.
-- **Documented alternative** if FP4 proves too noisy: `meta-llama/Llama-3.3-70B-Instruct-Turbo`
-  (confirmed available). It abandons architectural continuity with the thesis
-  entirely, which is why it is the fallback and not the default.
+### 3.1 Consequence: the pilot no longer runs the thesis's models
+
+Both thesis models are gone from serverless. `Mixtral-8x7B-Instruct-v0.1` and every
+`Llama-4-Maverick` build are dedicated-only. **Direct continuity with the thesis is
+lost**, and no thesis-era number may be compared against this pilot's rates.
+
+**This is arguably a better pilot, and the reasoning should survive review.**
+Limitation §9.1 says the pilot's central weakness is that "two open models trained
+with similar data may have inflated agreement." Mixtral and Llama-4-Maverick are both
+mixture-of-experts models from adjacent lineages — that critique had real force.
+Llama-3.3-70B (Meta, dense) and gpt-oss-120b (OpenAI, MoE) are separated by vendor,
+architecture, and training lineage, so shared-corpus inflation is a materially weaker
+objection. The forced swap strengthens the ordering-invariance test rather than
+weakening it. `gpt-oss-20b` is available as a within-family scale pair if Phase 1
+wants one.
 
 Decoding: temperature 0.7, top_p 1.0, max_tokens 256, no system prompt beyond the
 benchmark's standard instruction. **P̂ is defined relative to this decoding
@@ -238,28 +242,39 @@ times for the same prompt. Analysis slices by flag.
 
 ## 5. Judge
 
-**Judge model: a third-family open model on Together AI.** Leading candidate
-`Qwen/Qwen2.5-72B-Instruct-Turbo` (Together's optimized variant; the plain
-`Qwen/Qwen2.5-72B-Instruct` ID may or may not still be listed). **Verify the exact
-ID and current pricing at together.ai/models before hardcoding.** If Qwen is
-unavailable, the next-tier third-family alternatives on Together are DeepSeek V3 or
-Command R+. Record any substitution here.
+**Judge model: `claude-haiku-4-5` on the Anthropic API** (provider `anthropic` in
+`judge_client.py`, which already has a working Anthropic branch). $1.00 / $5.00 per
+million input / output tokens — the cheapest Anthropic model, and third-family to
+both evaluated models. Verified against current model data 2026-08-25.
 
-Together AI is already wired up: `src/models/multi_model_client.py` and
-`src/models/judge_client.py` both use `TOGETHER_API_KEY` against
-`https://api.together.xyz/v1`. Adding Qwen is a config addition, not new
-infrastructure.
+**Why not a Together-hosted judge.** Together's serverless tier on this account has
+exactly three chat models (§3): one Meta and two OpenAI open-weight. Any judge chosen
+from that set shares a family with one of the two evaluated models, so the §5
+independence requirement is **unsatisfiable within Together**. Every Qwen build —
+the original third-family candidate — is dedicated-endpoint-only. Going outside
+Together for the judge is what makes the family constraint satisfiable at all.
 
-**Why not Llama 3 70B** (the earlier proposal): it shares a model family with
-Model B (Llama 4 Maverick). Family-level self-preference in LLM-as-judge setups is
-documented (Panickssery et al. and others), and it would bias Model B's P̂
-*asymmetrically* relative to Model A's. Differential per-model judge error is
-precisely the error mode that corrupts a cross-model *ranking* comparison — it does
-not average out. Panel families are Mistral and Meta; Qwen (Alibaba) sits outside
-both.
+**Why the family constraint is worth paying ~$27 for.** Family-level self-preference
+in LLM-as-judge setups is documented (Panickssery et al. and others). If the judge
+shared a family with one evaluated model, that model's P̂ would be biased
+*asymmetrically* — and differential per-model judge error is precisely the error mode
+that corrupts a cross-model *ranking* comparison. It does not average out. Anthropic
+is equidistant from Meta and OpenAI.
 
-**Why not Haiku 4.5:** possibly out-of-pocket, and unnecessary given a funded
-open judge suffices for a pilot.
+**Why not Sonnet 5 or a larger judge:** $3.00 / $15.00 per million puts the same
+volume near $80. Haiku 4.5's adequacy is an empirical question, and §5.2 is the test
+that answers it — if per-model agreement is poor or unequal, escalate the judge then
+rather than pre-paying for capability the task may not need.
+
+**Prompt caching does not apply.** The judge system prompt is identical across all
+28,160 calls, but Haiku 4.5's minimum cacheable prefix is 4096 tokens and the prompt
+is well under that — a `cache_control` marker would silently do nothing. Do not add
+one.
+
+**Requires `ANTHROPIC_API_KEY` in `.env`** and the `anthropic` package installed
+(now added to `requirements.txt`; it was previously imported but undeclared). Note
+this is the only part of the pilot that is *not* covered by the Together balance —
+it bills to the Anthropic account separately.
 
 ### 5.1 Judge failure handling (inherits the March 2026 fix — non-negotiable)
 
@@ -511,14 +526,23 @@ on the normality argument.
 
 Volume: **704 unique prompts** — the deduplicated union of the primary (409),
 judge-bound (260), and secondary (431) sets, which overlap (§4.4) — × 20 samples ×
-2 models = **28,160 completions**, plus one judge call each. Unchanged by the §4
-amendment, because the union is still all 431 unique V3 prompts plus 273 V5-clean
-pool top-ups.
+2 models = **28,160 completions**, plus one judge call each.
 
-Rough token estimate: ~7M generation tokens, ~10M judge tokens. At Together's
-open-model rates this lands around **$15–25 including retries**. Verify current
-per-token pricing before the run; even a 3× error stays well inside the $100
-pilot budget.
+| Stage | Provider | Estimate |
+|---|---|---|
+| Generation (2 models × 28,160 completions, ~240 tok each ≈ 6.8M tokens) | Together, open-model rates | **~$4** |
+| Judging (28,160 calls, ~350 in / ~120 out ≈ 9.9M + 3.4M tokens on `claude-haiku-4-5` at $1/$5 per M) | Anthropic | **~$27** |
+| | | **~$31 total** |
+
+**Two separate bills.** The $56 Together balance covers generation with wide margin;
+the judge bills to the Anthropic account. Verify per-token pricing before the run.
+
+**Optional 50% saving on the judge:** the Anthropic Batch API halves token cost and
+this workload is entirely offline, which would bring judging to ~$13. It is not in
+the current design because it changes the failure-handling shape — batch results
+arrive asynchronously and the §5.1 per-call retry contract has to be reworked around
+them. Worth doing if judge cost becomes a constraint at Phase 1 volume; not worth the
+added complexity for a one-off pilot.
 
 **Cost is not the binding constraint on this pilot.** The earlier
 100-prompt/k=10 design sacrificed statistical power for savings that do not exist.
@@ -534,7 +558,10 @@ State these before she finds them:
 
 1. **Two open models with overlapping pretraining data.** Agreement may be
    inflated by shared corpora. Necessary-but-not-sufficient; a low result is far
-   more informative than a high one (§1).
+   more informative than a high one (§1). **Weaker than it was under the original
+   model pair** — Llama-3.3-70B (Meta, dense) and gpt-oss-120b (OpenAI, MoE) are
+   separated by vendor, architecture, and training lineage, where Mixtral and
+   Llama-4-Maverick were both MoE from adjacent lineages (§3.1).
 2. **Single judge, no consensus.** Mitigated by the §5.2 per-model validation, not
    eliminated. Phase 1 must decide consensus vs. single judge.
 3. **Split-half ceiling underestimates the k=20 ceiling,** so τ_corr is slightly
@@ -559,10 +586,12 @@ State these before she finds them:
 10. **Two of seven categories are unusable as designed.** `borderline_obscure_real`
     and `factual` need real sourced ground truth or a retrieval-augmented judge
     before Phase 1 can use them. Not pilot scope; blocking for Phase 1.
-11. **Model B runs at FP4, not the FP8 the thesis used** (§3). Absolute rates are not
-    comparable to thesis-era Maverick numbers, and heavier quantization is a
-    candidate explanation if τ_selfB is markedly worse than τ_selfA.
-
+11. **Neither evaluated model is a thesis model** (§3.1). Both thesis models are
+    dedicated-endpoint-only on Together, so direct continuity with the thesis is lost
+    and no thesis-era rate may be compared against this pilot's.
+12. **The judge is a different vendor from both evaluated models, but is also the
+    cheapest model in its line.** Independence is bought at the cost of judge
+    capability; §5.2 is the check on whether that trade held.
 ---
 
 ## 10. Amendment log
@@ -613,3 +642,33 @@ pre-registration.
   Also verified available and now pinned in §3: the judge
   `Qwen/Qwen2.5-72B-Instruct-Turbo` (previously flagged unverified). Mixtral Model A
   needed no change. Still no data collected.
+- 2026-08-25 (still pre-data) — **§3 and §5 rewritten: all three models replaced.**
+  The prior amendment relied on `/v1/models` to confirm availability. That was wrong:
+  the endpoint lists every model Together knows about, including dedicated-endpoint-
+  only ones. Probing each candidate with a real 1-token request showed Together's
+  serverless tier on this account offers **exactly three chat models** —
+  `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `openai/gpt-oss-120b`,
+  `openai/gpt-oss-20b`. Both previously pinned evaluated models
+  (`Mixtral-8x7B-Instruct-v0.1`, `Llama-4-Maverick-…-FP4`) and **every** Qwen build
+  return `400 model_not_available`.
+
+  Changes: Model A → `meta-llama/Llama-3.3-70B-Instruct-Turbo`, Model B →
+  `openai/gpt-oss-120b`. Judge moved off Together entirely to
+  **`claude-haiku-4-5`** on the Anthropic API — with only Meta and OpenAI available
+  on Together's serverless tier, the §5 family-independence requirement is
+  unsatisfiable there, so a third vendor is the only way to keep it. Cost model
+  rewritten (§8): ~$4 generation on Together, ~$27 judging on Anthropic, two separate
+  bills. `anthropic` added to `requirements.txt` (previously imported but undeclared);
+  `ANTHROPIC_API_KEY` now required in `.env`.
+
+  Consequences logged rather than buried: **neither evaluated model is a thesis
+  model** (§3.1, limitation §9.11), so continuity with the thesis is gone. Against
+  that, the new pair is separated by vendor, architecture, and training lineage where
+  the old pair were both MoE from adjacent lineages — which materially weakens
+  limitation §9.1, the pilot's central critique. The forced swap strengthens the
+  ordering-invariance test.
+
+  The family guard in `run_phase05_judging.py` now derives forbidden family tokens
+  from the models actually present in the completions file rather than a hardcoded
+  list, so it cannot drift out of sync with §3 again. Still no data collected; the §7
+  go/no-go rule is unchanged.

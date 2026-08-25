@@ -89,7 +89,11 @@ Phases are sequenced by dependency, not by calendar. Phases 3 and 4 can parallel
 - [ ] Lock the model panel (proposal below; **may need to drop OpenAI models if API access isn't covered**)
 - [ ] Pick the external dataset to port to — leading candidate: **PopQA** (matches our entity-obscurity framing)
 
-**Currently funded panel: Mixtral 8x7B + Llama 4 Maverick (Together AI). That is two models.** All other panel members below are gated on the Boaz credit reply and on any Harvard institutional API access. The 8-model table is a proposal, not a plan of record.
+**Currently reachable panel: `Llama-3.3-70B-Instruct-Turbo` + `gpt-oss-120b` (+ `gpt-oss-20b`). That is three models, and it is a hard ceiling, not a budget choice.** Verified 2026-08-25 by probing with real requests: Together's serverless tier on this account serves exactly those three chat models. **Both thesis models — Mixtral 8x7B and every Llama-4-Maverick build — are dedicated-endpoint-only**, which bills per running minute and is the wrong economics for batch evaluation. Every Mistral, Qwen, Gemma, GLM, and DeepSeek build is likewise dedicated-only.
+
+Two consequences: (1) the panel cannot be widened on Together no matter what the budget is — additional breadth requires closed-model API access, i.e. the Boaz credit reply and any Harvard institutional access; (2) a judge that shares no family with the evaluated models is **unsatisfiable within Together**, so Phase 0.5's judge runs on the Anthropic API. The 8-model table below is a proposal, not a plan of record.
+
+One anomaly worth a support ticket in parallel: `Qwen2.5-72B-Instruct-Turbo` is normally serverless on Together for everyone, which suggests an account-tier restriction rather than a catalog change. Unknown latency — do not block on it.
 
 **Working model panel proposal (8 models, June 2026 SOTA):**
 
@@ -101,8 +105,8 @@ Phases are sequenced by dependency, not by calendar. Phases 3 and 4 can parallel
 | Mid-tier closed | Claude Haiku 4.5 | Cheap/fast Anthropic |
 | Mid-tier closed | GPT-5.5 Instant | Cheap/fast OpenAI; pairs with Thinking for reasoning ablation |
 | Mid-tier closed | Gemini 3.5 Flash | Cheap/fast Google |
-| Frontier open | Llama 4 Maverick | Continuity with thesis; weights available for probe baseline |
-| Small open | Llama 3 8B *or* Qwen 3 7B | Diversity tail; needed for probe baseline |
+| Frontier open | Llama 4 Maverick | ~~Continuity with thesis~~ — **dedicated-endpoint-only on Together as of 2026-08-25; not reachable on serverless.** Replace with `Llama-3.3-70B-Instruct-Turbo` |
+| Small open | Llama 3 8B *or* Qwen 3 7B | Diversity tail; needed for probe baseline. **All Qwen builds are dedicated-only** — `gpt-oss-20b` is the reachable small-open option |
 
 Notes:
 - **Skip Fable 5** — 2× Opus pricing makes multi-sample eval prohibitive.
@@ -115,12 +119,13 @@ Notes:
 
 **Full design is pre-registered in `PHASE_0.5_SPEC.md` (2026-08-24, written before any data exists). That document is authoritative; this is a summary.**
 
-Uses only existing infrastructure (Mixtral 8x7B + Llama 4 Maverick via Together AI). No new credits, no sign-off needed.
+Models: `meta-llama/Llama-3.3-70B-Instruct-Turbo` (Meta, dense) and `openai/gpt-oss-120b` (OpenAI, MoE) via Together serverless — **neither is a thesis model**, because both thesis models are dedicated-endpoint-only (spec §3.1). Continuity with the thesis is lost; in exchange the new pair is separated by vendor, architecture, and training lineage where Mixtral and Maverick were both MoE from adjacent lineages, which materially weakens the pilot's central "shared pretraining data inflates agreement" critique.
 
 - **Claim under test**: *prompt difficulty ordering is largely model-invariant.* (NOT "hallucination is a property of the prompt, not the model" — that version is false as stated; models differ substantially in absolute rate, and the pilot measures that too.)
 - **Prompts**: 409 across the three *verifiable* categories (`borderline_plausible_fake` n=169, `nonexistent` n=120, `ambiguous` n=120), drawn from V3 (the held-out test set, 431 unique, verified zero overlap with V5 train) plus V5-train-clean top-up from the standalone pool files. Deduplicated on question text. **Category admission turns on ground-truth verifiability** — `factual` and `borderline_obscure_real` are excluded from the decision surface because their ground_truth contains no facts, making the judge fall back on its own knowledge and correlating both models' scores through a shared referent (spec §4.0). They are run separately as a labelled artifact diagnostic (§4.2, §6.2b). `borderline_edge_factual` is excluded as well (n_eff=5 unique in V3, floor effect) and kept only as a degenerate-variance control; `impossible` is excluded for thin n=30.
 - **k=20** samples per (prompt, model) at T=0.7 — attenuation is driven by k, and cost is not the constraint.
-- **Judge**: a funded third-family open model on Together (candidate `Qwen/Qwen2.5-72B-Instruct`). NOT a Llama-family judge — that shares a family with Model B and would bias its P̂ asymmetrically. Inherits the March 2026 failure rule: failed judge calls are never assigned a label and never counted.
+- **Judge**: `claude-haiku-4-5` on the **Anthropic API**, not Together. With only Meta and OpenAI models on Together's serverless tier, a judge sharing no family with either evaluated model is unsatisfiable there — and family self-preference would bias one model's P̂ asymmetrically, which does not average out in a ranking comparison. ~$27 for the run, billed separately from the $56 Together balance. Requires `ANTHROPIC_API_KEY`. Inherits the March 2026 failure rule: failed judge calls are never assigned a label and never counted.
+- **Cost**: ~$4 generation (Together) + ~$27 judging (Anthropic) ≈ **$31**, across two separate bills.
 - **Primary statistic**: blocked **within-category** τ_b (only same-category prompt pairs counted; 28,476 pairs), attenuation-corrected against a within-model split-half noise ceiling. Nested bootstrap over prompts *and* completions, 1000×.
 - **Reported alongside**: (i) Δ_artifact = τ_corr(judge-bound categories) − τ_corr(verifiable categories), a direct effect-size estimate of the shared-judge artifact; (ii) pooled τ_b on all 7 V3 categories, explicitly labelled stratification-inflated. Neither gates the decision. Both are candidate paper figures.
 
