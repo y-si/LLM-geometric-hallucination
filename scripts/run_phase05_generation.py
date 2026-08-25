@@ -46,7 +46,12 @@ OUTPUT_DIR = BASE_DIR / "results" / "phase05"
 OUTPUT_PATH = OUTPUT_DIR / "completions.jsonl"
 
 # §3 — the two funded models. Keys resolve via experiments/multi_model_config.yaml.
-MODELS = ["mixtral-8x7b", "llama-4-maverick-17b"]
+# Maverick is the FP4 build: Together retired the FP8 serverless endpoint (verified
+# 2026-08-25, only -FP4 is served). The thesis ran FP8, so absolute hallucination
+# rates here are NOT comparable to thesis-era Maverick numbers. Tolerable because the
+# pilot's claim is about prompt-difficulty ORDERING, not rates — but logged in
+# PHASE_0.5_SPEC.md §9 as a limitation.
+MODELS = ["mixtral-8x7b", "llama-4-maverick-17b-fp4"]
 
 # §6.1 / §3 — pre-registered decoding config. Do not change mid-run.
 K_SAMPLES = 20

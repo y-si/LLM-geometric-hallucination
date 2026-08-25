@@ -69,12 +69,34 @@ Recorded so the reasoning isn't lost:
 
 ## 3. Models
 
-Both funded today via Together AI. No sign-off required, no new credits.
+Both funded via Together AI ($56 balance as of 2026-08-25). No sign-off required, no
+new credits. Availability verified against the live model list 2026-08-25.
 
-| Role | Model ID |
-|---|---|
-| Model A | `mistralai/Mixtral-8x7B-Instruct-v0.1` |
-| Model B | `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8` |
+| Role | Model ID | Config key |
+|---|---|---|
+| Model A | `mistralai/Mixtral-8x7B-Instruct-v0.1` | `mixtral-8x7b` |
+| Model B | `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP4` | `llama-4-maverick-17b-fp4` |
+| Judge | `Qwen/Qwen2.5-72B-Instruct-Turbo` | `qwen2.5-72b-instruct-turbo` |
+
+**Model B is the FP4 build, not FP8.** Together has retired the FP8 serverless
+endpoint — verified 2026-08-25 that of the `meta-llama/Llama-4-*` family only
+`Llama-4-Maverick-17B-128E-Instruct-FP4` (plus Scout variants) is served. The thesis
+ran FP8.
+
+Consequences, stated rather than buried:
+- FP4 is a more aggressive quantization than FP8, so Model B's absolute
+  hallucination rate here is **not comparable to thesis-era Maverick numbers**. Do
+  not cite them against each other.
+- Quantization primarily shifts absolute quality, and therefore *rates*. The pilot's
+  claim is about prompt-difficulty **ordering**, which is why this is tolerable
+  rather than disqualifying — a concrete instance of why the rate-vs-ordering
+  distinction in §1 earns its keep.
+- If Model B's split-half reliability τ_selfB comes back markedly worse than Model
+  A's, quantization noise is a candidate explanation and should be reported as such
+  before concluding anything about the claim.
+- **Documented alternative** if FP4 proves too noisy: `meta-llama/Llama-3.3-70B-Instruct-Turbo`
+  (confirmed available). It abandons architectural continuity with the thesis
+  entirely, which is why it is the fallback and not the default.
 
 Decoding: temperature 0.7, top_p 1.0, max_tokens 256, no system prompt beyond the
 benchmark's standard instruction. **P̂ is defined relative to this decoding
@@ -537,6 +559,9 @@ State these before she finds them:
 10. **Two of seven categories are unusable as designed.** `borderline_obscure_real`
     and `factual` need real sourced ground truth or a retrieval-augmented judge
     before Phase 1 can use them. Not pilot scope; blocking for Phase 1.
+11. **Model B runs at FP4, not the FP8 the thesis used** (§3). Absolute rates are not
+    comparable to thesis-era Maverick numbers, and heavier quantization is a
+    candidate explanation if τ_selfB is markedly worse than τ_selfA.
 
 ---
 
@@ -575,3 +600,16 @@ pre-registration.
 
   **No data had been collected at the time of this amendment** — only the prompt
   manifest had been generated. The go/no-go rule in §7 is unchanged.
+- 2026-08-25 (still pre-data) — **§3 model ID corrected.** Verified the live Together
+  model list: `meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8` is no longer
+  served, only `-FP4`. Model B switched to the FP4 build; a new
+  `llama-4-maverick-17b-fp4` entry was added to
+  `experiments/multi_model_config.yaml` rather than mutating the FP8 entry, which is
+  retained as the record of what the thesis ran. Consequence logged in §3 and as
+  limitation §9.11: absolute rates are not comparable to thesis-era Maverick numbers,
+  and quantization noise is a candidate explanation if τ_selfB is markedly worse than
+  τ_selfA. Documented fallback is `Llama-3.3-70B-Instruct-Turbo`.
+
+  Also verified available and now pinned in §3: the judge
+  `Qwen/Qwen2.5-72B-Instruct-Turbo` (previously flagged unverified). Mixtral Model A
+  needed no change. Still no data collected.

@@ -59,11 +59,9 @@ OUTPUT_DIR = BASE_DIR / "results" / "phase05"
 COMPLETIONS_PATH = OUTPUT_DIR / "completions.jsonl"
 OUTPUT_PATH = OUTPUT_DIR / "judgments.jsonl"
 
-# §5 — third-family judge. VERIFY THIS ID AND ITS PRICING AT together.ai/models
-# BEFORE A FULL RUN. Together's optimized variant carries a -Turbo suffix and the
-# plain ID may not be listed. Documented fallbacks if Qwen is unavailable:
-# DeepSeek V3 or Command R+ (both third-family relative to Mistral and Llama).
-# Run --preflight first; it fails loudly rather than burning 28k calls.
+# §5 — third-family judge. VERIFIED AVAILABLE on Together 2026-08-25 against the live
+# model list. Documented fallbacks if it is ever retired: DeepSeek V3 or Command R+
+# (both third-family relative to Mistral and Llama). Run --preflight after any change.
 JUDGE_MODEL = "Qwen/Qwen2.5-72B-Instruct-Turbo"
 JUDGE_PROVIDER = "together"
 JUDGE_TEMPERATURE = 0.0

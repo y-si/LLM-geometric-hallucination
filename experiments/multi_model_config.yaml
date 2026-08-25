@@ -37,6 +37,18 @@ models:
     provider: "together"
     model_id: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
 
+  # Together retired the FP8 serverless endpoint; verified 2026-08-25 that only FP4
+  # is served. The FP8 entry above is kept as the record of what the thesis ran.
+  # Phase 0.5 and later use this FP4 entry. See PHASE_0.5_SPEC.md §3.
+  - name: "llama-4-maverick-17b-fp4"
+    provider: "together"
+    model_id: "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP4"
+
+  # Third-family judge for Phase 0.5 (§5) — not Mistral, not Meta.
+  - name: "qwen2.5-72b-instruct-turbo"
+    provider: "together"
+    model_id: "Qwen/Qwen2.5-72B-Instruct-Turbo"
+
   # Mistral / Mixtral (via Together AI)
   - name: "mixtral-8x7b"
     provider: "together"
