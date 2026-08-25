@@ -104,6 +104,8 @@ Not in any pulled checkout: the frozen thesis and the judge-contamination incide
 - ❌ Chase GPT-5.6 / Llama 5 / other newer model releases — lock to current model versions.
 - ❌ Cite any number from this file without tracing it to a file in the repo. See the dataset table above for what happened last time.
 - ❌ Read `result["label"]` from a judge call without checking `result["failed"]`. See the judge contamination section.
+- ❌ Reuse thesis-era judgments on the `factual` or `borderline_obscure_real` categories. See the ground-truth verifiability section — those labels are judge-parametric-knowledge-bound.
+- ❌ Edit the original notes in `RESEARCH_PAPER.md`. It is a historical meeting record; rewriting it makes the doc's own history untrustworthy. Add "SUPERSEDED BY X" annotations only.
 - ❌ Add features beyond what's asked. Bug fixes don't need surrounding cleanup. One-shot ops don't need helpers.
 - ❌ Over-apologize in advisor emails for the 4-month gap. One throwaway line max, then move on.
 - ❌ Commit `.env` or any file that might contain credentials.
@@ -157,6 +159,49 @@ How the tracked code implements it:
    fallback; it must treat `failed: True` as "no label exists" and reduce the
    effective sample size. This is specified for the pilot in
    `PHASE_0.5_SPEC.md` §5.1.
+
+### Ground-truth verifiability — judge-parametric-knowledge contamination
+
+**Discovered 2026-08-24. This is the most consequential known issue for the paper.**
+
+`borderline_obscure_real` and `factual` ground_truth fields are **meta-statements
+that contain no embedded facts**:
+
+- `borderline_obscure_real` (all 162): *"Real entity: `<E>`. Answer may be uncertain due to obscurity."*
+- `factual` (94 of 98): *"This is a factual question with a clear, objectively verifiable answer based on established knowledge."* — and does not contain the answer.
+
+For a real entity, `judge_client.py` routes to CATEGORY 3 (FACTUAL), whose rule is
+"CORRECT (0): the answer matches the core truth." **There is no core truth in the
+ground truth.** The judge therefore falls back on its own parametric knowledge, so
+any label on these categories measures *model–judge disagreement*, not hallucination
+against verified ground truth.
+
+**Consequences — do not build on these numbers:**
+
+- ❌ **Do NOT reuse thesis-era numbers on these categories in the paper.** Every
+  thesis-era figure computed on the factual category (the 14.8% Mixtral and 9.7%
+  Llama baselines, and everything derived from them in Ch 5–7) has the shared-judge
+  property built in. Recompute from scratch with sourced ground truth or a
+  retrieval-augmented judge. The thesis is shipped and is not being retro-fixed.
+- ❌ Both categories are **blocking for Phase 1** until they have real sourced ground
+  truth or a retrieval-augmented judge.
+- ⚠️ **Why it matters statistically:** if P̂ for two models is both defined as
+  "disagrees with judge J," their rankings are jointly determined by J — including
+  by J's *ignorance*. Errors correlate through the shared referent, not through any
+  prompt property, which inflates cross-model Kendall's tau toward a **false GO**.
+  Blocking within category does not fix it.
+
+**Verifiable categories** (ground truth licenses a judgment without the judge
+consulting its own world knowledge): `borderline_plausible_fake`, `nonexistent`,
+`ambiguous`, `impossible`. These carry the Phase 0.5 decision surface.
+
+**Turned into a measurement, not just a caveat.** Phase 0.5 runs the judge-bound
+categories as a labelled diagnostic and reports
+Δ_artifact = τ_corr(judge-bound) − τ_corr(verifiable), a direct effect-size estimate
+of the artifact. Candidate paper section: *existing benchmarks conflate hallucination
+with disagreement-with-judge-knowledge; here is the effect size, and here is
+ground-truth verifiability as a benchmark design criterion.* See
+`PHASE_0.5_SPEC.md` §4.0, §4.2, §6.2b.
 
 ### CoT contamination
 

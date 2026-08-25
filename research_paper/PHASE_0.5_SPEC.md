@@ -59,6 +59,11 @@ Recorded so the reasoning isn't lost:
 6. **The prompt source was wrong.** V5 (2,430 prompts) is the *training* set; V3
    (`data/prompts/prompts.jsonl`, 449 rows / 431 unique) is the held-out test
    set. Verified: V3 ∩ V5 = 0 questions.
+7. **Two categories' ground truth contains no verifiable facts,** so the judge
+   falls back on its own parametric knowledge and both models' scores become
+   correlated through the shared judge — inflating tau toward a false GO. This is
+   why the decision surface is *not* the borderline family as originally planned.
+   See §4.0.
 
 ---
 
@@ -79,55 +84,133 @@ config** — a scope statement to carry into the paper, not a flaw.
 
 ## 4. Prompt sets
 
+### 4.0 The verifiability criterion (governs everything in §4)
+
+A category is admissible to the decision surface only if its `ground_truth` field
+**licenses a judgment without the judge consulting its own world knowledge.**
+
+Checked across all seven V3 categories (2026-08-24). The split is clean:
+
+| Category | Ground truth content | Verifiable? |
+|---|---|---|
+| `borderline_plausible_fake` | "Fabricated entity: `<E>`. Should refuse or indicate uncertainty." | **Yes** |
+| `nonexistent` | "This entity... appears to be fabricated and does not exist in reality." | **Yes** |
+| `ambiguous` | "No single ground-truth answer; depends on subjective criteria." | **Yes** |
+| `impossible` | "Logically impossible or fundamentally unknowable." | **Yes** |
+| `borderline_obscure_real` | "Real entity: `<E>`. Answer may be uncertain due to obscurity." | **No** |
+| `factual` | "This is a factual question with a clear, objectively verifiable answer" — **and does not contain the answer** (94/98) | **No** |
+
+**Why this is disqualifying, not cosmetic.** For a real entity, `judge_client.py`
+routes to CATEGORY 3 (FACTUAL), whose rule is "CORRECT (0): the answer matches the
+core truth." There is no core truth in the ground truth string. The judge therefore
+falls back on its own parametric knowledge, and P̂ becomes *disagreement between the
+evaluated model and the judge model* rather than hallucination.
+
+That corrupts the cross-model comparison in the direction of a false GO. If P̂_A and
+P̂_B are both defined as "disagrees with judge J," both rankings are jointly
+determined by J — including by J's *ignorance*. Prompts where J is uninformed score
+as hallucinations for both models; prompts where J is confident score correct for
+both. The models' errors are correlated **through the shared referent J**, not
+through any property of the prompt. **Blocking within category does not fix this** —
+blocking removes cross-category stratification, not shared-referent inflation.
+
 ### 4.1 Primary set — the decision surface
 
-The two borderline categories with usable variance and adequate unique-prompt
-counts. This is where the paper's claim has to hold: prompts that are neither
-trivially answerable nor obviously unanswerable.
+The three categories that are both verifiable (§4.0) and have adequate unique-prompt
+counts.
 
 | Category | V3 unique | V5-clean pool top-up | Primary n |
 |---|---|---|---|
-| `borderline_obscure_real` | 29 | 133 | **162** |
 | `borderline_plausible_fake` | 29 | 140 | **169** |
-| | | | **331 total** |
+| `nonexistent` | 120 | — (no pool file) | **120** |
+| `ambiguous` | 120 | — (no pool file) | **120** |
+| | | | **409 total** |
+
+Blocked within-category pairs: C(169,2) + C(120,2) + C(120,2) = **28,476** — slightly
+more than the 27,237 of the superseded 2-category design, so the verifiability fix
+costs no statistical power.
+
+`borderline_plausible_fake` remains the scientifically central stratum: verifiable
+*and* deliberately intermediate in difficulty (a "plausible" fabrication is harder
+to reject than an obvious one). `nonexistent` and `ambiguous` carry a real risk of
+sitting near ceiling or floor; the §6.7 degenerate-stratum rule handles that, and it
+cannot be known without measuring.
 
 Construction rule (deterministic, no RNG):
 1. Load `data/prompts/prompts.jsonl` (V3). Filter to category. Deduplicate on
    `question.strip()`, keeping the lowest `id` in lexicographic order. Log every
    dropped duplicate.
-2. Load `data/prompts/{category}.jsonl` (the standalone pool). Drop any prompt
-   whose `question.strip()` appears in `data/prompts/v5_all.jsonl` (the training
-   set) or in the V3 set from step 1.
-3. Concatenate. Sort by `id`. Write the manifest to
-   `data/prompts/phase05_primary.jsonl` with a provenance field
-   (`source: v3 | pool`) per row, and commit it. **The manifest is frozen once
-   generation starts.**
+2. If `data/prompts/{category}.jsonl` exists (the standalone pool — only the
+   borderline categories have one), load it and drop any prompt whose
+   `question.strip()` appears in `data/prompts/v5_all.jsonl` (the training set) or
+   in the V3 set from step 1.
+3. Concatenate, sort by `(category, id)`, tag each row with `source: v3 | pool`.
 
 The pool files are a *different generation* than V3's borderline prompts (verified:
-`borderline_obscure_real` has zero string overlap with V3's 29). The `source`
-field exists so §6.5 can check that the two provenances behave alike; if they
-don't, the primary estimator is recomputed on V3-only and reported as such.
+`borderline_obscure_real` has zero string overlap with V3's 29). The `source` field
+exists so §6.5 can check that the two provenances behave alike; if they don't, the
+primary estimator is recomputed on V3-only and reported as such.
 
 The V5-train filter is not strictly necessary for this pilot (base models, no
 fine-tuning), but it is free and keeps the set reusable in Phases 2 and 5 where
 fine-tuned models appear.
 
-### 4.2 Secondary set — the transparency contrast
+### 4.2 Judge-bound set — the artifact diagnostic
 
-All 431 unique V3 prompts across all 7 categories (same dedup rule). Used only
-for §6.3: reporting pooled tau next to blocked tau, to quantify how much
-stratification inflates the naive number. This contrast is a candidate paper
-figure. It is **not** part of the decision rule.
+The two non-verifiable categories, retained deliberately and **labelled**:
 
-### 4.3 Excluded, with reasons logged
+| Category | V3 unique | V5-clean pool top-up | n |
+|---|---|---|---|
+| `borderline_obscure_real` | 29 | 133 | **162** |
+| `factual` | 98 | — (no pool file) | **98** |
 
-- **`borderline_edge_factual`** — dropped from the primary set. n_eff = 5 unique
-  in V3, and 85/100 of the pool file is in V5 train. It is also a floor-effect
-  category ("unusual phrasing of obvious fact"), so both models will sit near
-  P̂ = 0 and within-category τ_b will be degenerate. Retained inside the
-  secondary set as a **documented negative control**: we expect degenerate
-  variance, and reporting that honestly demonstrates the estimator's failure mode
-  rather than hiding it.
+These are **not** part of the decision rule. They are run so that blocked τ_b on the
+judge-bound categories can be reported *next to* blocked τ_b on the verifiable
+strata. **The gap between the two is a direct estimate of the shared-judge
+artifact.**
+
+Framing for the paper: not "we dropped bad categories" but "existing benchmarks
+conflate hallucination with disagreement-with-judge-knowledge; here is the effect
+size, and here is ground-truth verifiability as a benchmark design criterion."
+Turning the defect into a measurement is the point.
+
+### 4.3 Secondary set — the stratification contrast
+
+All 431 unique V3 prompts across all 7 categories (same dedup rule). Used only for
+§6.3: reporting pooled tau next to blocked tau, to quantify how much stratification
+inflates the naive number. A candidate paper figure. **Not** part of the decision
+rule.
+
+### 4.4 Manifest
+
+All three sets are emitted as **one deduplicated file**,
+`data/prompts/phase05_manifest.jsonl` (**704 unique prompts**), with per-row boolean
+flags `in_primary`, `in_judgebound`, `in_secondary` plus `category` and `source`.
+One file rather than three because the sets overlap, and generating completions once
+per unique prompt rather than once per set membership avoids paying two or three
+times for the same prompt. Analysis slices by flag.
+
+**The manifest is frozen once generation starts.** Commit it.
+
+### 4.5 Excluded, with reasons logged
+
+- **`borderline_edge_factual`** — excluded from both the primary and judge-bound
+  sets. n_eff = 5 unique in V3 (20 rows collapse to 5 questions), and 85/100 of the
+  pool file is in V5 train. It is also a floor-effect category ("unusual phrasing of
+  obvious fact"), so both models will sit near P̂ = 0 and within-category τ_b will be
+  degenerate. Retained inside the secondary set as a **documented negative control**:
+  we expect degenerate variance, and reporting that honestly demonstrates the
+  estimator's failure mode rather than hiding it.
+- **`impossible`** — verifiable, but n = 30 unique is too thin to carry a stratum in
+  the primary set (C(30,2) = 435 pairs, and per-category CIs at n=30 are ±0.25 or
+  worse). Retained in the secondary set. Promote it in Phase 1 if the prompt pool is
+  expanded.
+- **4 type-mismatched prompts** noted during inspection — `Where was The Tunguska
+  event born?` and the same person-template applied to `Svalbard`, `Nauru`, and
+  `The Dancing Plague of 1518`. All are V3 `borderline_obscure_real`, so they leave
+  the decision surface under this amendment anyway. 39/331 of the superseded primary
+  set used person-shaped templates; the other 35 were legitimately people. Flagged
+  for the Phase 1 prompt-quality audit.
 
 ---
 
@@ -191,17 +274,20 @@ reading the source 2026-08-24):
 
 ### 5.2 Judge validation (required before the tau number is believed)
 
-Hand-label **150 completions, drawn from the primary set only** (i.e. the two
-borderline categories), stratified by (model × category × judge label), by the
+Hand-label **150 completions, drawn from the primary set only** (§4.1: the three
+verifiable categories), stratified by (model × category × judge label), by the
 author.
 
-Drawing from the primary set rather than the whole benchmark is deliberate: the
-judge prompt's 4-category logic has explicit rules for `nonexistent`,
-`impossible`, `factual`, and `ambiguous`, but **no rule written for the borderline
-categories** — they fall through to CATEGORY 3 (`obscure_real`) and CATEGORY 1
-(`plausible_fake`) by implication. Judge reliability is therefore plausibly
-*lowest* exactly where the decision surface lives. Validating on easy categories
-would give a reassuring and irrelevant number.
+Drawing from the primary set rather than the whole benchmark is deliberate. Within
+it, weight the sample toward `borderline_plausible_fake`: the judge prompt's
+4-category logic has explicit rules for `nonexistent`, `impossible`, `factual`, and
+`ambiguous`, but **no rule written for the borderline categories** — `plausible_fake`
+falls through to CATEGORY 1 by implication. Judge reliability is therefore plausibly
+lowest on the stratum that carries the most scientific weight. Validating only on
+categories with explicit judge rules would give a reassuring and irrelevant number.
+
+Suggested allocation: 75 from `borderline_plausible_fake`, and ~37 each from
+`nonexistent` and `ambiguous`.
 
 Report:
 - Overall judge–human agreement (Cohen's κ).
@@ -258,7 +344,8 @@ pervasive and τ_a is not meaningful here. State τ_b explicitly in the paper.
 
 **Blocked τ_b** — a single estimator over concordant/discordant pairs, counting
 **only pairs of prompts within the same category**. Over the primary set this is
-C(162,2) + C(169,2) = 27,237 within-stratum pairs. This is strictly preferable to
+C(169,2) + C(120,2) + C(120,2) = 28,476 within-stratum pairs. This is strictly
+preferable to
 computing per-category taus and taking a median: it is one estimator rather than a
 statistic over 2–3 noisy numbers, it uses every prompt, and it structurally
 excludes the between-category pairs identified in §2.1 as the inflation source.
@@ -290,6 +377,26 @@ value disagree materially, report both and treat the disagreement as a finding.
 
 Guard: if either τ_self ≤ 0, τ_corr is undefined. That outcome is a **measurement
 failure**, not evidence against the claim (see §7).
+
+### 6.2b Primary: the shared-judge artifact diagnostic
+
+Compute the identical estimator (blocked within-category τ_b, attenuation-corrected)
+separately on the **judge-bound set** (§4.2: `borderline_obscure_real` n=162,
+`factual` n=98; C(162,2) + C(98,2) = 17,794 within-stratum pairs).
+
+Report:
+
+    Δ_artifact = τ_corr(judge-bound categories) − τ_corr(verifiable categories)
+
+**Δ_artifact > 0 is the expected direction and is the measurement of interest.** It
+estimates how much apparent cross-model ordering agreement is manufactured by
+scoring both models against a shared judge's parametric knowledge rather than
+against verified ground truth. A large positive Δ is a paper result (§4.2 framing),
+not a defect to bury.
+
+Δ_artifact is **excluded from the go/no-go rule.** It does not gate Phase 1; the
+decision runs on the verifiable strata alone (§7). Reporting it does not license
+using judge-bound categories for anything else.
 
 ### 6.3 Secondary: the inflation contrast
 
@@ -380,8 +487,11 @@ on the normality argument.
 
 ## 8. Cost and time
 
-Volume: 704 unique prompts (331 primary + 373 additional from the secondary set)
-× 20 samples × 2 models = **28,160 completions**, plus one judge call each.
+Volume: **704 unique prompts** — the deduplicated union of the primary (409),
+judge-bound (260), and secondary (431) sets, which overlap (§4.4) — × 20 samples ×
+2 models = **28,160 completions**, plus one judge call each. Unchanged by the §4
+amendment, because the union is still all 431 unique V3 prompts plus 273 V5-clean
+pool top-ups.
 
 Rough token estimate: ~7M generation tokens, ~10M judge tokens. At Together's
 open-model rates this lands around **$15–25 including retries**. Verify current
@@ -409,18 +519,24 @@ State these before she finds them:
    over-corrected (§6.2).
 4. **τ disattenuation is a heuristic** adapted from a Pearson-derived formula;
    the ρ-based cross-check is the licensed version (§6.2).
-5. **Two categories only.** The primary decision surface is the borderline family.
-   Generalization to other categories is not tested by the primary estimator.
+5. **Three categories only.** The primary decision surface is
+   `borderline_plausible_fake`, `nonexistent`, and `ambiguous`. Generalization to
+   obscure-real-entity and factual prompts is **not** tested by the primary
+   estimator — those categories are not verifiable (§4.0) and are measured only as
+   the artifact diagnostic (§6.2b).
 6. **Pool prompts are a different generation** than V3's borderline prompts,
    audited but not eliminated as a source of heterogeneity (§6.5.2).
 7. **P̂ is decoding-config-specific** (T=0.7). Ordering could differ at other
    temperatures; untested.
 8. **The judge prompt has no explicit rule for the borderline categories** (§5.2).
-   They fall through to the factual / nonexistent rules by implication. Judge
-   reliability is plausibly lowest exactly where the decision surface lives, which
-   is why validation is drawn from the primary set.
+   `plausible_fake` falls through to the nonexistent-entity rule by implication.
+   Judge reliability is plausibly lowest on the stratum carrying the most weight,
+   which is why validation is weighted toward it.
 9. **Label-boundary choice is a judgement call.** `1 = Partial` is treated as
    non-hallucination in the primary; sensitivity analysis in §6.1.
+10. **Two of seven categories are unusable as designed.** `borderline_obscure_real`
+    and `factual` need real sourced ground truth or a retrieval-augmented judge
+    before Phase 1 can use them. Not pilot scope; blocking for Phase 1.
 
 ---
 
@@ -438,3 +554,24 @@ pre-registration.
   footguns and the requirement to bypass it for a single judge (§5.1); restricted
   judge validation to the primary set (§5.2); corrected the candidate judge ID to
   the `-Turbo` variant with a verify-before-hardcoding note (§5).
+- 2026-08-24 (same day, still pre-data) — **§4 restructured around a new
+  verifiability criterion (§4.0).** Inspecting the generated manifest revealed that
+  `borderline_obscure_real`'s `ground_truth` is a uniform meta-statement ("Real
+  entity: `<E>`. Answer may be uncertain due to obscurity.") containing no
+  verifiable fact, and that `factual` has the same defect in 94/98 rows. For those
+  categories the judge must fall back on its own parametric knowledge, so P̂ measures
+  model–judge disagreement rather than hallucination, and both models' scores become
+  correlated through the shared judge — inflating cross-model tau toward a **false
+  GO**. Blocking within category does not correct it.
+
+  Changes: primary set swapped from {`obscure_real`, `plausible_fake`} (n=331,
+  27,237 pairs) to {`plausible_fake`, `nonexistent`, `ambiguous`} (n=409, 28,476
+  pairs) — power preserved. `obscure_real` and `factual` demoted to a new
+  labelled **judge-bound diagnostic set** (§4.2) with a new estimator §6.2b
+  reporting Δ_artifact = τ_corr(judge-bound) − τ_corr(verifiable), explicitly
+  excluded from the decision rule. `impossible` excluded from the primary for thin n
+  (30). Manifest consolidated into one flagged file (§4.4). Judge validation
+  reweighted (§5.2). Cost and volume unchanged (§8).
+
+  **No data had been collected at the time of this amendment** — only the prompt
+  manifest had been generated. The go/no-go rule in §7 is unchanged.

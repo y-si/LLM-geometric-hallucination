@@ -55,6 +55,7 @@ This is the load-bearing claim for the entire paper. If corrected tau is low, th
    - Probe-based (internal representations) — harder for closed models
    - Frame on the Pareto frontier (cost × pre-gen vs. post-gen × signal quality)
 4. **External dataset(s)** beyond our benchmark + TruthfulQA. Candidates: SimpleQA, PopQA, FreshQA.
+9. **Ground-truth verifiability as a benchmark design criterion** — promoted from caveat to candidate contribution. Our own benchmark's `factual` and `borderline_obscure_real` categories have ground_truth fields containing no embedded facts, so any judgment on them measures model–judge disagreement rather than hallucination (see `CONTEXT.md`). Phase 0.5 measures the effect size directly (Δ_artifact, `PHASE_0.5_SPEC.md` §6.2b). Framing: *existing benchmarks conflate hallucination with disagreement-with-judge-knowledge; here is the effect size, and here is verifiability as a design criterion.* This is a paper section, not a limitations bullet.
 
 ### Structural rewrites
 5. **8-page discipline.** Density leads; everything else is ablation or appendix.
@@ -117,11 +118,11 @@ Notes:
 Uses only existing infrastructure (Mixtral 8x7B + Llama 4 Maverick via Together AI). No new credits, no sign-off needed.
 
 - **Claim under test**: *prompt difficulty ordering is largely model-invariant.* (NOT "hallucination is a property of the prompt, not the model" — that version is false as stated; models differ substantially in absolute rate, and the pilot measures that too.)
-- **Prompts**: 331 from the two viable borderline categories (`obscure_real` n=162, `plausible_fake` n=169), drawn from V3 (the held-out test set, 431 unique, verified zero overlap with V5 train) plus V5-train-clean top-up from the standalone pool files. Deduplicated on question text. `borderline_edge_factual` is excluded from the decision surface (n_eff=5 unique in V3, 85% of its pool file is in V5 train, floor effect) and retained only as a documented degenerate-variance control.
+- **Prompts**: 409 across the three *verifiable* categories (`borderline_plausible_fake` n=169, `nonexistent` n=120, `ambiguous` n=120), drawn from V3 (the held-out test set, 431 unique, verified zero overlap with V5 train) plus V5-train-clean top-up from the standalone pool files. Deduplicated on question text. **Category admission turns on ground-truth verifiability** — `factual` and `borderline_obscure_real` are excluded from the decision surface because their ground_truth contains no facts, making the judge fall back on its own knowledge and correlating both models' scores through a shared referent (spec §4.0). They are run separately as a labelled artifact diagnostic (§4.2, §6.2b). `borderline_edge_factual` is excluded as well (n_eff=5 unique in V3, floor effect) and kept only as a degenerate-variance control; `impossible` is excluded for thin n=30.
 - **k=20** samples per (prompt, model) at T=0.7 — attenuation is driven by k, and cost is not the constraint.
 - **Judge**: a funded third-family open model on Together (candidate `Qwen/Qwen2.5-72B-Instruct`). NOT a Llama-family judge — that shares a family with Model B and would bias its P̂ asymmetrically. Inherits the March 2026 failure rule: failed judge calls are never assigned a label and never counted.
-- **Primary statistic**: blocked **within-category** τ_b (only same-category prompt pairs counted; 27,237 pairs), attenuation-corrected against a within-model split-half noise ceiling. Nested bootstrap over prompts *and* completions, 1000×.
-- **Reported alongside**: pooled τ_b on all 7 V3 categories, explicitly labelled stratification-inflated and excluded from the decision. The pooled-vs-blocked gap is a candidate paper figure.
+- **Primary statistic**: blocked **within-category** τ_b (only same-category prompt pairs counted; 28,476 pairs), attenuation-corrected against a within-model split-half noise ceiling. Nested bootstrap over prompts *and* completions, 1000×.
+- **Reported alongside**: (i) Δ_artifact = τ_corr(judge-bound categories) − τ_corr(verifiable categories), a direct effect-size estimate of the shared-judge artifact; (ii) pooled τ_b on all 7 V3 categories, explicitly labelled stratification-inflated. Neither gates the decision. Both are candidate paper figures.
 
 **Pre-registered decision rule** (binding; see spec §7 for the derivation of the thresholds):
 - **GO** to Phase 1 if τ_corr ≥ 0.50 **and** bootstrap 95% CI lower bound ≥ 0.30 — i.e. at least half the variance in prompt-level difficulty is model-invariant.
@@ -141,6 +142,7 @@ Cost: ~$15–25. Time: 1–2 days, plus ~2h hand-labelling 150 completions for j
 ### Phase 1 — Prompt-vs-model experiment at scale (load-bearing)
 *Goal: establish that prompt difficulty ordering is largely model-invariant across a heterogeneous panel.*
 - **Entry condition: Phase 0.5 returned GO** under the pre-registered rule in `PHASE_0.5_SPEC.md` §7. Do not start otherwise.
+- **Blocking prerequisite**: the `factual` and `borderline_obscure_real` categories need real sourced ground truth or a retrieval-augmented judge before Phase 1 can use them at all. Their current ground_truth fields contain no facts, making any judgment judge-parametric-knowledge-bound (see `CONTEXT.md`). Phase 0.5 works around this by excluding them from its decision surface; Phase 1 cannot, if it wants to claim coverage of factual and obscure-entity prompts.
 - Extend the pilot to the full 5–10 model panel (**funding-gated — currently 2 models**)
 - 500 prompts (still stratified), k=20 samples — inherit the pilot's estimator, not Boaz's original sketch
 - Full judge pipeline (3-judge consensus or single judge — decide with Sunny). Third-family judge requirement carries over: the judge must not share a model family with any panel member.
@@ -149,6 +151,7 @@ Cost: ~$15–25. Time: 1–2 days, plus ~2h hand-labelling 150 completions for j
 
 ### Phase 2 — Geometric prediction at scale
 *Goal: show density predicts the prompt-level P(hallucinate) from Phase 1.*
+- **Recompute, do not reuse.** Any factual-adjacent analysis that reaches the paper must be recomputed from scratch — thesis-era judgments on the `factual` and `borderline_obscure_real` categories are judge-parametric-knowledge-bound (see `CONTEXT.md`).
 - Extract input embeddings across the panel
 - Compute density + other geometric features per prompt
 - Regress P(hallucinate) on geometric features — per-model and pooled
