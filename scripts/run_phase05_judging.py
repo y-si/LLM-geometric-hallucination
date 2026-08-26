@@ -31,14 +31,14 @@ self-preference would bias one model's P-hat asymmetrically, and differential
 per-model judge error does not average out in a cross-model ranking comparison.
 Together's serverless tier on this account offers only Meta and OpenAI models, so that
 requirement is unsatisfiable there — the judge runs on the Anthropic API instead
-(claude-haiku-4-5, ~$27 for this run, billed separately from the Together balance).
+(claude-haiku-4-5, ~$50 for this run, billed separately from the Together balance).
 The guard derives forbidden family tokens from the models actually present in the
 completions file, so it tracks §3 automatically rather than drifting.
 
 Requires ANTHROPIC_API_KEY in .env and the `anthropic` package.
 
 Output is append-only JSONL at results/phase05/judgments.jsonl, resumable: re-running
-skips any (prompt_id, model, sample_idx) already judged successfully.
+skips any (uid, model, sample_idx) already judged successfully.
 
 Usage:
     python3 scripts/run_phase05_judging.py --preflight     # verify judge responds
@@ -70,7 +70,7 @@ OUTPUT_PATH = OUTPUT_DIR / "judgments.jsonl"
 # OpenAI models on Together's serverless tier (verified 2026-08-25), family
 # independence is unsatisfiable there: every available judge would share a family with
 # one evaluated model. claude-haiku-4-5 is $1/$5 per M tokens, the cheapest Anthropic
-# model, ~$27 for this run — billed separately from the Together balance.
+# model, ~$50 for this run — billed separately from the Together balance.
 # Do NOT add prompt caching: Haiku 4.5's minimum cacheable prefix is 4096 tokens and
 # the judge system prompt is well under that, so a marker would silently do nothing.
 JUDGE_MODEL = "claude-haiku-4-5"
@@ -159,7 +159,7 @@ def check_judge_family(evaluated_models):
 def existing_keys(path):
     done, failed = set(), set()
     for row in read_jsonl(path):
-        key = (row["prompt_id"], row["model"], row["sample_idx"])
+        key = (row["uid"], row["model"], row["sample_idx"])
         if row.get("judge_failed"):
             failed.add(key)
         else:
@@ -170,7 +170,8 @@ def existing_keys(path):
 def judge_one(judge, completion_row, ground_truth):
     """One judgment. Enforces the failure contract: no label on failure."""
     key_fields = {
-        "prompt_id": completion_row["prompt_id"],
+        "uid": completion_row["uid"],
+        "prompt_id": completion_row.get("prompt_id"),
         "category": completion_row["category"],
         "model": completion_row["model"],
         "sample_idx": completion_row["sample_idx"],
@@ -207,7 +208,7 @@ def preflight(judge, completions, ground_truths):
     if sample is None:
         sys.exit("No successful completions to judge. Run generation first.")
 
-    row = judge_one(judge, sample, ground_truths[sample["prompt_id"]])
+    row = judge_one(judge, sample, ground_truths[sample["uid"]])
     if row.get("judge_failed"):
         print(f"  FAIL  {row.get('error')}")
         print("\nCheck that ANTHROPIC_API_KEY is set in .env and that the `anthropic` "
@@ -242,7 +243,9 @@ def main():
     manifest = read_jsonl(MANIFEST_PATH)
     if not manifest:
         sys.exit(f"No manifest at {MANIFEST_PATH}. Run build_phase05_manifest.py first.")
-    ground_truths = {r["id"]: r["ground_truth"] for r in manifest}
+    # Keyed on uid, NOT id: V3 and the pool files reuse the same id space, so
+    # keying on id would pair 54 prompts with the WRONG ground truth.
+    ground_truths = {r["uid"]: r["ground_truth"] for r in manifest}
 
     completions = read_jsonl(COMPLETIONS_PATH)
     if not completions:
@@ -261,7 +264,7 @@ def main():
     # Generation failures have no text to judge; they already reduce k_eff.
     judgeable = [c for c in completions if c.get("completion")]
     skipped_gen_failures = len(completions) - len(judgeable)
-    judgeable.sort(key=lambda r: (r["category"], str(r["prompt_id"]),
+    judgeable.sort(key=lambda r: (r["category"], r["uid"],
                                   r["model"], r["sample_idx"]))
     if args.limit:
         judgeable = judgeable[:args.limit]
@@ -269,13 +272,13 @@ def main():
     done, previously_failed = existing_keys(OUTPUT_PATH)
     tasks = []
     for row in judgeable:
-        key = (row["prompt_id"], row["model"], row["sample_idx"])
+        key = (row["uid"], row["model"], row["sample_idx"])
         if key in done:
             continue
         if key in previously_failed and not args.retry_failed:
             continue
-        if row["prompt_id"] not in ground_truths:
-            sys.exit(f"prompt_id {row['prompt_id']} is not in the manifest — "
+        if row["uid"] not in ground_truths:
+            sys.exit(f"uid {row['uid']} is not in the manifest — "
                      "completions and manifest are out of sync.")
         tasks.append(row)
 
@@ -298,7 +301,7 @@ def main():
     start = time.time()
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = [executor.submit(judge_one, judge, row, ground_truths[row["prompt_id"]])
+        futures = [executor.submit(judge_one, judge, row, ground_truths[row["uid"]])
                    for row in tasks]
         for future in as_completed(futures):
             row = future.result()
@@ -344,7 +347,7 @@ def main():
     k_eff = defaultdict(int)
     for r in all_judgments:
         if not r.get("judge_failed"):
-            k_eff[(r["prompt_id"], r["model"])] += 1
+            k_eff[(r["uid"], r["model"])] += 1
     below = sum(1 for v in k_eff.values() if v < 16)
     print(f"\n(prompt, model) pairs with k_eff < 16 (excluded from the primary "
           f"estimator per §5.1): {below}")

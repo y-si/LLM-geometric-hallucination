@@ -87,7 +87,16 @@ def dedup_by_question(rows):
 
 
 def build_category(category, v3_rows, v5_questions):
-    """V3 rows for a category, deduped, plus V5-clean pool top-up if a pool exists."""
+    """V3 rows for a category, deduped, plus V5-clean pool top-up if a pool exists.
+
+    IDs are namespaced by source. V3 and the standalone pool files reuse the same id
+    space (both contain e.g. `borderline_obscure_0`) while naming DIFFERENT questions.
+    Everything downstream keys on (prompt_id, model, sample_idx), so an un-namespaced
+    id silently collides: the resume logic treats the second prompt as already
+    generated and skips it. That is exactly what happened on the first full run —
+    54 colliding ids produced 2,160 duplicate keys. `uid` is the real key; `id` is
+    retained as provenance.
+    """
     v3_cat = [r for r in v3_rows if r["category"] == category]
     v3_kept, v3_dropped = dedup_by_question(v3_cat)
 
@@ -97,7 +106,7 @@ def build_category(category, v3_rows, v5_questions):
     for r in v3_dropped:
         print(f"    dropped dup id={r['id']}: {norm(r['question'])[:70]}")
 
-    rows = [{**r, "source": "v3"} for r in v3_kept]
+    rows = [{**r, "source": "v3", "uid": f"v3:{r['id']}"} for r in v3_kept]
     taken = {norm(r["question"]) for r in v3_kept}
 
     pool_path = PROMPTS_DIR / f"{category}.jsonl"
@@ -119,7 +128,7 @@ def build_category(category, v3_rows, v5_questions):
             already_taken += 1
             continue
         taken.add(q)
-        rows.append({**r, "source": "pool"})
+        rows.append({**r, "source": "pool", "uid": f"pool:{r['id']}"})
         added += 1
 
     print(f"  pool ({pool_path.name}): {len(pool_rows)} rows -> {len(pool_kept)} unique; "
@@ -172,11 +181,22 @@ def main():
             q = norm(r["question"])
             if q not in merged:
                 merged[q] = {**r, "source": r.get("source", "v3"),
+                             "uid": r.get("uid", f"v3:{r['id']}"),
                              "in_primary": False, "in_judgebound": False,
                              "in_secondary": False}
             merged[q][flag] = True
 
-    manifest = sorted(merged.values(), key=lambda r: (r["category"], str(r["id"])))
+    manifest = sorted(merged.values(), key=lambda r: (r["category"], r["uid"]))
+
+    # `uid` is the key everything downstream joins on. A collision here silently
+    # corrupts the run: the resume logic skips the second prompt as already done.
+    uids = Counter(r["uid"] for r in manifest)
+    collisions = {u: n for u, n in uids.items() if n > 1}
+    if collisions:
+        sys.exit(f"FAIL: {len(collisions)} duplicate uid(s) — downstream keys would "
+                 f"collide: {sorted(collisions)[:5]}")
+    if len(uids) != len(manifest):
+        sys.exit("FAIL: uid count does not match manifest length")
 
     counts = Counter(r["category"] for r in manifest
                      if r["in_primary"] or r["in_judgebound"])

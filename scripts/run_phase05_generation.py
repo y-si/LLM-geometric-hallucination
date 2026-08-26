@@ -8,7 +8,7 @@ built by scripts/build_phase05_manifest.py) and produces k=20 completions per
     704 prompts x 20 samples x 2 models = 28,160 completions
 
 Decoding config is pre-registered and must not drift: temperature 0.7, top_p 1.0,
-max_tokens 256, no system prompt. P-hat is defined relative to this config, so a
+max_tokens 2048, no system prompt. P-hat is defined relative to this config, so a
 change invalidates comparison with any earlier partial run.
 
 sample_idx is recorded and stable because the split-half noise ceiling (§6.2) splits
@@ -16,7 +16,7 @@ each prompt's completions by odd/even index. It must be a real per-sample index,
 a re-derived ordering.
 
 Output is append-only JSONL at results/phase05/completions.jsonl. The script is
-resumable: re-running skips any (prompt_id, model, sample_idx) triple already
+resumable: re-running skips any (uid, model, sample_idx) triple already
 present, so a rate-limit crash costs only the in-flight batch. Generation failures
 are recorded as rows with generation_failed=true rather than dropped silently, so a
 later pass can retry exactly the gaps.
@@ -131,7 +131,7 @@ def load_manifest(limit=None):
     if not prompts:
         sys.exit(f"No manifest at {MANIFEST_PATH}. "
                  "Run scripts/build_phase05_manifest.py first.")
-    prompts.sort(key=lambda r: (r["category"], str(r["id"])))
+    prompts.sort(key=lambda r: (r["category"], r["uid"]))
     if limit:
         prompts = stratified_sample(prompts, limit)
     return prompts
@@ -155,16 +155,16 @@ def stratified_sample(prompts, limit):
             if depth < len(by_cat[cat]) and len(picked) < limit:
                 picked.append(by_cat[cat][depth])
         depth += 1
-    picked.sort(key=lambda r: (r["category"], str(r["id"])))
+    picked.sort(key=lambda r: (r["category"], r["uid"]))
     return picked
 
 
 def existing_keys(path):
-    """Set of (prompt_id, model, sample_idx) already generated successfully."""
+    """Set of (uid, model, sample_idx) already generated successfully."""
     done = set()
     failed = Counter()
     for row in read_jsonl(path):
-        key = (row["prompt_id"], row["model"], row["sample_idx"])
+        key = (row["uid"], row["model"], row["sample_idx"])
         if row.get("generation_failed"):
             failed[key] += 1
         else:
@@ -194,7 +194,8 @@ def generate_one(client, prompt_row, model_key, sample_idx):
                 raise ValueError(f"empty completion "
                                  f"(finish_reason={result.get('finish_reason')})")
             return {
-                "prompt_id": prompt_row["id"],
+                "uid": prompt_row["uid"],
+        "prompt_id": prompt_row["id"],
                 "category": prompt_row["category"],
                 "model": model_key,
                 "sample_idx": sample_idx,
@@ -212,6 +213,7 @@ def generate_one(client, prompt_row, model_key, sample_idx):
                 time.sleep(2 ** attempt)
 
     return {
+        "uid": prompt_row["uid"],
         "prompt_id": prompt_row["id"],
         "category": prompt_row["category"],
         "model": model_key,
@@ -270,7 +272,7 @@ def main():
     for prompt_row in prompts:
         for model_key in MODELS:
             for sample_idx in range(K_SAMPLES):
-                key = (prompt_row["id"], model_key, sample_idx)
+                key = (prompt_row["uid"], model_key, sample_idx)
                 if key in done:
                     continue
                 if key in previously_failed and not args.retry_failed:
@@ -303,7 +305,7 @@ def main():
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {
             executor.submit(generate_one, clients[model_key], prompt_row,
-                            model_key, sample_idx): (prompt_row["id"], model_key, sample_idx)
+                            model_key, sample_idx): (prompt_row["uid"], model_key, sample_idx)
             for prompt_row, model_key, sample_idx in tasks
         }
         for future in as_completed(futures):
@@ -344,7 +346,7 @@ def main():
     k_eff = defaultdict(int)
     for r in rows:
         if not r.get("generation_failed"):
-            k_eff[(r["prompt_id"], r["model"])] += 1
+            k_eff[(r["uid"], r["model"])] += 1
     short = sum(1 for v in k_eff.values() if v < K_SAMPLES)
     print("\ncumulative in file:")
     for model_key in MODELS:
