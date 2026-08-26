@@ -317,8 +317,12 @@ See **`HANDOFF.md`**. Do not duplicate status here — one place, or they drift.
 
 - Auto-memory at `~/.claude/projects/.../memory/` does NOT sync via git. That content is
   mirrored here in CONTEXT.md and in the other repo docs.
-- **Rotate API keys if they ever appear in a terminal transcript or a pasted command.**
-  This has happened twice — a wrapped `curl -H` line echoed a key, and `.env` contents
-  surfaced into session context on edit.
+- **API key hygiene.** Keys have surfaced in session transcripts twice (a wrapped
+  `curl -H` line echoed one; `.env` contents entered context on edit). That is
+  low-risk — transcripts are local and not scraped. **Rotation is only mandatory if a
+  key enters git history or is shared externally.** Verified 2026-08-25: `.env` has
+  never been committed and no key material exists in any commit. The durable
+  protection is a **spend cap on both provider accounts**, which also bounds the damage
+  from a runaway script — a more realistic failure than key theft.
 - Together AI is used for open-model inference. **Verified 2026-08-25: this account's serverless tier serves exactly three chat models** — `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`. Everything else, including both thesis models (Mixtral 8x7B, all Llama-4-Maverick builds) and every Qwen build, is dedicated-endpoint-only (bills per running minute). `/v1/models` lists dedicated-only models too, so it is **not** an availability check — probe with a real 1-token request instead (`scripts/diagnostics/probe_together_serverless.py`).
 - Anthropic API is used for the Phase 0.5 judge (`claude-haiku-4-5`), because family independence from the evaluated models is unsatisfiable within Together's serverless tier. Requires `ANTHROPIC_API_KEY`; bills separately from Together.

@@ -30,7 +30,6 @@ file.
 models probe-confirmed serverless, preflight passed, smoke test clean at n=14.
 
 ```bash
-# rotate keys FIRST if they were exposed — the process holds the key in memory
 nohup python3 scripts/run_phase05_generation.py > results/phase05/gen.log 2>&1 &
 tail -f results/phase05/gen.log
 ```
