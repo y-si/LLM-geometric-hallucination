@@ -1,6 +1,10 @@
 # Research Paper — Session Context
 
-**If you're a fresh Claude Code session on any machine, read this first.** This file exists so that a clean session can catch up on the project without needing access to the local `~/.claude/` auto-memory (which does not sync via git).
+**If you're a fresh Claude Code session on any machine, read this first, then
+`HANDOFF.md`.** This file is stable orientation: what the project is, how to work on it,
+what the standing rules are. `HANDOFF.md` is volatile state: what is running right now,
+what to do next, what is blocked. When the two disagree about current status,
+`HANDOFF.md` wins.
 
 Last updated: 2026-08-24
 
@@ -81,7 +85,8 @@ Detailed advisor conversation history is in local auto-memory: `~/.claude/projec
 
 | File | Purpose |
 |---|---|
-| `research_paper/CONTEXT.md` | This file — session entry point |
+| `research_paper/CONTEXT.md` | This file — stable orientation, standing rules |
+| `research_paper/HANDOFF.md` | **Volatile state** — what's running, next action, blockers, session log. Update at the end of every session; it wins over this file on current status |
 | `research_paper/PLAN.md` | Phased roadmap for the paper |
 | `research_paper/PHASE_0.5_SPEC.md` | **Pre-registered** Phase 0.5 pilot design, estimator, and binding decision rule |
 | `research_paper/DEADLINES.md` | Venue deadlines + working-backwards timeline |
@@ -298,19 +303,15 @@ stopped rather than starting over.
 
 ### End-of-session checklist (do this before switching machines)
 
+- [ ] **Update `HANDOFF.md`** — running jobs, next action, blockers, a session-log entry
 - [ ] `python3 scripts/sync_phase05_results.py pack`
 - [ ] `git add -A && git commit && git push`
 - [ ] Any diagnostic worth keeping lives in `scripts/diagnostics/`, **not `/tmp`** —
       macOS clears `/tmp` and three probe scripts were already lost that way.
-- [ ] Update the "current state" line below if the phase changed.
 
-### Current state (update when it changes)
+### Current state
 
-- **2026-08-25**: Phase 0.5 fully specified and instrumented. Manifest frozen (704
-  prompts). Generation + judging scripts written, preflighted, smoke-tested at n=14.
-  `max_tokens=2048` set from measurement. **No pilot data collected yet** — the next
-  action is the full generation run (~10h, resumable). Analysis script (spec §6–§7) is
-  still unwritten and is the main remaining build.
+See **`HANDOFF.md`**. Do not duplicate status here — one place, or they drift.
 
 ### Other
 
