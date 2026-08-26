@@ -167,6 +167,29 @@ def existing_keys(path):
     return done, failed - done
 
 
+def stratified_sample(rows, limit):
+    """Round-robin across (category, model), deterministically.
+
+    A plain rows[:limit] after sorting by (category, uid, model, sample_idx) yields all
+    `limit` samples of a SINGLE prompt from a single model in the first category —
+    a smoke test that validates one prompt out of 704 and one model out of two. The
+    generation script had the same defect; this is the same fix.
+    """
+    buckets = defaultdict(list)
+    for r in rows:
+        buckets[(r["category"], r["model"])].append(r)
+    keys = sorted(buckets)
+    picked, depth = [], 0
+    longest = max(len(v) for v in buckets.values())
+    while len(picked) < limit and depth < longest:
+        for k in keys:
+            if depth < len(buckets[k]) and len(picked) < limit:
+                picked.append(buckets[k][depth])
+        depth += 1
+    picked.sort(key=lambda r: (r["category"], r["uid"], r["model"], r["sample_idx"]))
+    return picked
+
+
 def judge_one(judge, completion_row, ground_truth):
     """One judgment. Enforces the failure contract: no label on failure."""
     key_fields = {
@@ -267,7 +290,7 @@ def main():
     judgeable.sort(key=lambda r: (r["category"], r["uid"],
                                   r["model"], r["sample_idx"]))
     if args.limit:
-        judgeable = judgeable[:args.limit]
+        judgeable = stratified_sample(judgeable, args.limit)
 
     done, previously_failed = existing_keys(OUTPUT_PATH)
     tasks = []
