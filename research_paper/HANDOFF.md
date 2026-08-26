@@ -15,47 +15,45 @@ file.
 
 | Job | Machine | Started | Status | Output |
 |---|---|---|---|---|
-| **Phase 0.5 full generation** | day machine (Seins-MacBook-Pro) | 2026-08-25 ~22:06 | **IN FLIGHT**, PID 91505 | `results/phase05/completions.jsonl` |
+| _(none)_ | — | — | — | — |
 
-**DO NOT start generation on the other machine.** Both would write to their own
-`completions.jsonl` and you would pay twice for the same completions.
-
-Measured throughput 0.56 completions/sec → **~13.8 hours**, finishing around midday
-2026-08-26. Held awake by `caffeinate -is -w 91505` (releases automatically when the
-job exits). Lid must stay **open** — clamshell sleep is immediate and caffeinate does
-not prevent it; the display going dark is harmless and unrelated.
-
-Check progress (do **not** use `gen.log` — Python block-buffers stdout to a file, so it
-stays empty until ~500 completions):
-
-```bash
-wc -l results/phase05/completions.jsonl     # 28160 = done
-pgrep -f run_phase05                        # alive?
-```
-
-If it dies or the machine sleeps, **just re-run the same command** — generation is
-resumable and continues from the last completed row:
-
-```bash
-nohup python3 scripts/run_phase05_generation.py > results/phase05/gen.log 2>&1 &
-```
+**Generation is COMPLETE** — 28,160 / 28,160 completions, 1,408 / 1,408 (uid, model)
+pairs at exactly k=20, zero pairs short, zero absent. Packed and pushed (`fdab540`).
 
 ---
 
 ## Next action
 
-**When generation finishes**, read the per-model truncation report at the end of the
-run, then judge:
+**Judge the completions.** Preflight already passed — `claude-haiku-4-5` correctly
+routed an `ambiguous` prompt to CATEGORY 4 and cited the rule, so it is following the
+taxonomy rather than guessing.
 
 ```bash
-python3 scripts/run_phase05_judging.py --preflight   # 1 real judgment — READ the reasoning
-python3 scripts/run_phase05_judging.py --limit 20    # smoke test
-python3 scripts/run_phase05_judging.py               # full, ~$50 on Anthropic, resumable
+python3 scripts/run_phase05_judging.py --limit 20    # smoke test, read the labels
+python3 scripts/run_phase05_judging.py               # full, ~$50, resumable, ~several hours
 ```
 
-The preflight prints the judge's actual label and reasoning on a real completion. Read
-it rather than just checking it exits clean — it is the first evidence about whether
-`claude-haiku-4-5` judges borderline prompts sensibly (§5.2).
+Judging is resumable exactly like generation. Watch progress with
+`wc -l results/phase05/judgments.jsonl` (target 28,160), not the log.
+
+**Then** the analysis script (spec §6–§7) — still unwritten, and the only thing between
+this data and a GO/NO-GO verdict.
+
+---
+
+## Generation results (2026-08-26)
+
+| | Llama-3.3-70B | gpt-oss-120b |
+|---|---|---|
+| Completions | 14,080 | 14,080 |
+| Truncated (`finish_reason == "length"`) | **0.0%** (2) | **19.6%** (2,758) |
+| Median output tokens | 101 | 686 |
+
+The 19.6-point truncation asymmetry is **expected and is not a defect**: a model still
+generating at 2048 tokens is confabulating at length, which is the behaviour being
+measured. Do not raise `max_tokens` to chase it, and do not residualize P̂ on length —
+that controls a mediator and destroys real signal (§6.5.4). The test that matters is
+label-neutrality, run after judging.
 
 ---
 
@@ -100,6 +98,35 @@ carefully and against the real data shapes in `results/phase05/*.jsonl`.
 ## Session log
 
 Newest first. One entry per working session: what changed, what it cost, what broke.
+
+### 2026-08-26 (day machine) — generation complete
+
+**28,160 / 28,160 completions, all 1,408 (uid, model) pairs at k=20.** ~14 hours wall
+clock at 0.56/s. No pilot judgments yet.
+
+- **Caught a keying bug before it corrupted the result.** V3 and the pool files reuse
+  the same id space for *different* questions, so 54 ids collided; the resume logic
+  skipped the second prompt of each pair. Worst consequence was latent — the judging
+  script keyed `ground_truths` on `id`, which would have paired 54 prompts with the
+  **wrong ground truth** and mislabelled them. Fixed by namespacing ids as
+  `uid` (`v3:` / `pool:`) with a build-time uniqueness assertion. **No regeneration
+  needed** — every row stores its `question`, so `scripts/migrate_completions_to_uid.py`
+  re-keyed on that.
+- **354 failures were a transient provider outage**, one contiguous burst near the end
+  of the run, all `503 Service unavailable` / connection errors. Two retries from a real
+  shell recovered all of them.
+- Two wrong diagnoses corrected along the way: the failures were *not* caused by
+  unsubstituted `[placeholder]` tokens (67 of 69 placeholder prompts generated fine),
+  and a "100% retry failure" was a sandbox with no outbound HTTPS, not a real result.
+- **Judge preflight passed with good reasoning** — `claude-haiku-4-5` routed an
+  `ambiguous` prompt to CATEGORY 4 and cited the rule it applied.
+- **Recorded for later: 69 of 449 V3 prompts contain unsubstituted `[placeholder]`
+  tokens** ("What is the capital of [country]?"). A pre-existing benchmark defect
+  inherited from the thesis, ~15% of prompts. Needs a decision before Phase 1 — a
+  reviewer will notice.
+- Spend: ~$9 generation. Together balance ~$47.
+
+Commits: `020858b` → `fdab540`.
 
 ### 2026-08-25 (day machine)
 
