@@ -85,3 +85,9 @@ memory/
 *.tmp
 *.bak
 *.swp
+
+# Phase 0.5 pilot results: raw JSONL is large (~52 MB/file) and expensive to
+# reproduce (~$55, ~10h). Sync the gzipped form instead — see
+# scripts/sync_phase05_results.py (pack / unpack).
+results/phase05/*.jsonl
+!results/phase05/*.jsonl.gz

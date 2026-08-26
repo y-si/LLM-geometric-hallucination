@@ -503,21 +503,39 @@ agreeing in *ordering* — the evidence for the §1 rephrasing.
    on each model's own refusal rate. If the ordering agreement is substantially
    carried by shared refusal behaviour rather than shared hallucination behaviour,
    that is a different (weaker) claim and must be reported as such.
-4. **Completion-length confound.** The two models differ ~7× in natural completion
-   length, and the gap varies by prompt *within* category (§3.2). A longer answer has
-   more opportunities to trip the judge's hallucination rule, so length may be driving
-   labels rather than prompt difficulty. Three reports:
-   - Per model, within category: correlation between a completion's `output_tokens`
-     and its hallucination label (Spearman ρ; point-biserial as a cross-check).
-   - Per (prompt, model): mean `output_tokens`, and blocked τ_b between the two
-     models' per-prompt mean lengths. High length-agreement plus high P̂-agreement is
-     ambiguous; the next item disambiguates.
-   - **τ_cross recomputed on P̂ residualized on each model's own per-prompt mean
-     completion length.** If τ_corr collapses under this control, the headline result
-     is about verbosity rather than prompt difficulty, and must be reported that way.
-   - Truncation rate per model (`finish_reason == "length"`). A gap above 5 points is
-     treated as a confound requiring either regeneration at a higher `max_tokens` or
-     explicit reporting — the generation script prints this and warns.
+4. **Completion-length and truncation.** The two models differ ~7× in natural
+   completion length and the gap varies by prompt within category (§3.2).
+
+   **Do NOT residualize P̂ on completion length.** An earlier draft of this section
+   specified exactly that, and it was wrong. Length here is not a confounder sitting
+   beside the outcome — it is a **consequence** of it: the model writes at length
+   *because* it is confabulating. Measured 2026-08-25: on `nonexistent` prompts
+   gpt-oss's median completion is 2048 tokens (hitting the cap) against Llama's 85.
+   Residualizing on a mediator strips real signal rather than nuisance variance, and
+   would have driven τ_corr down spuriously — i.e. manufactured a false NO-GO.
+
+   The real question is measurement error, not confounding: **does truncation change
+   the label?** Report:
+   - **Label-neutrality test (primary).** For prompts that produced *both* truncated
+     and complete samples, compare the hallucination-label distribution between them
+     **holding the prompt fixed** (Fisher exact per prompt; pooled across such prompts
+     with a Cochran–Mantel–Haenszel test). No difference ⇒ truncation is label-neutral
+     and the confound is closed. This costs no extra API calls — it falls out of the
+     judged data.
+   - **Coverage caveat.** Prompts truncated on *every* sample admit no within-prompt
+     contrast (`nonexistent_001` was 20/20 in the smoke test). Report how many prompts
+     fall in that class; they are untestable by this method and must be named.
+   - **Descriptive only:** the association between `output_tokens` and the
+     hallucination label, per model, within category — reported as a finding about
+     confabulation behaviour, explicitly **not** used as a control.
+   - Truncation rate per model from `finish_reason == "length"`, with the per-category
+     breakdown.
+
+   Why `max_tokens` is not raised further to chase this: at 2048 a model that is still
+   generating has already committed to its answer, so truncation is very unlikely to
+   flip a label — unlike at 256, where a model could be cut off before reaching its
+   disclaimer. Raising the cap roughly doubles judge input cost for no measurement
+   gain.
 
 ### 6.6 Confidence intervals
 

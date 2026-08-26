@@ -371,10 +371,13 @@ def main():
         gap = abs(list(rates.values())[0] - list(rates.values())[1])
         print(f"  asymmetry between models: {gap:.1%}")
         if gap > 0.05:
-            print("  WARNING: >5 point truncation gap. The judge scores truncated "
-                  "answers as answers, so this biases one model's P-hat relative to "
-                  "the other. Raise MAX_TOKENS and regenerate, or report it as a "
-                  "confound (PHASE_0.5_SPEC.md §6.5.4).")
+            print("  NOTE: >5 point truncation gap. This is expected — a model that is"
+                  " still generating at max_tokens is confabulating at length, which"
+                  " is the behaviour being measured, not noise.\n"
+                  "  Do NOT raise MAX_TOKENS to chase it and do NOT residualize P-hat"
+                  " on length (that controls a mediator and destroys real signal).\n"
+                  "  The check that matters is the label-neutrality test in"
+                  " PHASE_0.5_SPEC.md §6.5.4, run after judging.")
 
 
 if __name__ == "__main__":

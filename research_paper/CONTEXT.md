@@ -257,8 +257,67 @@ Ready to send. Subject: "Quick question on the credits"
 
 ## Cross-machine notes
 
-- Auto-memory at `~/.claude/projects/.../memory/` does NOT sync via git. That content is mirrored here in CONTEXT.md and in the other repo docs. If you edit CONTEXT.md, also update `~/.claude/projects/.../memory/MEMORY.md` on this machine so the local auto-memory stays in sync.
-- Local `.env` with API keys must be reconfigured per machine (never committed).
-- Together AI is used for open-model inference. **Verified 2026-08-25: this account's serverless tier serves exactly three chat models** — `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`. Everything else, including both thesis models (Mixtral 8x7B, all Llama-4-Maverick builds) and every Qwen build, is dedicated-endpoint-only (bills per running minute). `/v1/models` lists dedicated-only models too, so it is **not** an availability check — probe with a real 1-token request instead.
+**Working pattern (from 2026-08-25): day machine and night machine, synced through git.**
+Claude Code quota is per-machine, so the work alternates. The repo is the handoff
+medium — anything that only exists on one laptop is effectively lost.
+
+**Important: running the pilot costs zero Claude Code quota.** `run_phase05_generation.py`
+and `run_phase05_judging.py` are plain Python hitting Together/Anthropic APIs. Quota is
+consumed by *conversations about* the work, not the work itself. So the long overnight
+generation can run on whichever machine is convenient.
+
+### Per-machine setup (one time)
+
+1. `git clone` / `git pull`
+2. `pip3 install -r requirements.txt` (numpy, scipy, pandas, matplotlib, seaborn,
+   scikit-learn, **openai**, **anthropic**, pyyaml)
+3. Create `.env` at the repo root — **never committed**, must be recreated per machine:
+   ```
+   TOGETHER_API_KEY=...
+   ANTHROPIC_API_KEY=...
+   ```
+   Scripts load it themselves via `src/utils/env.py`; no `source .env` needed.
+4. `python3 -c "import sys;print(sys.version)"` — `python3`, not `python`.
+
+### Syncing pilot results
+
+Raw results are ~52 MB per file and cost ~$55 and ~10 hours to reproduce, so they are
+version-controlled in gzipped form. `results/phase05/*.jsonl` is gitignored;
+`*.jsonl.gz` is committed.
+
+```
+python3 scripts/sync_phase05_results.py pack      # before commit/push
+python3 scripts/sync_phase05_results.py unpack    # after pull on the other machine
+python3 scripts/sync_phase05_results.py status
+```
+
+`unpack` refuses to overwrite a newer local `.jsonl`, so pulling cannot silently
+discard completions generated since the last pack. **Both generation and judging are
+resumable** — after `unpack`, re-running continues from where the other machine
+stopped rather than starting over.
+
+### End-of-session checklist (do this before switching machines)
+
+- [ ] `python3 scripts/sync_phase05_results.py pack`
+- [ ] `git add -A && git commit && git push`
+- [ ] Any diagnostic worth keeping lives in `scripts/diagnostics/`, **not `/tmp`** —
+      macOS clears `/tmp` and three probe scripts were already lost that way.
+- [ ] Update the "current state" line below if the phase changed.
+
+### Current state (update when it changes)
+
+- **2026-08-25**: Phase 0.5 fully specified and instrumented. Manifest frozen (704
+  prompts). Generation + judging scripts written, preflighted, smoke-tested at n=14.
+  `max_tokens=2048` set from measurement. **No pilot data collected yet** — the next
+  action is the full generation run (~10h, resumable). Analysis script (spec §6–§7) is
+  still unwritten and is the main remaining build.
+
+### Other
+
+- Auto-memory at `~/.claude/projects/.../memory/` does NOT sync via git. That content is
+  mirrored here in CONTEXT.md and in the other repo docs.
+- **Rotate API keys if they ever appear in a terminal transcript or a pasted command.**
+  This has happened twice — a wrapped `curl -H` line echoed a key, and `.env` contents
+  surfaced into session context on edit.
+- Together AI is used for open-model inference. **Verified 2026-08-25: this account's serverless tier serves exactly three chat models** — `meta-llama/Llama-3.3-70B-Instruct-Turbo`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`. Everything else, including both thesis models (Mixtral 8x7B, all Llama-4-Maverick builds) and every Qwen build, is dedicated-endpoint-only (bills per running minute). `/v1/models` lists dedicated-only models too, so it is **not** an availability check — probe with a real 1-token request instead (`scripts/diagnostics/probe_together_serverless.py`).
 - Anthropic API is used for the Phase 0.5 judge (`claude-haiku-4-5`), because family independence from the evaluated models is unsatisfiable within Together's serverless tier. Requires `ANTHROPIC_API_KEY`; bills separately from Together.
-- `python3` not `python` on the main machine — verify on any new machine.
