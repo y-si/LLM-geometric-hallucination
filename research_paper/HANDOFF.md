@@ -13,39 +13,49 @@ file.
 
 ## Running right now
 
-| Job | Machine | Status | Output |
-|---|---|---|---|
-| _(none)_ | — | — | — |
+| Job | Machine | Started | Status | Output |
+|---|---|---|---|---|
+| **Phase 0.5 full generation** | day machine (Seins-MacBook-Pro) | 2026-08-25 ~22:06 | **IN FLIGHT**, PID 91505 | `results/phase05/completions.jsonl` |
 
-> When you start a long job, add a row: what, which machine, when started, where the
-> log is. When it finishes, move it to the session log below and clear the row.
-> **Never run generation or judging on two machines at once** — they write to separate
-> files and you pay twice for the same completions.
+**DO NOT start generation on the other machine.** Both would write to their own
+`completions.jsonl` and you would pay twice for the same completions.
+
+Measured throughput 0.56 completions/sec → **~13.8 hours**, finishing around midday
+2026-08-26. Held awake by `caffeinate -is -w 91505` (releases automatically when the
+job exits). Lid must stay **open** — clamshell sleep is immediate and caffeinate does
+not prevent it; the display going dark is harmless and unrelated.
+
+Check progress (do **not** use `gen.log` — Python block-buffers stdout to a file, so it
+stays empty until ~500 completions):
+
+```bash
+wc -l results/phase05/completions.jsonl     # 28160 = done
+pgrep -f run_phase05                        # alive?
+```
+
+If it dies or the machine sleeps, **just re-run the same command** — generation is
+resumable and continues from the last completed row:
+
+```bash
+nohup python3 scripts/run_phase05_generation.py > results/phase05/gen.log 2>&1 &
+```
 
 ---
 
 ## Next action
 
-**Run the full Phase 0.5 generation.** Everything upstream is verified: manifest frozen,
-models probe-confirmed serverless, preflight passed, smoke test clean at n=14.
+**When generation finishes**, read the per-model truncation report at the end of the
+run, then judge:
 
 ```bash
-nohup python3 scripts/run_phase05_generation.py > results/phase05/gen.log 2>&1 &
-tail -f results/phase05/gen.log
-```
-
-- ~28,160 completions, **~10 hours**, fully resumable (a crash or closed laptop costs
-  only the in-flight batch — just re-run the same command).
-- Costs ~$5–9 on Together. **Zero Claude Code quota** — it is plain Python hitting
-  provider APIs.
-
-Then, in order:
-
-```bash
-python3 scripts/run_phase05_judging.py --preflight   # 1 real judgment, read the reasoning
+python3 scripts/run_phase05_judging.py --preflight   # 1 real judgment — READ the reasoning
 python3 scripts/run_phase05_judging.py --limit 20    # smoke test
-python3 scripts/run_phase05_judging.py               # full, ~$50 on Anthropic
+python3 scripts/run_phase05_judging.py               # full, ~$50 on Anthropic, resumable
 ```
+
+The preflight prints the judge's actual label and reasoning on a real completion. Read
+it rather than just checking it exits clean — it is the first evidence about whether
+`claude-haiku-4-5` judges borderline prompts sensibly (§5.2).
 
 ---
 
@@ -117,3 +127,20 @@ pilot data collected yet.
 - **Spend so far: ~$0.50** (preflights, probes, two smoke tests). Together balance $56.
 
 Commits: `44fd4dc` → `c5001ae`.
+
+### Operational notes learned the hard way
+
+- **`nohup … > file &` produces an empty log for a long time.** Python block-buffers
+  stdout when it is redirected, and the progress lines only flush every
+  `max(20, min(500, n/20))` completions — 500 at full scale, so ~15 minutes of silence
+  at the start. Check `wc -l` on the output file, not the log.
+- **`tail -f` is just a viewer.** Ctrl-C stops watching, not the job. The job is the
+  detached PID.
+- **Display sleep ≠ system sleep ≠ lid close.** Screen going dark is harmless;
+  `caffeinate -i` blocks idle system sleep; **nothing** short of an external display
+  prevents clamshell sleep. Leave the lid open.
+- **Check the power source before starting a multi-hour run.** A ~14-hour job on a
+  ~13-hour battery loses regardless of caffeinate, because critical-battery sleep
+  overrides the assertion.
+- **Long runs are resumable by design** — re-running the same command continues from
+  the last completed row. A sleep or crash costs time, never data.
