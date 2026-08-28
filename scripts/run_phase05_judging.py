@@ -90,11 +90,19 @@ def configure(dataset):
 # independence is unsatisfiable there: every available judge would share a family with
 # one evaluated model. claude-haiku-4-5 is $1/$5 per M tokens, the cheapest Anthropic
 # model, ~$50 for this run — billed separately from the Together balance.
-# Do NOT add prompt caching: Haiku 4.5's minimum cacheable prefix is 4096 tokens and
-# the judge system prompt is well under that, so a marker would silently do nothing.
-# Re-measured 2026-08-28 after rubric v2: 5,079 chars ~= 1,270 tokens, still under the
-# minimum. v2 roughly doubled the system prompt, which adds ~$20 of input cost over a
-# full 0.5b run — revisit caching if the rubric ever crosses the threshold.
+# Do NOT add prompt caching. VERIFIED EMPIRICALLY 2026-08-28, not assumed: sending the
+# real v2 system prompt twice with a cache_control marker reported
+# cache_creation_input_tokens = 0 and cache_read_input_tokens = 0 on both calls, so the
+# 1,326-token prefix is under this model's minimum cacheable length. A marker on a
+# too-short prompt is SILENTLY IGNORED -- no error, no warning -- which is why this
+# needed testing rather than reading a number off a docs page. Reproduce with
+# scripts/check_prompt_caching.py (~$0.01).
+#
+# This is worth more than a footnote, because the system prompt is the single largest
+# line item in judging: 1,270 tokens x 32,680 calls = 41.5M input tokens, 60% of the
+# judging input bill (~$41 of ~$125). Caching it would save ~$37. The only route to the
+# minimum is padding the rubric, and padding a PRE-REGISTERED rubric to cross a billing
+# threshold does not belong in a methods section.
 JUDGE_MODEL = "claude-haiku-4-5"
 JUDGE_PROVIDER = "anthropic"
 JUDGE_TEMPERATURE = 0.0
