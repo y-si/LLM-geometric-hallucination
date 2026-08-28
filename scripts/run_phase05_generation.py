@@ -47,6 +47,24 @@ OUTPUT_DIR = BASE_DIR / "results" / "phase05"
 OUTPUT_PATH = OUTPUT_DIR / "completions.jsonl"
 CONFIG_PATH = OUTPUT_DIR / "decoding_config.json"
 
+# Dataset profiles. phase05 = the V3 pilot (§4); phase05b = the TruthfulQA replication
+# (§11). Separate output directories are the point: a shared completions.jsonl would let
+# two different prompt populations accumulate in one file, which the decoding-config
+# fingerprint could not detect because the decoding config is identical between them.
+DATASETS = {
+    "phase05": "phase05_manifest.jsonl",
+    "phase05b": "phase05b_manifest.jsonl",
+}
+
+
+def configure(dataset):
+    """Point the module at a dataset profile. Call before any path is read."""
+    global MANIFEST_PATH, OUTPUT_DIR, OUTPUT_PATH, CONFIG_PATH
+    MANIFEST_PATH = BASE_DIR / "data" / "prompts" / DATASETS[dataset]
+    OUTPUT_DIR = BASE_DIR / "results" / dataset
+    OUTPUT_PATH = OUTPUT_DIR / "completions.jsonl"
+    CONFIG_PATH = OUTPUT_DIR / "decoding_config.json"
+
 # §3 — the two evaluated models. Keys resolve via experiments/multi_model_config.yaml.
 # Availability verified 2026-08-25 by probing with real 1-token requests: Together's
 # serverless tier on this account serves exactly three chat models (these two plus
@@ -244,7 +262,10 @@ def preflight(clients):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Phase 0.5: generate pilot completions (resumable)")
+        description="Phase 0.5 / 0.5b: generate pilot completions (resumable)")
+    parser.add_argument("--dataset", choices=sorted(DATASETS), default="phase05",
+                        help="phase05 = V3 pilot (§4); phase05b = TruthfulQA "
+                             "replication (§11). Writes to results/<dataset>/.")
     parser.add_argument("--preflight", action="store_true",
                         help="Verify each model responds, then exit")
     parser.add_argument("--limit", type=int, default=None,
@@ -252,6 +273,10 @@ def main():
     parser.add_argument("--retry-failed", action="store_true",
                         help="Also retry triples previously recorded as failed")
     args = parser.parse_args()
+
+    configure(args.dataset)
+    print(f"dataset: {args.dataset}   manifest: {MANIFEST_PATH.name}   "
+          f"output: {OUTPUT_DIR.relative_to(BASE_DIR)}/")
 
     # Both models are Together-hosted, so that is the only credential needed.
     load_env_file(required=["TOGETHER_API_KEY"])

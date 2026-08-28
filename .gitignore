@@ -91,3 +91,11 @@ memory/
 # scripts/sync_phase05_results.py (pack / unpack).
 results/phase05/*.jsonl
 !results/phase05/*.jsonl.gz
+
+# Phase 0.5b (TruthfulQA, spec §11): same reasoning, bigger — 817 x 20 x 2 =
+# 32,680 completions, ~16 h and ~$80 to reproduce. Added BEFORE the run so the raw
+# file cannot be committed by accident on the first `git add -A` after generation.
+results/phase05b/*.jsonl
+!results/phase05b/*.jsonl.gz
+results/phase05b_probe/*.jsonl
+!results/phase05b_probe/*.jsonl.gz

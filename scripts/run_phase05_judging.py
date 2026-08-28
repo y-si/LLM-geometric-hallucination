@@ -58,13 +58,32 @@ from collections import Counter, defaultdict
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from src.models.judge_client import JudgeClient  # noqa: E402
+from src.models.judge_client import (  # noqa: E402
+    JUDGE_RUBRIC_VERSION, JudgeClient)
 from src.utils.env import load_env_file  # noqa: E402
 
 MANIFEST_PATH = BASE_DIR / "data" / "prompts" / "phase05_manifest.jsonl"
 OUTPUT_DIR = BASE_DIR / "results" / "phase05"
 COMPLETIONS_PATH = OUTPUT_DIR / "completions.jsonl"
 OUTPUT_PATH = OUTPUT_DIR / "judgments.jsonl"
+
+# Dataset profiles. phase05 = the V3 pilot (§4); phase05b = the TruthfulQA replication
+# (§11). Judgments must never be mixed across datasets OR across rubric versions --
+# see JUDGE_RUBRIC_VERSION in src/models/judge_client.py, which is stamped onto every
+# row so a mixed file is detectable after the fact rather than silently pooled.
+DATASETS = {
+    "phase05": "phase05_manifest.jsonl",
+    "phase05b": "phase05b_manifest.jsonl",
+}
+
+
+def configure(dataset):
+    """Point the module at a dataset profile. Call before any path is read."""
+    global MANIFEST_PATH, OUTPUT_DIR, COMPLETIONS_PATH, OUTPUT_PATH
+    MANIFEST_PATH = BASE_DIR / "data" / "prompts" / DATASETS[dataset]
+    OUTPUT_DIR = BASE_DIR / "results" / dataset
+    COMPLETIONS_PATH = OUTPUT_DIR / "completions.jsonl"
+    OUTPUT_PATH = OUTPUT_DIR / "judgments.jsonl"
 
 # §5 — third-VENDOR judge on the Anthropic API, not Together. With only Meta and
 # OpenAI models on Together's serverless tier (verified 2026-08-25), family
@@ -73,6 +92,9 @@ OUTPUT_PATH = OUTPUT_DIR / "judgments.jsonl"
 # model, ~$50 for this run — billed separately from the Together balance.
 # Do NOT add prompt caching: Haiku 4.5's minimum cacheable prefix is 4096 tokens and
 # the judge system prompt is well under that, so a marker would silently do nothing.
+# Re-measured 2026-08-28 after rubric v2: 5,079 chars ~= 1,270 tokens, still under the
+# minimum. v2 roughly doubled the system prompt, which adds ~$20 of input cost over a
+# full 0.5b run — revisit caching if the rubric ever crosses the threshold.
 JUDGE_MODEL = "claude-haiku-4-5"
 JUDGE_PROVIDER = "anthropic"
 JUDGE_TEMPERATURE = 0.0
@@ -221,6 +243,14 @@ def judge_one(judge, completion_row, ground_truth):
         "confidence": result["confidence"],
         "justification": result["justification"],
         "judge_model": JUDGE_MODEL,
+        # Provenance, both stamped per row rather than assumed run-wide: a resumed run
+        # can span a rubric edit, and labels are only comparable within a version.
+        "rubric_version": result.get("rubric_version", JUDGE_RUBRIC_VERSION),
+        # Rubric v2 diagnostic. Carries the §6.1 label-boundary sensitivity on
+        # "correct rejection then unmarked fabrication" (pinned to 2), so the
+        # alternative mapping to 1 is computable without re-judging 32,680 rows.
+        "mixed_rejection_then_fabrication":
+            bool(result.get("mixed_rejection_then_fabrication", False)),
     }
 
 
@@ -249,7 +279,10 @@ def preflight(judge, completions, ground_truths):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Phase 0.5: judge pilot completions (resumable)")
+        description="Phase 0.5 / 0.5b: judge pilot completions (resumable)")
+    parser.add_argument("--dataset", choices=sorted(DATASETS), default="phase05",
+                        help="phase05 = V3 pilot (§4); phase05b = TruthfulQA "
+                             "replication (§11). Reads and writes results/<dataset>/.")
     parser.add_argument("--preflight", action="store_true",
                         help="Judge one completion to verify the judge works, then exit")
     parser.add_argument("--limit", type=int, default=None,
@@ -257,6 +290,10 @@ def main():
     parser.add_argument("--retry-failed", action="store_true",
                         help="Also retry completions whose judgment previously failed")
     args = parser.parse_args()
+
+    configure(args.dataset)
+    print(f"dataset: {args.dataset}   manifest: {MANIFEST_PATH.name}   "
+          f"judge: {JUDGE_MODEL} rubric {JUDGE_RUBRIC_VERSION}")
 
     # The judge runs on the Anthropic API (§5), not Together.
     load_env_file(required=["ANTHROPIC_API_KEY"])
@@ -316,7 +353,11 @@ def main():
     print(f"to judge         : {len(tasks)}\n")
 
     if not tasks:
+        # Still print the state summary. It costs nothing, spends nothing, and is the
+        # cheapest way to check where a run stands — which matters now that the
+        # summary is trustworthy (see the two fixed defects in report_state()).
         print("Nothing to do.")
+        report_state(completions)
         return
 
     completed, failed = 0, 0
@@ -349,31 +390,99 @@ def main():
 
     print(f"\nwrote -> {OUTPUT_PATH.relative_to(BASE_DIR)}")
     print(f"judged {completed - failed}, failed {failed}")
+    report_state(completions)
 
-    # §5.1 — failure rate gate and k_eff report.
+
+def report_state(completions):
+    """§5.1 — failure-rate gate, k_eff report, label distribution.
+
+    TWO DEFECTS WERE FIXED HERE ON 2026-08-26. Both were reporting-only and never
+    touched a label, but both were actively misleading on the first real run. They are
+    described in full because the same traps are easy to reintroduce.
+
+    DEFECT 1 — the rate could never clear. This used
+        n_failed / len(all_judgments)
+    over every row in the file. But append_rows() is APPEND-ONLY, so --retry-failed
+    leaves each stale failure row sitting next to the success that replaced it. After a
+    fully successful recovery that ratio read 9,213 / 37,373 = 24.65% and kept printing
+    the §5.1 infrastructure-failure warning forever, on data that was in fact complete.
+    What §5.1 actually cares about is how much data was LOST, so the rate is now
+    computed over COMPLETIONS WITH NO LABEL, deduplicated by
+    (uid, model, sample_idx). The gross call-failure rate is still shown, because a high
+    value means the API was unreliable during the run even if every sample was
+    eventually labelled — but it does not gate.
+
+    DEFECT 2 — the k_eff count hid the worst damage. k_eff was a defaultdict(int)
+    populated only from rows that SUCCEEDED, so a (uid, model) pair whose every sample
+    failed had no key at all and was invisible to the `v < 16` count. On the first run
+    it printed 13 pairs below threshold when the true number was 464, because 451 pairs
+    had zero successes — a 35x undercount that omitted precisely the pairs that
+    mattered. k_eff is now seeded from the full completions cross-product so a
+    zero-success pair is counted as k_eff = 0.
+
+    scripts/analyze_phase05.py computes both quantities the same way. Keep them in
+    sync; if these two ever disagree again, one of them is wrong.
+    """
     all_judgments = read_jsonl(OUTPUT_PATH)
-    n_failed = sum(1 for r in all_judgments if r.get("judge_failed"))
-    if all_judgments:
-        rate = n_failed / len(all_judgments)
-        print(f"\ncumulative judge failure rate: {rate:.2%} "
-              f"({n_failed}/{len(all_judgments)})")
+
+    labelled_keys = set()
+    failed_rows = 0
+    for r in all_judgments:
+        key = (r["uid"], r["model"], r["sample_idx"])
+        if r.get("judge_failed") or r.get("label") is None:
+            failed_rows += 1
+        else:
+            labelled_keys.add(key)
+
+    judgeable = {(r["uid"], r["model"], r["sample_idx"]) for r in completions
+                 if r.get("completion")}
+    unrecovered = sorted(judgeable - labelled_keys)
+
+    if judgeable:
+        rate = len(unrecovered) / len(judgeable)
+        print(f"\nunrecovered rate (completions with NO label): {rate:.2%} "
+              f"({len(unrecovered)}/{len(judgeable)})  <- this is the §5.1 gate")
+        if all_judgments:
+            print(f"gross call-failure rate (diagnostic, does NOT gate): "
+                  f"{failed_rows / len(all_judgments):.2%} "
+                  f"({failed_rows}/{len(all_judgments)} rows; append-only, so stale "
+                  "failure rows from before a retry are still counted here)")
         if rate > FAILURE_RATE_ABORT:
             print(f"WARNING: above the {FAILURE_RATE_ABORT:.0%} threshold. "
                   "PHASE_0.5_SPEC.md §5.1 treats this as an infrastructure failure, "
                   "not data. Re-run with --retry-failed before analysing.")
+        elif unrecovered:
+            print(f"  {len(unrecovered)} sample(s) still unlabelled, below the "
+                  f"{FAILURE_RATE_ABORT:.0%} gate. Check whether they are retryable:")
+            last_error = {}
+            for r in all_judgments:
+                if r.get("judge_failed"):
+                    last_error[(r["uid"], r["model"], r["sample_idx"])] = r.get("error")
+            for key in unrecovered[:10]:
+                print(f"    {key[0]} {key[1]} idx={key[2]}: "
+                      f"{str(last_error.get(key, 'never attempted'))[:90]}")
+            if len(unrecovered) > 10:
+                print(f"    ... and {len(unrecovered) - 10} more")
+            print("  NOTE: a JSON-parse error is NOT retryable. JUDGE_TEMPERATURE is "
+                  "0.0, so a retry replays byte-identical malformed judge output. "
+                  "Retrying those forever is a no-op — stop and accept the k_eff loss.")
 
     labels = Counter(r["label"] for r in all_judgments if not r.get("judge_failed"))
     print("\nlabel distribution (0=Correct 1=Partial 2=Hallucination 3=Refusal):")
     for label in (0, 1, 2, 3):
         print(f"  {label}: {labels[label]}")
 
-    k_eff = defaultdict(int)
-    for r in all_judgments:
-        if not r.get("judge_failed"):
-            k_eff[(r["uid"], r["model"])] += 1
+    # Seeded from the full cross-product so zero-success pairs are visible (defect 2).
+    k_eff = {(r["uid"], r["model"]): 0 for r in completions}
+    for key in labelled_keys:
+        pair = (key[0], key[1])
+        if pair in k_eff:
+            k_eff[pair] += 1
     below = sum(1 for v in k_eff.values() if v < 16)
+    zero = sum(1 for v in k_eff.values() if v == 0)
     print(f"\n(prompt, model) pairs with k_eff < 16 (excluded from the primary "
-          f"estimator per §5.1): {below}")
+          f"estimator per §5.1): {below} of {len(k_eff)}"
+          f"{f', of which {zero} have k_eff = 0' if zero else ''}")
 
 
 if __name__ == "__main__":
