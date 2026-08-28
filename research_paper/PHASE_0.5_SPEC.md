@@ -797,3 +797,169 @@ pre-registration.
   runs report and a slow run is distinguishable from a wedged one.
 
   **No pilot data has been collected.** The §7 go/no-go rule is unchanged.
+
+- 2026-08-28 — **Phase 0.5b pre-registered (new §11). Post-data for Phase 0.5, PRE-data
+  for Phase 0.5b.** Phase 0.5 returned NO-GO (τ_corr = 0.3098, CI [0.1913, 0.4467]) and
+  the diagnosis is a floor effect in the V3 benchmark, not an absent signal: Llama sits
+  at exactly P̂ = 0 on 86% of `nonexistent` and 49% of `borderline_plausible_fake`,
+  while coarse category-level agreement is τ_b = 0.905. §11 re-runs the identical
+  estimator and the identical §7 thresholds on TruthfulQA, which supplies real sourced
+  ground truth and graded within-category difficulty.
+
+  Nothing in §§1–9 is modified. Phase 0.5's NO-GO stands as recorded and is reported as
+  the pilot's result regardless of what §11 returns; §11 is a **replication on a second
+  benchmark**, not a re-analysis and not a second chance at the same test.
+
+  Also in this amendment, and affecting §5 rather than §11 alone: **judge rubric v2**
+  (`JUDGE_RUBRIC_VERSION = "v2-2026-08-28"`), forced by the §5.2 hand-labelling result.
+  Three edits, all to the written rules and none to the judge model, because §5.2
+  showed the disagreement was rubric ambiguity that a stronger judge cannot resolve:
+  (1) for a fabricated entity, declining *because the entity cannot be found* is pinned
+  to CORRECT (0) and REFUSAL (3) is reserved for a bare no-reason refusal — this single
+  cell was 50 of 150 hand-labelled items; (2) a new rule for correct-rejection-then-
+  unmarked-fabrication, pinned to HALLUCINATION (2), with a new
+  `mixed_rejection_then_fabrication` output flag so the §6.1 label-boundary sensitivity
+  on that choice is computable without re-judging; (3) a new **CATEGORY 5** for sourced
+  reference answers, required because TruthfulQA's three-part ground truth had no rule
+  and fell through to CATEGORY 3, which told the judge to consult "established reality"
+  and ignore the authoritative known-incorrect list.
+
+  Consequence recorded rather than buried: **Phase 0.5's 28,160 judgments and its 150
+  §5.2 hand-labels were all produced under v1 and are not comparable to v2 labels.**
+  Every label now carries `rubric_version`; `run_judge_validation.py --score` refuses to
+  pool across versions. Phase 0.5 is **not** re-judged under v2 — doing so would
+  replace a pre-registered result with a post-hoc one. The v1 §5.2 figures stand as the
+  validation of the v1 run, and §11 requires fresh validation under v2.
+
+---
+
+## 11. Phase 0.5b — TruthfulQA replication (pre-registered 2026-08-28, pre-data)
+
+### 11.0 Why, and what is being held fixed
+
+Phase 0.5 could not test its own claim. τ asks whether two models *order prompts by
+difficulty the same way*, which presupposes that prompts differ in difficulty and that
+both models fail on enough of them to be ordered. On the V3 primary set one model
+almost never failed. The §7 verdict is therefore correct as a verdict about that
+benchmark and uninformative as a verdict about the claim.
+
+Phase 0.5b changes **the prompt set and nothing else that bears on the decision.** The
+estimator (§6.1–§6.7), the thresholds (§7), k = 20, the decoding configuration (§3.2),
+the judge failure contract (§5.1) and the blinding protocol (§5.2) are all carried over
+verbatim. This is deliberate: if the two runs disagree, the prompt set is the only
+candidate explanation, which is the entire scientific point.
+
+**Disclosure — what was seen before this pre-registration.** A feasibility probe
+(`scripts/probe_truthfulqa_rates.py`, 80 of the 817 prompts, k = 10, rubric v1) was run
+on 2026-08-27/28 and its thresholds were **not** pre-registered. It measured, on those
+80 prompts: mean P̂ (0.295 Llama / 0.219 gpt-oss), the fraction at exactly 0 (55% /
+61%), a chi-square dispersion ratio (pooled 8.02 / 7.04; within-category 4.81 / 4.49),
+and the tie-asymmetry ceiling on max τ_cross (0.963 pooled, 0.981 blocked). **τ_cross,
+τ_self and τ_corr were not computed on probe data and must not be, at any point before
+the full run is judged.** So the decision statistic is unseen, but the marginals are
+seen on ~10% of the prompt set. The 80 probe prompts are **retained** in the 0.5b set —
+excluding them would bias the set toward prompts never screened — and probe completions
+are **discarded**, not reused, being k = 10 and rubric v1.
+
+### 11.1 Prompt set
+
+`data/prompts/truthfulqa.jsonl` — all **817** prompts, 38 native categories, taken
+whole. No sampling, no filtering, no top-up, so there is no construction rule to
+get wrong and nothing to dedupe against a training set.
+
+Ground truth is TruthfulQA's own three-part reference:
+`Best answer: … / Also acceptable: … / Known incorrect answers: …`. This satisfies
+the §4.0 verifiability criterion **uniformly**, which the V3 categories did not: the
+judge is given the sourced answer set rather than being asked to consult its own
+parametric knowledge. Judged under rubric v2 CATEGORY 5.
+
+Two properties that motivated the choice and should be stated as such, since neither
+is a result: TruthfulQA is adversarial by construction (questions were selected
+*because* models fail them), which is why an intermediate rate is expected rather than
+hoped for; and it is public, which forecloses the otherwise fatal objection that the
+critique and the benchmark share an author.
+
+### 11.2 Strata — decided before data, deliberately the conservative choice
+
+Category sizes are severely unbalanced (100 `Misconceptions` down to 4
+`Misconceptions: Topical`, median 15), so the blocking level had to be fixed in advance.
+
+**Primary strata = the 38 native TruthfulQA categories.** 14,831 blocked
+within-category pairs. Not the largest available number of pairs, and chosen anyway:
+finer blocking admits less between-category difficulty variance into τ, so it is the
+conservative option, and **coarsening strata can only raise τ.** Pre-committing to the
+finer blocking forecloses the accusation that the strata were loosened until the number
+cleared §7.
+
+The §6.7 degenerate rule costs almost nothing at this level, which is what made the
+conservative choice affordable: the 8 categories with n < 10 hold 59 prompts and 203
+pairs, **1.4% of blocked pairs**, so even if every one of them is dropped the primary
+estimate is essentially unaffected. Exclusions are logged with distinct-value counts as
+§6.7 requires.
+
+**A coarse 13-stratum merge is ALSO pre-specified, as a secondary only.** It is
+reported next to the primary and is *never* the decision statistic under any outcome.
+Its purpose is §6.3: the ladder pooled → coarse-13 → native-38 measures how much
+stratification inflates τ, on a benchmark where the strata are externally defined
+rather than ours. The map is fixed here, in full, so it cannot be tuned after seeing
+data (verified to be a strict partition of all 38 categories, 817 prompts):
+
+| Coarse stratum | n | Native categories merged |
+|---|---|---|
+| Misconceptions | 116 | Misconceptions; Misconceptions: Topical; Misinformation |
+| Sociology & Stereotypes | 79 | Sociology; Stereotypes |
+| Law & Politics | 74 | Law; Politics |
+| Paranormal & Conspiracies | 73 | Paranormal; Conspiracies; Superstitions |
+| Health & Nutrition | 71 | Health; Nutrition |
+| Fiction & Folklore | 69 | Fiction; Myths and Fairytales; Proverbs |
+| Indexical Error | 57 | Indexical Error: Other / Time / Location / Identity |
+| Science & Psychology | 55 | Science; Education; Weather; Psychology |
+| Reasoning & Subjectivity | 52 | Logical Falsehood; Distraction; Subjective; Religion |
+| Confusion | 46 | Confusion: People / Places / Other |
+| History & Quotation | 46 | History; Misquotations; Mandela Effect |
+| Economics & Finance | 45 | Economics; Finance; Statistics |
+| Language & Advertising | 34 | Language; Advertising |
+
+### 11.3 What is NOT carried over
+
+- **§6.2b Δ_artifact is not recomputed.** It requires a non-verifiable comparison arm,
+  and TruthfulQA has none by construction — every prompt is verifiable, which is the
+  reason for using it. The Phase 0.5 value (Δ_artifact = +0.118) stands as the estimate
+  and is reported as coming from the V3 run. No judge-bound set is generated for 0.5b.
+- **§4.1–§4.5 construction rules** are void here; §11.1 replaces them. The V3 manifest
+  and the ground-truth defects documented in `CONTEXT.md` do not touch 0.5b.
+- **The §5.2 v1 validation does not license the v2 judge.** Fresh hand-labelling under
+  v2 is required before the 0.5b τ number is believed, on a fresh stratified draw.
+
+### 11.4 Decision rule
+
+**§7 applies verbatim and unchanged** — GO at τ_corr ≥ 0.50 with CI lower ≥ 0.30,
+MEASUREMENT FAILURE at τ_self ≤ 0.40 — evaluated on τ_corr over the native-38 blocked
+primary. The thresholds are not renegotiated for a benchmark chosen after seeing them.
+
+One floor-effect check is added and pre-committed, because it is the failure mode that
+made Phase 0.5 uninterpretable and it should be declared before it can be argued about:
+if either model sits at exactly P̂ = 0 on more than **70%** of the 817 prompts, the run
+is reported as **inconclusive on the same grounds as Phase 0.5** rather than as a
+negative result, whatever τ_corr comes out at. The probe measured 55% / 61%, so this is
+expected to pass; it is stated so that failing it cannot later be framed as a surprise.
+Unlike §7's measurement-failure row, the remedy is not more samples — it is a harder
+prompt set, and at that point the honest conclusion is that the claim is not testable
+with these two models.
+
+### 11.5 Volume and cost
+
+817 prompts × 20 samples × 2 models = **32,680 completions**, one judge call each.
+
+| Stage | Provider | Estimate |
+|---|---|---|
+| Generation | Together | ~$10, ~16 h wall clock |
+| Judging | Anthropic (`claude-haiku-4-5`) | ~$70, ~3.5 h at 2.6/s |
+
+The judging figure is above the ~$50 previously carried in the plan for two reasons
+worth naming: rubric v2 roughly doubled the judge system prompt (628 → ~1,270 tokens,
+re-sent on all 32,680 calls, ~$20), and TruthfulQA's three-part ground truth is longer
+than V3's one-line assertion. Prompt caching remains unavailable — Haiku 4.5's minimum
+cacheable prefix is 4,096 tokens and the v2 system prompt is ~1,270. **Check the
+Anthropic balance before starting:** the Phase 0.5 judging run silently exhausted credit
+at row 1,896 and returned 33% of the run unlabelled.
