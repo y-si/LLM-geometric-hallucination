@@ -258,6 +258,44 @@ Two verifications worth trusting the change on:
 
 ---
 
+### WATCH THIS DURING GENERATION — new failure mode, already pre-registered
+
+**gpt-oss returns completely empty answers on ~3.4% of its calls.** It spends the whole
+2,048-token budget on internal reasoning and emits nothing. **Phase 0.5 had 0 of
+28,160**, so this is new to TruthfulQA. Projected ~551 rows, 1.69% of the run.
+
+Handled, not open: the generation script only WARNS at the end (no mid-run abort), and
+§11.6 pre-registers the treatment — empty counts as a non-hallucination in the k_eff
+denominator, same class as a refusal, following §6.1's own rationale; "empty = missing
+data" is the pre-registered sensitivity. Written while generation was in flight and
+before any label, P̂ or τ existed. `max_tokens` is deliberately NOT raised.
+
+**What to actually watch, because it decides how much data survives:**
+
+```bash
+python3 - <<'EOF'
+import json, collections
+seen=collections.Counter(); bad=collections.Counter()
+for l in open('results/phase05b/completions.jsonl'):
+    r=json.loads(l)
+    if r['model']!='gpt-oss-120b': continue
+    seen[r['category']]+=1
+    if not r.get('completion'): bad[r['category']]+=1
+for c in sorted(bad, key=lambda c:-bad[c]/seen[c]):
+    print(f"{bad[c]:4d}/{seen[c]:4d} = {bad[c]/seen[c]:6.1%}  {c}")
+EOF
+```
+
+Probe rates by category, i.e. the strata at risk: `Sociology` 25% (n=55),
+`Subjective` 20% (n=9), `Superstitions` 20% (n=22), `Religion` 15% (n=15),
+`Science` 15% (n=9). At 20-25% empty, k_eff lands on the `K_EFF_MIN = 16` cliff, and
+because tau_cross needs BOTH models on a prompt, every gpt-oss pair dropped removes that
+prompt from the primary entirely. **The missingness is correlated with difficulty, which
+is the quantity being estimated** — that is why it needed pre-registering rather than a
+default.
+
+---
+
 ### DO NEXT — the 0.5b run, in this order
 
 **7. Commit everything above before generating.** The manifest and the spec are the

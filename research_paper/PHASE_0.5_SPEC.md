@@ -831,6 +831,30 @@ pre-registration.
   replace a pre-registered result with a post-hoc one. The v1 §5.2 figures stand as the
   validation of the v1 run, and §11 requires fresh validation under v2.
 
+- 2026-08-28 (later, generation in flight at 2,350/32,680 completions; **no judge label,
+  no P̂ and no τ existed**) — **§11.6 added: pre-registered treatment of empty
+  completions.** A failure mode absent from Phase 0.5 (0 of 28,160) appeared in 0.5b:
+  `gpt-oss-120b` spends the full 2,048-token budget on internal reasoning and returns no
+  visible content, projected ~551 rows (1.69% of all completions).
+
+  It needed a pre-registered decision rather than a default because the missingness is
+  **concentrated on the hardest strata** (`Sociology` 25%, `Subjective` 20%,
+  `Superstitions` 20%, `Religion` 15%) and therefore correlated with prompt difficulty —
+  the quantity being estimated. At those rates k_eff straddles the `K_EFF_MIN = 16`
+  cliff, and since τ_cross needs both models on a prompt, each gpt-oss pair lost removes
+  the prompt from the primary set entirely.
+
+  Primary: empty = non-hallucination, in the k_eff denominator, same class as a refusal —
+  which follows §6.1's *existing* rationale for refusals rather than introducing a new
+  principle. Sensitivity: empty = missing data, pair dropped below k_eff 16. If the two
+  disagree on the §7 verdict, the disagreement is reported as the finding.
+
+  `max_tokens` is deliberately NOT raised; §3.2's rule against chasing truncation is
+  distinguished, since it was written about truncation *with content*, not empty output.
+  Limitation disclosed in §11.6: unlike a real refusal, an empty completion is
+  budget-dependent, so P̂ inherits a dependence on `max_tokens` under the primary
+  treatment.
+
 ---
 
 ## 11. Phase 0.5b — TruthfulQA replication (pre-registered 2026-08-28, pre-data)
@@ -963,3 +987,68 @@ than V3's one-line assertion. Prompt caching remains unavailable — Haiku 4.5's
 cacheable prefix is 4,096 tokens and the v2 system prompt is ~1,270. **Check the
 Anthropic balance before starting:** the Phase 0.5 judging run silently exhausted credit
 at row 1,896 and returned 33% of the run unlabelled.
+
+### 11.6 Empty completions — pre-registered treatment (added 2026-08-28, pre-judging)
+
+**Timing disclosure, stated plainly because it matters.** This subsection was written
+while 0.5b generation was in flight, at 2,350 of 32,680 completions. What had been
+inspected: the generation-failure rate, its split by model, and its concentration by
+category. What did NOT exist and had not been computed: any judge label, therefore any
+P̂, therefore any τ of any kind. The decision below is made on the *missingness pattern*
+alone, before any outcome variable exists.
+
+**The failure mode.** `gpt-oss-120b` sometimes consumes the entire 2,048-token budget on
+internal reasoning and returns **no visible content at all**. Phase 0.5 had **0 of
+28,160** such rows; 0.5b projects **~551** (3.4% of gpt-oss calls, 1.69% of all
+completions). The generation script records each one with `uid`, `model`, `sample_idx`
+and reason, so every treatment below stays computable from the shipped data.
+
+**Why §3.2's existing rule does not settle it.** The pre-registered instruction "do not
+raise `max_tokens` to chase it" was written about **truncation with content** — a model
+still generating at the cap is confabulating at length, and that length *is* the
+behaviour being measured. An **empty** completion asserts nothing. It is a different
+event and the existing guidance does not reach it.
+
+**Why this cannot be left to a default.** The missingness is concentrated, and
+concentrated on the hardest strata. Probe rates by category: `Sociology` 25%,
+`Subjective` 20%, `Superstitions` 20%, `Religion` 15%, `Science` 15%. At a 20–25% empty
+rate, k_eff ≈ 15–16, straddling the §5.1 `K_EFF_MIN = 16` cliff — so whole prompts drop
+out, and because τ_cross requires **both** models on a prompt, each gpt-oss pair lost
+removes that prompt from the primary entirely. The missingness is therefore correlated
+with prompt difficulty, which is the very quantity being estimated. Missingness on the
+dependent variable, left to a default, biases τ in an unknown direction.
+
+**PRIMARY treatment: an empty completion is a non-hallucination and stays in the P̂
+denominator.** It is assigned to the same class as a refusal (label 3): counted in
+k_eff, not counted in the numerator.
+
+This is not a new principle; §6.1 already decided this exact question for refusals, and
+the rationale transfers verbatim:
+
+> the paper needs the UNCONDITIONAL probability that sampling this model on this prompt
+> yields a hallucination — that is what an inference-time gate acts on. Dropping
+> refusals would condition on the model having attempted an answer and introduce a
+> selection effect.
+
+Sampling the model produced no assertion. Treating that as missing data instead
+conditions on "the model managed to produce an answer", which is precisely the selection
+effect §6.1 exists to prevent, and here it would select against gpt-oss's hardest
+prompts.
+
+**PRE-REGISTERED SENSITIVITY: empty = missing data**, i.e. excluded from k_eff exactly as
+an API failure is under §5.1, with the pair dropped when k_eff < 16. Reported alongside
+the primary with the count of prompts and strata lost. If the two treatments disagree on
+the §7 verdict, **that disagreement is the finding** and is reported as such rather than
+resolved in favour of either.
+
+**Disclosed limitation.** Unlike a genuine refusal, an empty completion is
+**budget-dependent**: at a larger `max_tokens` some of these rows would have contained an
+answer. So P̂ inherits a dependence on the token budget under the primary treatment. This
+is stated rather than hidden, and it is the strongest objection to the choice above.
+
+**`max_tokens` is NOT raised.** Doing so would alter the measurement for all 32,680
+completions rather than the ~551 affected ones — shifting gpt-oss's mean output length
+and the ~26-point verbosity asymmetry that §6.5.4 tests — and tuning a pre-registered
+decoding parameter mid-run to chase a failure mode costs more credibility than 1.7% of
+rows is worth. The decoding fingerprint (§3.2) would in any case refuse to resume across
+the change.
