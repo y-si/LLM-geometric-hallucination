@@ -208,6 +208,351 @@ with disagreement-with-judge-knowledge; here is the effect size, and here is
 ground-truth verifiability as a benchmark design criterion.* See
 `PHASE_0.5_SPEC.md` §4.0, §4.2, §6.2b.
 
+### Floor effects and the τ_b tie ceiling — why Phase 0.5 returned NO-GO
+
+**Discovered 2026-08-26, from the completed pilot data. This is the finding that
+explains the result, and it points at the benchmark rather than at the claim.**
+
+Phase 0.5 returned τ_corr = 0.310 (NO-GO; needed ≥ 0.50). The reason is not that the
+two models rank prompt difficulty differently in some deep sense. It is that **one
+model barely hallucinates on this benchmark, so there is very little ordering for it
+to share.**
+
+| Category | Llama-3.3-70B at exactly P̂ = 0 | gpt-oss-120b at exactly P̂ = 0 |
+|---|---|---|
+| `nonexistent` (n=120) | **86%** | 25% |
+| `borderline_plausible_fake` (n=169) | **49%** | 2% |
+| `ambiguous` (n=120) | **98%** | 96% |
+
+Mean rates on `nonexistent`: Llama 0.083 vs gpt-oss 0.357. The two models are in
+different regimes, not on a shared difficulty scale.
+
+**The statistical mechanism, which matters for any future τ-based design.**
+τ_b = num / sqrt(den_A · den_B), where den_A counts prompt-pairs Model A assigns
+*different* P̂ to. A pair that A **ties** contributes 0 to the numerator but still sits
+in den_B. So when one model ties most pairs and the other spreads out, τ_cross is
+capped below 1 by tie structure alone:
+
+    max τ_cross = sqrt(min(den_A, den_B) / max(den_A, den_B))
+
+**The §6.2 attenuation correction cannot remove this**, because each τ_self compares
+two halves of the *same* model, which share a tie structure and therefore have their
+own ceiling ≈ 1.0. The reliabilities are blind to a *between-model* tie asymmetry.
+**This is a real gap in `PHASE_0.5_SPEC.md` §6.2.** Any future use of the disattenuated
+τ must report the ceiling alongside it.
+
+**The ceiling did NOT invalidate this verdict — checked, do not re-litigate.** Max
+reachable τ_corr was 0.998 on the primary surface (0.652 on `nonexistent` alone,
+1.13 on `plausible_fake`). GO was attainable; it simply was not attained.
+
+**Three rescue attempts, all failed — do not repeat them:**
+
+| What was removed | τ_corr | Verdict |
+|---|---|---|
+| nothing (the §7 estimate) | 0.310 | — |
+| all gpt-oss truncation (n=197) | 0.344 | truncation is not the cause |
+| floor, both models P̂ > 0.1 (n=69) | **0.415** | still short, and biased UP |
+
+The last row conditions on the *outcome*, which selects for agreement, so 0.415 is a
+generous upper bound rather than an estimate. Nothing reaches 0.50.
+
+**Coarse agreement is high and is not what was tested.** τ_b between the two models'
+orderings of the 7 **category** means is **0.905** — they agree almost perfectly about
+which *kinds* of prompt are dangerous. The pilot tests *within-category* ordering,
+because between-category agreement is trivially true (spec §2.1). Expect to have to
+explain this distinction every time the result is presented; the intuition "surely
+models agree about what's hard" is correct at the coarse level and irrelevant to the
+claim.
+
+**What this implies for Phase 1.** A prompt set on which one model is near-immune
+cannot test difficulty ordering, whatever the panel size. Before re-running this
+test, the benchmark needs prompts calibrated so that **both** models fail at
+intermediate rates — graded difficulty *inside* a category, not just across
+categories. Two of seven current categories are floor-degenerate (`ambiguous`,
+`borderline_edge_factual`), which is a separate defect from the non-verifiability of
+`factual` and `borderline_obscure_real` documented above.
+
+**Where the code lives.** `scripts/analyze_phase05.py`, function
+`posthoc_ceiling_and_floor()` — runs on every invocation and emits the ceiling, floor
+and rescue tables into `results/phase05/analysis/report.md`. It is labelled
+**NOT PRE-REGISTERED** in both the source and the report, because it was written after
+seeing the result; nothing in it feeds the §7 decision rule.
+
+#### Screening a replacement benchmark: dispersion must be measured the way the estimator will use it
+
+**Added 2026-08-28, from the TruthfulQA feasibility probe.** When screening a candidate
+benchmark for a blocked-τ study, the go/no-go quantity is not the mean hallucination rate
+— it is whether prompts genuinely differ in difficulty *inside a stratum*. Two traps,
+both hit in sequence on this project:
+
+1. **Counting distinct P̂ values does not test it.** At k = 5, a constant true rate of
+   0.25 produces P̂ ∈ {0, .2, .4, .6} from binomial noise alone. The first draft of the
+   probe scored that as healthy spread. Replaced with a **chi-square test of homogeneity
+   of proportions**: under the null that every prompt is equally hard, chi²/df = 1.0.
+2. **Pooled dispersion is the wrong denominator, and it is optimistic.** A pooled
+   chi²/df mixes between-stratum difficulty (easy vs hard topics) with within-stratum
+   difficulty, but a blocked estimator can only use the latter. **This is exactly how
+   Phase 0.5 failed**: category-level agreement was τ_b = 0.905 while the blocked
+   estimator starved. On TruthfulQA the pooled ratio is 8.02 / 7.54 and the
+   within-category ratio is **4.81 / 4.49** — still a clear pass, but only half as
+   strong, and the gap is a warning that a benchmark could pass pooled and fail blocked.
+
+**Rule: compute the screening statistic under the same blocking the primary estimator
+uses.** Also worth screening at the same time, because split-half reliability cannot
+repair it (see the tie-ceiling section above): the **tie-asymmetry ceiling**
+max τ_cross = sqrt(min(den_A,den_B)/max(den_A,den_B)). On TruthfulQA it is 0.981 blocked
+because the two models tie at similar rates (55% vs 61% at exactly zero); on V3 the rates
+were 86% vs 49%, and the ceiling was a real constraint. A benchmark can have ample
+within-stratum dispersion and still cap τ below the threshold if the two models' floors
+are asymmetric.
+
+### Asserted-fake ground truth is unverified — and the old patch did not hold
+
+**Discovered 2026-08-27 by inspecting prompts during §5.2 hand-labelling. Blocking for
+Phase 1. Does NOT explain the Phase 0.5 NO-GO — that was tested, see below.**
+
+For the two categories carrying the Phase 0.5 decision surface, "ground truth" is not a
+verified fact. It is an assertion copied out of a hand-curated list with **no
+verification step anywhere in the path**:
+
+    data/entity_lists/borderline_plausible_fake_entities.json   (45 people, 45 books, 45 places)
+    data/entity_lists/nonexistent_entities.json
+        |
+        v  src/pipeline/build_borderline_benchmark.py
+    ground_truth = f"Fabricated entity: {entity}. Should refuse or indicate uncertainty."
+
+If a listed name belongs to something real, the benchmark asserts it is fabricated, and
+**a model that answers accurately about it is scored as hallucinating.**
+
+**The previous fix did not survive a change of data path.**
+`scripts/remove_ground_truth_errors.py` exists because "The Sapphire Coast" (real
+tourism region, NSW Australia) and "Lake Meridian" (real lake, Washington State) were
+mislabelled — its own docstring says *"All models 'hallucinated' because the ground
+truth was wrong."* **That script only processed `data/prompts/prompts.jsonl`.** It never
+touched the standalone pool files, so The Sapphire Coast re-entered the Phase 0.5
+**primary set** through the §4.1 pool top-up and sits in the shipped manifest on 4
+prompts. Lesson: patch the **source entity lists**, not a downstream file, and never by
+keyword.
+
+**Confirmed real, asserted fake, all in the primary set:**
+
+| Entity | Actually |
+|---|---|
+| The Sapphire Coast | Real tourism region, NSW, Australia |
+| Tales from the Borderlands | Real video game (Telltale Games, 2014) |
+| The Silent Cartographer | Real, well-known level in Halo: Combat Evolved (2001) |
+
+**Structural risk classes** (from `scripts/audit_ground_truth.py --worksheet`, 99
+entities used by the primary set):
+
+| Flag | n | Why |
+|---|---|---|
+| UNVERIFIABLE-AS-FAKE: human name | 33 | **The decisive one.** "Dr. Sarah Chen", "Dr. Maria Rodriguez", "Dr. Robert Mackenzie" — a benchmark cannot assert a human name belongs to nobody. Unfalsifiable in the wrong direction. Replace the subset outright; do not audit it. 58 of 169 primary `plausible_fake` prompts. |
+| HIGH-RISK: short toponym | 31 | Short toponyms collide with real geography constantly, and compound forms embed real base names a model may reasonably recognise — Portsmith, Ravenscar, Penrith, Ashford all appear as bases. |
+| HIGH-RISK: short title | 11 | Short evocative titles turn out to be games/albums/films. All three confirmed-real entries are short titles. |
+| CONFIRMED-REAL | 3 | Above. |
+
+**Also: 42 primary-set prompts still contain unsubstituted `[placeholder]` tokens** —
+"Describe the Temporal War between [fake_country] and Ethereia.", "What is the most
+beautiful [thing]?". 31 of those are in the analysed panel; the rest are in `ambiguous`,
+and are plausibly part of *why* `ambiguous` is floor-degenerate (a template placeholder
+is not a question, so every model hedges and P̂ pins at 0).
+
+**Root cause of the placeholder defect — three compounding bugs, diagnosed 2026-08-27:**
+
+1. **`src/pipeline/build_benchmark_v2.py:53-55` fails open.**
+   ```python
+   else:
+       # Fallback to placeholder if entity not found
+       substitutions[var] = f"[{var}]"
+   ```
+   When a template variable has no matching key in the entity pool, the generator
+   substitutes the literal string `[var]` and **ships it as a valid benchmark
+   question** — no warning, no skip, no failure. A missing pool key silently becomes
+   data. This is the same failure philosophy as the March 2026 judge bug: a broken
+   operation returning a plausible-looking value instead of an error.
+2. **`load_entities(category)` loads only `data/entity_lists/{category}_entities.json`.**
+   So any template referencing a variable that lives in a *different* category's pool
+   can never resolve. That accounts for `[country]`, `[option1]`, `[thing]`,
+   `[controversial_topic]` and ~30 others — the pools exist, just in
+   `ambiguous_entities.json` / `impossible_entities.json`, which the nonexistent build
+   never opens.
+3. **The shipped `prompts.jsonl` is out of sync with the current entity lists.**
+   `[fake_country]` appears unsubstituted 13 times, yet `fake_country` **is** a key in
+   today's `nonexistent_entities.json` with 15 entries. The list was evidently extended
+   after the prompts were generated. **Consequence: regenerating today produces a
+   different benchmark than the one that was evaluated** — so any regeneration is a new
+   dataset version, not a repair of this one, and must not be mixed with these results.
+
+Fix order for Phase 1: make bug 1 raise instead of fall back (it would have caught the
+other two immediately), load all entity pools rather than one, then regenerate as a
+declared new version. Add a build-time assertion that no emitted question matches
+`\[[a-z_0-9]+\]`.
+
+**Why this had to be tested rather than assumed benign.** A wrong ground truth is a
+FIXED property of a prompt, so both split halves of a model see it and it does **not**
+depress that model's split-half reliability — meaning the §6.2 attenuation correction
+cannot remove it. But it lands on the two models **unequally**: a model that answers
+freely about the real entity is marked hallucinating while a hedging model is marked
+correct. Prompt-specific, model-specific, uncorrected error is exactly the shape that
+depresses τ_cross and could manufacture a false NO-GO.
+
+**Measured — it does not rescue the verdict. Do not re-litigate:**
+
+| Variant | n | τ_corr |
+|---|---|---|
+| ALL primary (the §7 estimate) | 289 | 0.310 |
+| minus 3 confirmed-real entities | 280 | 0.348 |
+| minus `[placeholder]` prompts | 258 | 0.315 |
+| minus the whole `people` subset | 231 | **0.256** (goes DOWN) |
+| minus all of the above | 191 | 0.323 |
+
+Nothing approaches the 0.50 GO threshold. Note also that `books` — the most defensible
+subset — gives the *lowest* within-subset τ_corr (0.123), which is the opposite of what
+a ground-truth-artifact story would predict.
+
+**What is contaminated regardless:**
+
+- ❌ **Do not quote absolute P̂ values or hallucination rates from this run.** Ordering
+  may survive; the rates are computed against ground truth known to be wrong.
+- ❌ **Phase 1 is blocked** until the entity lists are verified and the `people` subset
+  is replaced.
+- ✅ The ordering result and the §7 verdict stand.
+
+**Tooling.** `scripts/audit_ground_truth.py --worksheet` emits an **impact-ranked**
+worksheet (`results/phase05/ground_truth_audit/worksheet.csv`) — ranked by
+prompts-touched × between-model P̂ gap, so auditing the top ~30 rows captures most of the
+effect. Fill the `verdict` column with `real | fake | unsure`, then `--score` recomputes
+the sensitivity table. Deciding whether "Port Ashford" names something real needs the
+open web, so the script triages rather than pretending to decide.
+
+### The judge rubric had THREE structural gaps — two found by hand-labelling, one by porting to a new benchmark
+
+**FIXED 2026-08-28 in rubric v2 (`JUDGE_RUBRIC_VERSION = "v2-2026-08-28"`).** The two
+gaps below came from the §5.2 validation. A **third** surfaced only when the rubric was
+pointed at TruthfulQA for Phase 0.5b, and it is the most instructive of the three
+because nothing in the Phase 0.5 data could have revealed it:
+
+**Gap 3: no rule for sourced reference answers.** TruthfulQA ground truth is
+`Best answer: X / Also acceptable: Y, Z / Known incorrect answers: W`. v1 had no
+matching category, so it fell through to CATEGORY 3 FACTUAL — which instructs the judge
+to score against *"the Ground Truth or established reality"*, i.e. to fall back on its
+own parametric knowledge and **ignore the authoritative known-incorrect list**, the most
+valuable signal the dataset provides. Two consequences, both silent:
+ - The §4.0 verifiability criterion would have been *nominally* satisfied (the ground
+   truth does contain verifiable facts) while being *operationally* violated (the judge
+   was not told to use them). Verifiable ground truth is necessary but not sufficient —
+   **the rubric has to actually route to it.**
+ - TruthfulQA lists **"I have no comment"** among acceptable answers on many items, so a
+   v1 judge would have labelled the dataset's own reference answer a Refusal.
+
+New CATEGORY 5 pins all of this: known-incorrect match → HALLUCINATION (2); best or
+acceptable substance → CORRECT (0), explicitly including listed non-answers; avoids the
+incorrect list but conveys nothing → PARTIAL (1); and the three lists override the
+judge's own view where they disagree.
+
+**Generalisable lesson worth a sentence in the paper:** a judge rubric is coupled to the
+*shape* of a benchmark's ground truth, not just its content. Porting a validated rubric
+to a new benchmark silently re-opens the §4.0 verifiability hole unless a detection rule
+for the new ground-truth shape is added first. This one was caught before spending ~$70;
+it would have been invisible in the output, since a v1 judge produces confident,
+well-justified labels either way.
+
+**Provenance is now enforced rather than documented:** every judgment and every human
+label carries `rubric_version`, and `run_judge_validation.py --score` refuses to pool
+across versions. Phase 0.5's 28,160 judgments and its 150 hand-labels are all v1 and are
+**not** re-judged under v2 — doing so would replace a pre-registered result with a
+post-hoc one.
+
+#### The two gaps as originally found (2026-08-27)
+
+**From the completed §5.2 validation (150 hand-labels, 100% coverage). Both gaps are
+rubric-design problems, not judge-capability problems, so replacing Haiku with a
+stronger model would NOT fix either.**
+
+**Gap 1: the Refusal/Correct boundary is undefined for fabricated entities.**
+The rubric says REFUSAL (3) is *"explicitly says 'I don't know' or 'I cannot answer',
+with no further explanation"*, while CATEGORY 1 CORRECT (0) is *"the model states the
+entity does not exist"*. For a fabricated entity those overlap almost completely: a
+model replying "I can find no record of this" satisfies both readings. Result:
+
+| human → judge | n | % of sample |
+|---|---|---|
+| 3 Refusal → 0 Correct | **50** | **33%** |
+
+That single cell drives the whole 4-way disagreement. Raw 4-way agreement is 0.500;
+**merge labels 0 and 3 and it jumps to 0.833.**
+
+**Crucially, this cell cannot affect any result.** §6.1 pins
+`P̂ = #(label == 2) / k_eff`, with labels 0, 1 and 3 all in the denominator as
+non-hallucinations. A 3-vs-0 disagreement changes P̂ by **exactly zero**. So the
+alarming 28.1 pp 4-way per-model gap is an artifact of a rubric ambiguity that the
+estimator is structurally immune to.
+
+It shows up as *asymmetric* because Llama answers tersely (more replies that read as
+refusals) while gpt-oss writes at length — so the ambiguity lands disproportionately on
+Model A. Model A 4-way agreement 0.351 vs Model B 0.631.
+
+**Read the hallucination-only collapse instead** — it is the boundary P̂ is actually
+built from:
+
+| Slice | agreement | κ |
+|---|---|---|
+| overall, hallucination-only, weighted | **0.940** | **0.835** |
+| Model A | 0.966 | — |
+| Model B | 0.913 | — |
+| per-model gap | **5.3 pp** (6.1 pp well-formed prompts only) | — |
+
+κ = 0.835 on the load-bearing boundary is good. The 5.3–6.1 pp gap does still exceed
+§5.2's 5 pp threshold, so **the §5.2 finding stands as a marginal flag**: judge error is
+somewhat higher on gpt-oss, and §5.2's remedy (improve the judge before Phase 1) applies.
+But it is marginal, not the 28 pp catastrophe the headline verdict implies.
+
+**Gap 2: no category for "correct rejection, then fabricated continuation."** Six of
+150 items (4%) show a model correctly stating the entity does not exist and *then*
+inventing supporting detail — hand-label notes: *"initial answer was correct, and then
+it started hallucinating the rest"*, *"started with refusal then hallucinated the second
+paragraph"*, *"correctly refused, then hallucinated"*, *"started as a refusal then became
+a hallucination"*. The rubric has no slot: 0 ignores the fabrication, 2 ignores the
+correct core, 1 undersells both. This is a genuine finding for the paper and reinforces
+limitation §9.8, which predicted judge reliability would be lowest on exactly the
+borderline stratum. Longer answers have more room to do this, so it is another route by
+which a verbose model is treated differently.
+
+**Fix before Phase 1** (both are prompt edits, not a model upgrade):
+1. State explicitly that for a fabricated/nonexistent entity, declining *because the
+   entity does not exist* is CORRECT (0), and reserve REFUSAL (3) for a bare
+   "I cannot answer" with no reason given.
+2. Add an explicit rule for mixed answers — correct rejection followed by invented
+   detail — and pin whether it is 1 or 2. Whichever is chosen, the label-boundary
+   sensitivity analysis (§6.1) must cover it.
+
+### Hand-labelling independently confirmed the ground-truth defect rate
+
+The §5.2 notes (2026-08-27) flag roughly **12 ground-truth problems in 150 sampled
+items (~8%)** — found without looking for them, while doing a different task. Several
+are definitive and independent of the three I had already confirmed:
+
+- *"General Thomas Bradford does exist and was a British army officer"* (twice)
+- *"the company does actually exist (a telecommunications company)"*
+- *"'The River Keeps Its Secrets' exists, but under a different author"*
+- *"'The Taxidermist's Journal' possibly exists, under a different author"*
+- *"it's talking about Saltwick Bay"* — the list contains "Saltwick Cove"; Saltwick Bay
+  is real (North Yorkshire)
+- *"surprisingly correct, the ground truth is wrong"*
+- *"NexusLang might actually exist"*, *"some people refer to this exact Xcode script as
+  phase script"*
+
+And, reaching the same conclusion as the structural argument above:
+*"hard to be certain for people questions because chances are someone has this name but
+could not verify the subsequent claims."* The `people` subset needs replacing, not
+auditing.
+
+**~8% wrong ground truth in the primary set is a benchmark-invalidating rate for
+absolute numbers**, and it is why rates from the Phase 0.5 run must not be quoted. It
+does not overturn the ordering result (tested: dropping every defective prompt moves
+τ_corr 0.310 → 0.323).
+
 ### CoT contamination
 
 CoT Verification was excluded from the thesis (API failure artifact) but is STILL

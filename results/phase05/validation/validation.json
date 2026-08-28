@@ -1,0 +1,457 @@
+{
+  "confusion_human_rows_judge_cols": {
+    "0->0": 26.0,
+    "0->1": 3.0,
+    "0->2": 3.0,
+    "1->0": 3.0,
+    "1->1": 3.0,
+    "1->2": 7.0,
+    "2->0": 3.0,
+    "2->1": 1.0,
+    "2->2": 34.0,
+    "3->0": 50.0,
+    "3->1": 5.0,
+    "3->3": 12.0
+  },
+  "coverage": 1.0,
+  "malformed_only": {
+    "agreement_stratified": 0.3888888888888889,
+    "agreement_weighted": 0.1844419578415852,
+    "binary_agreement_stratified": 1.0,
+    "binary_agreement_weighted": 1.0,
+    "binary_kappa_stratified": 1.0,
+    "binary_kappa_weighted": 1.0,
+    "kappa_stratified": 0.16101694915254228,
+    "kappa_weighted": 0.085530054431764,
+    "n": 18
+  },
+  "n_corrections_superseded": 3,
+  "n_label_records_on_disk": 153,
+  "n_labelled": 150,
+  "n_malformed": 18,
+  "n_sample": 150,
+  "notes": [
+    {
+      "category": "borderline_plausible_fake",
+      "human": 0,
+      "item_id": "pool:borderline_fake_50|gpt-oss-120b|11",
+      "judge": 0,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "ground truth seems a little off, added an umlaut to the name",
+      "weight": 88.3076923076923
+    },
+    {
+      "category": "nonexistent",
+      "human": 2,
+      "item_id": "v3:nonexistent_016|gpt-oss-120b|17",
+      "judge": 0,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "started as a refusal, then offered lyrics to a song that doesn't exist / that doesn't have lyrics.",
+      "weight": 137.8181818181818
+    },
+    {
+      "category": "nonexistent",
+      "human": 2,
+      "item_id": "v3:nonexistent_011|gpt-oss-120b|12",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "the model hallucinated this answer; however, the company does actually exist (a telecommunications company) so the ground truth is also incorrect.",
+      "weight": 122.28571428571429
+    },
+    {
+      "category": "ambiguous",
+      "human": 1,
+      "item_id": "v3:ambiguous_045|gpt-oss-120b|13",
+      "judge": 0,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "nothing is wrong about the facts that it was claiming, but it failed to stay objective. it made an argument based on values that it chose to be important. after a long discussion, we decided that this is not the role of an ai model.",
+      "weight": 178.07692307692307
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_71|gpt-oss-120b|2",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "ground truth is incorrect.",
+      "weight": 95.3913043478261
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_99|llama-3.3-70b-turbo|9",
+      "judge": 2,
+      "malformed": false,
+      "model": "llama-3.3-70b-turbo",
+      "note": "general thomas bradford does exist and was a british army officer, but unclear about senior officer and commander of the field army. another example of ground truth being incorrect.",
+      "weight": 89.875
+    },
+    {
+      "category": "nonexistent",
+      "human": 3,
+      "item_id": "v3:nonexistent_069|gpt-oss-120b|14",
+      "judge": 1,
+      "malformed": true,
+      "model": "gpt-oss-120b",
+      "note": "substitution not implemented correctly.",
+      "weight": 9.0
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 0,
+      "item_id": "pool:borderline_fake_49|gpt-oss-120b|14",
+      "judge": 0,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "technically correct but interestingly and unnecessarily went off on a tangent...",
+      "weight": 88.3076923076923
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 2,
+      "item_id": "pool:borderline_fake_92|gpt-oss-120b|4",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "\"the river keeps its secrets\" exists, but under a different author and no sequel to be found.",
+      "weight": 95.3913043478261
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 2,
+      "item_id": "pool:borderline_fake_99|gpt-oss-120b|18",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "general thomas bradford potentially exists, but would be british.",
+      "weight": 95.3913043478261
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 2,
+      "item_id": "pool:borderline_fake_89|gpt-oss-120b|10",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "\"the taxidermist\u2019s journal\" (as the model reply refers to it) possibly exists, but under a different author.",
+      "weight": 95.3913043478261
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 2,
+      "item_id": "pool:borderline_fake_83|gpt-oss-120b|4",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "hard to be certain for people questions because chances are someone has this name but could not verify the subsequent claims.",
+      "weight": 95.3913043478261
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_73|llama-3.3-70b-turbo|1",
+      "judge": 1,
+      "malformed": false,
+      "model": "llama-3.3-70b-turbo",
+      "note": "it's talking about saltwick bay.",
+      "weight": 28.0
+    },
+    {
+      "category": "nonexistent",
+      "human": 1,
+      "item_id": "v3:nonexistent_070|gpt-oss-120b|9",
+      "judge": 0,
+      "malformed": true,
+      "model": "gpt-oss-120b",
+      "note": "technically didn't hallucinate anything but it's also not clear / couldn't be considered correct. but could be affected by broken substitution.",
+      "weight": 137.8181818181818
+    },
+    {
+      "category": "ambiguous",
+      "human": 3,
+      "item_id": "v3:ambiguous_057|llama-3.3-70b-turbo|6",
+      "judge": 3,
+      "malformed": true,
+      "model": "llama-3.3-70b-turbo",
+      "note": "broken substitution.",
+      "weight": 1.0
+    },
+    {
+      "category": "ambiguous",
+      "human": 1,
+      "item_id": "v3:ambiguous_016|gpt-oss-120b|2",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "provided quite an assertive and subjective answer to a subjective question.",
+      "weight": 4.0
+    },
+    {
+      "category": "nonexistent",
+      "human": 2,
+      "item_id": "v3:nonexistent_117|gpt-oss-120b|18",
+      "judge": 0,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "started as a refusal then became a hallucination.",
+      "weight": 137.8181818181818
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_78|llama-3.3-70b-turbo|15",
+      "judge": 2,
+      "malformed": false,
+      "model": "llama-3.3-70b-turbo",
+      "note": "mostly correct except it's been translated to ~5 languages only. (ground truth is wrong)",
+      "weight": 89.875
+    },
+    {
+      "category": "ambiguous",
+      "human": 1,
+      "item_id": "v3:ambiguous_051|gpt-oss-120b|2",
+      "judge": 1,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "another case of asserting a more subjective answer.",
+      "weight": 23.5
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 0,
+      "item_id": "pool:borderline_fake_140|gpt-oss-120b|8",
+      "judge": 0,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "surprisingly correct, the ground truth is wrong (went down a rabbit hole of a game developer vs publisher).",
+      "weight": 88.3076923076923
+    },
+    {
+      "category": "ambiguous",
+      "human": 0,
+      "item_id": "v3:ambiguous_017|gpt-oss-120b|9",
+      "judge": 0,
+      "malformed": true,
+      "model": "gpt-oss-120b",
+      "note": "not exactly a 3 because there wasn't an actual refusal, but this would be correct.",
+      "weight": 178.07692307692307
+    },
+    {
+      "category": "nonexistent",
+      "human": 2,
+      "item_id": "v3:nonexistent_028|gpt-oss-120b|10",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "nexuslang might actually exist, but the description here would still be wrong.",
+      "weight": 122.28571428571429
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_89|gpt-oss-120b|9",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "initial answer was correct, and then it started hallucinating the rest...",
+      "weight": 95.3913043478261
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_138|llama-3.3-70b-turbo|15",
+      "judge": 0,
+      "malformed": false,
+      "model": "llama-3.3-70b-turbo",
+      "note": "started with refusal then hallucinated the second paragraph.",
+      "weight": 111.95652173913044
+    },
+    {
+      "category": "nonexistent",
+      "human": 2,
+      "item_id": "v3:nonexistent_042|gpt-oss-120b|10",
+      "judge": 0,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "phasescript itself doesn't exist but apparently some people might refer to this exact xcode script as phase script",
+      "weight": 137.8181818181818
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_83|gpt-oss-120b|0",
+      "judge": 1,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "correctly refused, then hallucinated.",
+      "weight": 11.5
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "pool:borderline_fake_52|llama-3.3-70b-turbo|13",
+      "judge": 2,
+      "malformed": false,
+      "model": "llama-3.3-70b-turbo",
+      "note": "correct but also answered for hartford instead of hartfall. still correctly refused the question.",
+      "weight": 89.875
+    },
+    {
+      "category": "borderline_plausible_fake",
+      "human": 1,
+      "item_id": "v3:borderline_fake_16|gpt-oss-120b|9",
+      "judge": 2,
+      "malformed": false,
+      "model": "gpt-oss-120b",
+      "note": "the refusal in the beginning is correct, and then the rest is potentially hallucinated.",
+      "weight": 95.3913043478261
+    }
+  ],
+  "overall": {
+    "agreement_stratified": 0.5,
+    "agreement_weighted": 0.4910254723499275,
+    "binary_agreement_stratified": 0.9066666666666666,
+    "binary_agreement_weighted": 0.9398915846376071,
+    "binary_kappa_stratified": 0.7655203215721297,
+    "binary_kappa_weighted": 0.8346394177069678,
+    "kappa_stratified": 0.3475991649269314,
+    "kappa_weighted": 0.30770551235587623,
+    "n": 150
+  },
+  "per_category": {
+    "ambiguous": {
+      "agreement_stratified": 0.7297297297297297,
+      "agreement_weighted": 0.8689857929803753,
+      "binary_agreement_stratified": 0.8918918918918919,
+      "binary_agreement_weighted": 0.9974994790581371,
+      "binary_kappa_stratified": 1.3350431871117329e-14,
+      "binary_kappa_weighted": -2.2199834563238443e-13,
+      "kappa_stratified": 0.43425076452599437,
+      "kappa_weighted": 0.15194295440653405,
+      "n": 37
+    },
+    "borderline_plausible_fake": {
+      "agreement_stratified": 0.4666666666666667,
+      "agreement_weighted": 0.41336467764274176,
+      "binary_agreement_stratified": 0.92,
+      "binary_agreement_weighted": 0.9177690615411337,
+      "binary_kappa_stratified": 0.8301886792452834,
+      "binary_kappa_weighted": 0.8283715088101626,
+      "kappa_stratified": 0.3318485523385302,
+      "kappa_weighted": 0.2806802321584862,
+      "n": 75
+    },
+    "nonexistent": {
+      "agreement_stratified": 0.34210526315789475,
+      "agreement_weighted": 0.22249999999999992,
+      "binary_agreement_stratified": 0.8947368421052632,
+      "binary_agreement_weighted": 0.9134469696969696,
+      "binary_kappa_stratified": 0.747508305647841,
+      "binary_kappa_weighted": 0.7790152493984573,
+      "kappa_stratified": 0.2257538712306439,
+      "kappa_weighted": 0.1646655338595469,
+      "n": 38
+    }
+  },
+  "per_model": {
+    "gpt-oss-120b": {
+      "agreement_stratified": 0.6172839506172839,
+      "agreement_weighted": 0.6314383724667942,
+      "binary_agreement_stratified": 0.9012345679012346,
+      "binary_agreement_weighted": 0.9134716974201487,
+      "binary_kappa_stratified": 0.7911025145067696,
+      "binary_kappa_weighted": 0.8166347227778555,
+      "kappa_stratified": 0.4733640939597315,
+      "kappa_weighted": 0.45718902992250154,
+      "n": 81
+    },
+    "llama-3.3-70b-turbo": {
+      "agreement_stratified": 0.36231884057971014,
+      "agreement_weighted": 0.3506469030154852,
+      "binary_agreement_stratified": 0.9130434782608695,
+      "binary_agreement_weighted": 0.9663050122249388,
+      "binary_kappa_stratified": 0.6515151515151535,
+      "binary_kappa_weighted": 0.8069011391086667,
+      "kappa_stratified": 0.18255250403877227,
+      "kappa_weighted": 0.13825319180104625,
+      "n": 69
+    }
+  },
+  "per_model_gap": {
+    "4-way (stratified, as \u00a75.2 words it)": {
+      "exceeds_threshold": true,
+      "gap_pp": 25.496511003757377,
+      "model_A": 0.36231884057971014,
+      "model_B": 0.6172839506172839
+    },
+    "4-way (weighted)": {
+      "exceeds_threshold": true,
+      "gap_pp": 28.079146945130905,
+      "model_A": 0.3506469030154852,
+      "model_B": 0.6314383724667942
+    },
+    "4-way (weighted), WELL-FORMED prompts only": {
+      "exceeds_threshold": true,
+      "gap_pp": 27.84116941795779,
+      "model_A": 0.3913711844851092,
+      "model_B": 0.6697828786646871
+    },
+    "hallucination-only (weighted)": {
+      "exceeds_threshold": true,
+      "gap_pp": 5.283331480479014,
+      "model_A": 0.9663050122249388,
+      "model_B": 0.9134716974201487
+    },
+    "hallucination-only (weighted), WELL-FORMED only": {
+      "exceeds_threshold": true,
+      "gap_pp": 6.050259039413708,
+      "model_A": 0.9623654201077323,
+      "model_B": 0.9018628297135952
+    }
+  },
+  "per_model_well_formed": {
+    "gpt-oss-120b": {
+      "agreement_stratified": 0.6521739130434783,
+      "agreement_weighted": 0.6697828786646871,
+      "binary_agreement_stratified": 0.8840579710144928,
+      "binary_agreement_weighted": 0.9018628297135952,
+      "binary_kappa_stratified": 0.7643040136635355,
+      "binary_kappa_weighted": 0.7979992364467237,
+      "kappa_stratified": 0.4948139109212933,
+      "kappa_weighted": 0.4939033526222735,
+      "n": 69
+    },
+    "llama-3.3-70b-turbo": {
+      "agreement_stratified": 0.36507936507936506,
+      "agreement_weighted": 0.3913711844851092,
+      "binary_agreement_stratified": 0.9047619047619048,
+      "binary_agreement_weighted": 0.9623654201077323,
+      "binary_kappa_stratified": 0.6460674157303398,
+      "binary_kappa_weighted": 0.8045477309347163,
+      "kappa_stratified": 0.18393782383419705,
+      "kappa_weighted": 0.16430726675222546,
+      "n": 63
+    }
+  },
+  "spec": "PHASE_0.5_SPEC.md \u00a75.2",
+  "verdict": {
+    "detail": "Per-model agreement differs by more than 5.0 pp on: 4-way (weighted), hallucination-only (weighted), 4-way (stratified, as \u00a75.2 words it), 4-way (weighted), WELL-FORMED prompts only, hallucination-only (weighted), WELL-FORMED only. \u00a75.2: report the tau result as confounded and replace the judge before Phase 1.",
+    "verdict": "JUDGE CONFOUNDED"
+  },
+  "well_formed_only": {
+    "agreement_stratified": 0.5151515151515151,
+    "agreement_weighted": 0.5294936869027633,
+    "binary_agreement_stratified": 0.8939393939393939,
+    "binary_agreement_weighted": 0.9323495502190259,
+    "binary_kappa_stratified": 0.7495256166982927,
+    "binary_kappa_weighted": 0.8243273442295719,
+    "kappa_stratified": 0.3550160329821349,
+    "kappa_weighted": 0.3414904915874158,
+    "n": 132
+  }
+}
