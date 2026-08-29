@@ -100,6 +100,76 @@ ALLOCATION_SPEC = {"borderline_plausible_fake": 75, "nonexistent": 38, "ambiguou
 # suggested allocation, which must then be stated in the write-up.
 ALLOCATION_ESTIMATOR = {"borderline_plausible_fake": 90, "nonexistent": 60}
 
+# ── dataset profiles ────────────────────────────────────────────────────────────
+DATASETS = {
+    "phase05": {"manifest": "phase05_manifest.jsonl", "results": "phase05"},
+    "phase05b": {"manifest": "phase05b_manifest.jsonl", "results": "phase05b"},
+}
+DATASET = "phase05"
+
+
+def configure(dataset):
+    """Point the module at a dataset profile. Call before any path is read."""
+    cfg = DATASETS[dataset]
+    global DATASET, MANIFEST_PATH, RESULTS_DIR, COMPLETIONS_PATH, JUDGMENTS_PATH
+    global OUT_DIR, SAMPLE_PATH, LABELS_PATH
+    DATASET = dataset
+    MANIFEST_PATH = BASE_DIR / "data" / "prompts" / cfg["manifest"]
+    RESULTS_DIR = BASE_DIR / "results" / cfg["results"]
+    COMPLETIONS_PATH = RESULTS_DIR / "completions.jsonl"
+    JUDGMENTS_PATH = RESULTS_DIR / "judgments.jsonl"
+    OUT_DIR = RESULTS_DIR / "validation"
+    SAMPLE_PATH = OUT_DIR / "sample.jsonl"
+    LABELS_PATH = OUT_DIR / "human_labels.jsonl"
+
+
+def proportional_allocation(total=None):
+    """Allocate `total` labels across the manifest's categories, proportional to size.
+
+    WHY NOT THE PHASE 0.5 ALLOCATION. That one is a hand-picked dict over three
+    categories, weighted toward `borderline_plausible_fake` because the v1 rubric had no
+    rule for it and judge reliability was therefore plausibly worst on the stratum
+    carrying the most weight. Neither premise holds for 0.5b: TruthfulQA has 38
+    categories, and rubric v2's CATEGORY 5 applies UNIFORMLY to all of them, so there is
+    no category where the rubric is silent and no reason to over-weight one.
+
+    WHY NOT EQUAL PER CATEGORY. 150 / 38 = 4 labels per category. The §5.2 deliverable is
+    the PER-MODEL agreement gap, which is estimated across the whole sample, not within
+    category; 4 labels per category buys nothing for it and starves the (model x label)
+    cells that actually need population. Proportional allocation keeps the sample looking
+    like the benchmark, so the reweighted figures estimate what they claim to.
+
+    Deterministic: largest-remainder apportionment over categories sorted by name, no
+    RNG, so the same manifest always yields the same allocation.
+    """
+    total = TOTAL_N if total is None else total
+    counts = Counter(r["category"] for r in read_jsonl(MANIFEST_PATH)
+                     if r.get("in_primary"))
+    if not counts:
+        sys.exit("no prompts flagged in_primary in the manifest")
+    n_prompts = sum(counts.values())
+    exact = {c: total * n / n_prompts for c, n in counts.items()}
+    alloc = {c: int(v) for c, v in exact.items()}
+    # Largest remainder, then guarantee every category gets at least 1 so no stratum is
+    # silently unvalidated.
+    for c in sorted(alloc):
+        if alloc[c] == 0:
+            alloc[c] = 1
+    short = total - sum(alloc.values())
+    if short > 0:
+        order = sorted(exact, key=lambda c: (-(exact[c] - int(exact[c])), c))
+        for c in (order * (short // len(order) + 1))[:short]:
+            alloc[c] += 1
+    elif short < 0:
+        order = sorted(alloc, key=lambda c: (-alloc[c], c))
+        i = 0
+        while sum(alloc.values()) > total:
+            c = order[i % len(order)]
+            if alloc[c] > 1:
+                alloc[c] -= 1
+            i += 1
+    return alloc
+
 SAMPLE_SEED = 20260826
 TOTAL_N = 150
 PER_MODEL_GAP_THRESHOLD = 5.0   # percentage points, §5.2
@@ -942,9 +1012,18 @@ def main():
                          "corrections have shifted raw record positions.")
     ap.add_argument("--fix-note", default=None,
                     help="optional note to attach to a --fix correction")
+    ap.add_argument("--dataset", choices=sorted(DATASETS), default="phase05",
+                    help="phase05 = V3 pilot; phase05b = TruthfulQA replication (§11). "
+                         "Reads results/<dataset>/ and writes its validation/ subdir.")
     ap.add_argument("--seed", type=int, default=SAMPLE_SEED)
-    ap.add_argument("--out-dir", type=Path, default=OUT_DIR)
+    ap.add_argument("--out-dir", type=Path, default=None,
+                    help="defaults to results/<dataset>/validation")
     args = ap.parse_args()
+
+    # Must happen before any path or allocation is read.
+    configure(args.dataset)
+    if args.out_dir is None:
+        args.out_dir = OUT_DIR
 
     sample_path = args.out_dir / "sample.jsonl"
     labels_path = args.out_dir / "human_labels.jsonl"
@@ -972,9 +1051,18 @@ def main():
             sys.exit(f"{sample_path} already exists. Redrawing would invalidate any "
                      "labels already collected against the old sample. Delete it "
                      "deliberately if that is what you want.")
-        alloc = ALLOCATION_ESTIMATOR if args.skip_degenerate else ALLOCATION_SPEC
-        print(f"allocation: {alloc}"
-              f"{'  (--skip-degenerate: departs from the §5.2 suggestion)' if args.skip_degenerate else '  (§5.2 suggested)'}")
+        if args.dataset == "phase05b":
+            # 38 categories, rubric v2 applies CATEGORY 5 uniformly, so there is no
+            # stratum where the rubric is silent and no reason to hand-weight one.
+            alloc = proportional_allocation()
+            print(f"allocation: proportional over {len(alloc)} TruthfulQA categories, "
+                  f"{sum(alloc.values())} labels")
+            for c, n in sorted(alloc.items(), key=lambda x: (-x[1], x[0])):
+                print(f"    {n:3d}  {c}")
+        else:
+            alloc = ALLOCATION_ESTIMATOR if args.skip_degenerate else ALLOCATION_SPEC
+            print(f"allocation: {alloc}"
+                  f"{'  (--skip-degenerate: departs from the §5.2 suggestion)' if args.skip_degenerate else '  (§5.2 suggested)'}")
         draw(alloc, args.seed, sample_path)
     elif args.score:
         score(sample_path, labels_path, args.out_dir,
