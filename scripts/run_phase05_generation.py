@@ -177,17 +177,47 @@ def stratified_sample(prompts, limit):
     return picked
 
 
+def is_infra_failure(error):
+    """Is this failure infrastructure (retryable) or model behaviour (data)?
+
+    THIS DISTINCTION IS LOAD-BEARING, and conflating the two would quietly violate a
+    pre-registration. §11.6 pre-registers an EMPTY COMPLETION -- gpt-oss spending the
+    whole token budget on internal reasoning and returning nothing -- as DATA: a
+    non-hallucination that stays in the k_eff denominator, on the same §6.1 reasoning
+    that keeps refusals in the denominator.
+
+    Decoding runs at temperature 0.7, so retrying an empty completion draws a NEW sample
+    that will usually contain text. Retrying until text appears is resampling the
+    phenomenon away -- a selection effect on the dependent variable, and precisely what
+    §6.1 and §11.6 exist to prevent. Note these rows have ALREADY been retried
+    MAX_ATTEMPTS times inline, so a recorded empty is persistently empty, not a fluke.
+
+    Infrastructure failures carry no such information. The 2026-08-28 run lost 1,527 rows
+    to a transient "Connection error." outage hitting both models near-identically
+    (767 gpt-oss / 760 llama); those are not data and must be retried.
+
+    To retry empty completions deliberately -- e.g. if a future phase raises max_tokens,
+    which would make the old empties an artifact of the smaller budget -- delete those
+    rows from completions.jsonl explicitly rather than loosening this predicate.
+    """
+    return "empty completion (finish_reason=" not in (error or "")
+
+
 def existing_keys(path):
-    """Set of (uid, model, sample_idx) already generated successfully."""
+    """Successfully generated keys, plus failures split by whether they are retryable."""
     done = set()
-    failed = Counter()
+    failed_infra = Counter()
+    failed_behavioural = Counter()
     for row in read_jsonl(path):
         key = (row["uid"], row["model"], row["sample_idx"])
         if row.get("generation_failed"):
-            failed[key] += 1
+            if is_infra_failure(row.get("error")):
+                failed_infra[key] += 1
+            else:
+                failed_behavioural[key] += 1
         else:
             done.add(key)
-    return done, failed
+    return done, failed_infra, failed_behavioural
 
 
 def append_rows(path, rows):
@@ -291,7 +321,7 @@ def main():
         sys.exit(0 if preflight(clients) else 1)
 
     prompts = load_manifest(args.limit)
-    done, previously_failed = existing_keys(OUTPUT_PATH)
+    done, previously_failed, failed_behavioural = existing_keys(OUTPUT_PATH)
 
     tasks = []
     for prompt_row in prompts:
@@ -299,6 +329,11 @@ def main():
             for sample_idx in range(K_SAMPLES):
                 key = (prompt_row["uid"], model_key, sample_idx)
                 if key in done:
+                    continue
+                # §11.6: an empty completion is DATA, not a failed call. Never retried,
+                # not even with --retry-failed, because at T=0.7 a retry is a fresh
+                # sample and would select the phenomenon away. See is_infra_failure().
+                if key in failed_behavioural:
                     continue
                 if key in previously_failed and not args.retry_failed:
                     continue
@@ -314,6 +349,9 @@ def main():
     if previously_failed:
         state = "will retry" if args.retry_failed else "skipping (use --retry-failed)"
         print(f"previously failed : {len(previously_failed)}  ({state})")
+    if failed_behavioural:
+        print(f"empty completions : {len(failed_behavioural)}  (§11.6 DATA — never "
+              f"retried; a retry at T={TEMPERATURE} would resample the phenomenon away)")
     print(f"to generate       : {len(tasks)}\n")
 
     if not tasks:
@@ -367,6 +405,32 @@ def main():
                   "(PHASE_0.5_SPEC.md §5.1).")
 
     rows = read_jsonl(OUTPUT_PATH)
+
+    # Split the failures by cause. "23% failed" and "0.15% failed" demand opposite
+    # responses, and a single blended rate hides which one you are looking at: infra
+    # failures are recoverable non-data (retry them), empty completions are §11.6 data
+    # (never retry). The 2026-08-28 run had both at once and the blended number made a
+    # transient network outage look like a catastrophic gpt-oss defect.
+    infra = [r for r in rows if r.get("generation_failed")
+             and is_infra_failure(r.get("error"))]
+    empties = [r for r in rows if r.get("generation_failed")
+               and not is_infra_failure(r.get("error"))]
+    if infra or empties:
+        print("\nfailures in file, BY CAUSE:")
+        print(f"  infrastructure (retryable, NOT data) : {len(infra):6d}  "
+              f"({len(infra)/len(rows):.2%})")
+        if infra:
+            for err, n in Counter((r.get("error") or "")[:48]
+                                  for r in infra).most_common(3):
+                print(f"      {n:6d}x  {err}")
+            print(f"      -> recover with: --retry-failed")
+        print(f"  empty completions (§11.6 DATA)       : {len(empties):6d}  "
+              f"({len(empties)/len(rows):.2%})")
+        if empties:
+            by_model = Counter(r["model"] for r in empties)
+            print(f"      by model: {dict(by_model)}")
+            print(f"      -> NOT retried. Counted as non-hallucination in k_eff.")
+
     per_model = Counter(r["model"] for r in rows if not r.get("generation_failed"))
     k_eff = defaultdict(int)
     for r in rows:
