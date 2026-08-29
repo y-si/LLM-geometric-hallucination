@@ -99,3 +99,9 @@ results/phase05b/*.jsonl
 !results/phase05b/*.jsonl.gz
 results/phase05b_probe/*.jsonl
 !results/phase05b_probe/*.jsonl.gz
+
+# Run logs are not results. decoding_config.json IS tracked (it is the §3.2
+# fingerprint that makes a resume across a config change fail loudly), matching
+# how results/phase05/decoding_config.json is handled.
+results/*/gen.log
+results/*/judge.log
