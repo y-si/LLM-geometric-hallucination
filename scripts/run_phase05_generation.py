@@ -87,6 +87,10 @@ MODELS = ["llama-3.3-70b-turbo", "gpt-oss-120b"]
 # A single shared value keeps the decoding config identical across models, which is
 # what makes the two P-hat estimates comparable.
 K_SAMPLES = 20
+# §5.1 — below this k_eff the (prompt, model) pair leaves the primary estimator. Kept in
+# sync with analyze_phase05.py's K_EFF_MIN; reported here so a run that has quietly
+# destroyed its own analysis set says so at the end rather than at analysis time.
+K_EFF_MIN = 16
 TEMPERATURE = 0.7
 TOP_P = 1.0
 MAX_TOKENS = 2048
@@ -432,15 +436,32 @@ def main():
             print(f"      -> NOT retried. Counted as non-hallucination in k_eff.")
 
     per_model = Counter(r["model"] for r in rows if not r.get("generation_failed"))
-    k_eff = defaultdict(int)
+    # SEED FROM THE FULL EXPECTED CROSS-PRODUCT, not from the successes.
+    # Counting only rows that succeeded makes a pair with ZERO successes invisible --
+    # it never gets a key, so it cannot be counted as "short". That is the most
+    # important case to see, because k_eff = 0 means the prompt is lost entirely for
+    # that model, and since tau_cross needs BOTH models the whole prompt drops out.
+    # The 2026-08-28 outage made this concrete: the old code reported "11 pairs below
+    # k=20" when the true figure was 87, of which 76 were at k_eff = 0. An
+    # undercount that reassures is worse than no count. run_phase05_judging.py had
+    # the identical defect and was fixed the same way on 2026-08-26.
+    k_eff = Counter({(p["uid"], m): 0 for p in prompts for m in MODELS})
     for r in rows:
         if not r.get("generation_failed"):
             k_eff[(r["uid"], r["model"])] += 1
     short = sum(1 for v in k_eff.values() if v < K_SAMPLES)
+    zero = sum(1 for v in k_eff.values() if v == 0)
+    below_min = sum(1 for v in k_eff.values() if v < K_EFF_MIN)
+    lost_prompts = len({u for (u, _), v in k_eff.items() if v == 0})
     print("\ncumulative in file:")
     for model_key in MODELS:
         print(f"  {model_key:24s} {per_model[model_key]}")
-    print(f"  (prompt, model) pairs below k={K_SAMPLES}: {short}")
+    print(f"  (prompt, model) pairs below k={K_SAMPLES}: {short} of {len(k_eff)}")
+    print(f"  ... of which at k_eff = 0 (nothing generated): {zero}")
+    print(f"  ... below the §5.1 k_eff>={K_EFF_MIN} floor, i.e. DROPPED: {below_min}")
+    if lost_prompts:
+        print(f"  prompts that lost a model entirely: {lost_prompts} — each removes the")
+        print(f"    prompt from the primary set, since tau_cross needs both models")
 
     # Truncation report (§6.5.4). A completion cut off at max_tokens is judged as if
     # it were the model's answer, so an asymmetric truncation rate between models
