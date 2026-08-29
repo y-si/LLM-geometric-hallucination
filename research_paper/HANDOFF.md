@@ -258,6 +258,44 @@ Two verifications worth trusting the change on:
 
 ---
 
+## Phase 0.5b generation (2026-08-29) — COMPLETE, 32,662/32,680 (99.94%)
+
+| | Llama-3.3-70B | gpt-oss-120b |
+|---|---|---|
+| Good completions | 15,580+ | 15,525+ |
+| Truncated (`finish_reason == length`) | **0.5%** (84) | **23.6%** (3,668) |
+| Median output tokens | 315 | 1,349 |
+| Empty (budget spent on reasoning) | 0 | **18** (0.12%) |
+
+**Primary set: 817 of 817 prompts.** 0 pairs below the §5.1 k_eff floor under §11.6's
+primary treatment; 2 pairs (`0433`, `0477`) under the sensitivity treatment.
+
+Three things worth carrying forward:
+
+**1. A ~1 h network outage cost 1,527 rows and was fully recovered.** `--retry-failed`
+took pairs at k_eff = 0 from **76 → 0**. The only gaps remaining in the whole run are
+the 18 genuine empty completions. Cause was almost certainly the laptop lid being
+closed; note the failure count was ~190× my "~8 rows" estimate, because the process
+does not pause on sleep — it keeps pulling tasks and failing them instantly, so an
+hour of downtime burns ~1,500 tasks rather than the 8 in flight.
+
+**2. The probe over-forecast the empty-completion rate by 29×** — 3.38% predicted,
+**0.12%** actual. Per-category it was worse: `Sociology` was forecast at 25% and came in
+at 0.5%. Cause: the probe sampled ~2 prompts per category at k=10, so one unlucky prompt
+made a whole category look catastrophic. **Read probe per-category rates as noise; only
+the pooled figure was trustworthy.** The §11.6 pre-registration was still worth writing
+— it cost nothing and it now affects 2 prompts instead of being an open question.
+
+**3. Truncation asymmetry is 23.1 points** (was 19.6 in Phase 0.5), close to the 26
+forecast. Expected and pre-registered: a model still generating at the cap is
+confabulating at length, which is the behaviour being measured. **§6.5.4's
+label-neutrality test is now genuinely load-bearing** — at this gap, "the pilot measured
+verbosity agreement rather than difficulty agreement" is a live alternative explanation
+and a reviewer will raise it. Do not skip it, and do not residualize P̂ on length (that
+controls a mediator).
+
+---
+
 ### WATCH THIS DURING GENERATION — new failure mode, already pre-registered
 
 **gpt-oss returns completely empty answers on ~3.4% of its calls.** It spends the whole
