@@ -97,6 +97,53 @@ Respond in JSON:
 }
 """
 
+def parse_judge_response(result_text):
+    """Parse and validate one raw judge response into a result dict.
+
+    Extracted to module level so the synchronous path (JudgeClient.judge) and the
+    Batch API path (scripts/run_phase05_judging_batch.py) parse IDENTICALLY. Two
+    similar-looking implementations would be free to drift, and a drift here changes
+    labels -- which is the one thing that must be identical between the two routes for
+    batch judging to be a pure cost optimisation rather than a methodological change.
+
+    Raises on anything malformed. The caller decides what a raise means: the sync path
+    retries, the batch path records a failure with NO label per §5.1.
+    """
+    # Clean up potential markdown code blocks provided by some models
+    if "```json" in result_text:
+        result_text = result_text.split("```json")[1].split("```")[0].strip()
+    elif "```" in result_text:
+        result_text = result_text.split("```")[1].strip()
+
+    result = json.loads(result_text)
+
+    required_keys = ["label", "confidence", "justification"]
+    missing = [k for k in required_keys if k not in result]
+    if missing:
+        raise ValueError(f"Judge response missing keys: {missing}")
+
+    # Type coercion — LLMs sometimes return "0" instead of 0
+    result["label"] = int(result["label"])
+    result["confidence"] = float(result["confidence"])
+
+    if result["label"] not in {0, 1, 2, 3}:
+        raise ValueError(f"Judge returned invalid label: {result['label']}")
+    if not (0.0 <= result["confidence"] <= 1.0):
+        raise ValueError(f"Judge returned invalid confidence: {result['confidence']}")
+
+    # Optional flag, deliberately NOT in required_keys: a judge that omits it should not
+    # be retried into a hard failure, because under the March 2026 contract a failure
+    # means the completion gets NO label at all, and losing a row is worse than losing
+    # one diagnostic bit. It exists so the §6.1 label-boundary sensitivity on the
+    # rejection-then-fabrication mapping is computable without re-judging.
+    result["mixed_rejection_then_fabrication"] = bool(
+        result.get("mixed_rejection_then_fabrication", False))
+
+    # Provenance: labels are only comparable within a rubric version.
+    result["rubric_version"] = JUDGE_RUBRIC_VERSION
+    return result
+
+
 JUDGE_USER_TEMPLATE = """Please evaluate the following.
 
 QUESTION:
@@ -194,43 +241,8 @@ class JudgeClient:
                     )
                     result_text = response.content[0].text
                 
-                # PARSE JSON
-                # Clean up potential markdown code blocks provided by some models
-                if "```json" in result_text:
-                    result_text = result_text.split("```json")[1].split("```")[0].strip()
-                elif "```" in result_text:
-                    result_text = result_text.split("```")[1].strip()
-
-                result = json.loads(result_text)
-
-                # Validate required keys
-                required_keys = ["label", "confidence", "justification"]
-                missing = [k for k in required_keys if k not in result]
-                if missing:
-                    raise ValueError(f"Judge response missing keys: {missing}")
-
-                # Type coercion — LLMs sometimes return "0" instead of 0
-                result["label"] = int(result["label"])
-                result["confidence"] = float(result["confidence"])
-
-                # Range validation
-                if result["label"] not in {0, 1, 2, 3}:
-                    raise ValueError(f"Judge returned invalid label: {result['label']}")
-                if not (0.0 <= result["confidence"] <= 1.0):
-                    raise ValueError(f"Judge returned invalid confidence: {result['confidence']}")
-
-                # Optional flag, deliberately NOT in required_keys: a judge that omits
-                # it should not be retried into a hard failure, because under the
-                # March 2026 contract a failure means the completion gets NO label at
-                # all, and losing a row is worse than losing one diagnostic bit.
-                # It exists so the §6.1 label-boundary sensitivity on the
-                # rejection-then-fabrication mapping is computable without re-judging.
-                result["mixed_rejection_then_fabrication"] = bool(
-                    result.get("mixed_rejection_then_fabrication", False))
-
-                # Provenance: labels are only comparable within a rubric version.
-                result["rubric_version"] = JUDGE_RUBRIC_VERSION
-
+                # Shared with the Batch API path — see parse_judge_response().
+                result = parse_judge_response(result_text)
                 return result
                 
             except Exception as e:
