@@ -102,6 +102,9 @@ DATASETS = {
         "judgebound_categories": ("borderline_obscure_real", "factual"),
         "expected_n": 704,
         "coarse_strata": False,
+        # §11.4's floor check is a Phase 0.5b addition; Phase 0.5 predates it and is
+        # not retro-gated on it (that would replace a pre-registered verdict).
+        "floor_check_threshold": None,
     },
     "phase05b": {
         "spec": "research_paper/PHASE_0.5_SPEC.md §11 (estimator §6-§7 unchanged)",
@@ -113,6 +116,10 @@ DATASETS = {
         # §11.2 — the pre-registered coarse-13 merge is reported as a THIRD rung on
         # the §6.3 stratification ladder (pooled -> coarse -> native). Secondary only.
         "coarse_strata": True,
+        # §11.4 — pre-committed floor check. If EITHER model sits at exactly P-hat = 0
+        # on more than 70% of the 817 prompts, the run is reported inconclusive on the
+        # same grounds as Phase 0.5, whatever tau_corr comes out at.
+        "floor_check_threshold": 0.70,
     },
 }
 DATASET = "phase05"
@@ -137,6 +144,7 @@ PRIMARY_CATEGORIES = ("borderline_plausible_fake", "nonexistent", "ambiguous")
 JUDGEBOUND_CATEGORIES = ("borderline_obscure_real", "factual")
 EXPECTED_N_PROMPTS = 704
 COARSE_STRATA = False
+FLOOR_CHECK_THRESHOLD = None
 SPEC_REF = "research_paper/PHASE_0.5_SPEC.md §6-§7"
 
 
@@ -147,7 +155,7 @@ def configure(dataset):
     cfg = DATASETS[dataset]
     global DATASET, MANIFEST_PATH, RESULTS_DIR, COMPLETIONS_PATH, JUDGMENTS_PATH
     global DECODING_CONFIG_PATH, OUT_DIR, PRIMARY_CATEGORIES, JUDGEBOUND_CATEGORIES
-    global EXPECTED_N_PROMPTS, COARSE_STRATA, SPEC_REF
+    global EXPECTED_N_PROMPTS, COARSE_STRATA, SPEC_REF, FLOOR_CHECK_THRESHOLD
     DATASET = dataset
     MANIFEST_PATH = BASE_DIR / "data" / "prompts" / cfg["manifest"]
     RESULTS_DIR = BASE_DIR / "results" / cfg["results"]
@@ -159,6 +167,7 @@ def configure(dataset):
     JUDGEBOUND_CATEGORIES = cfg["judgebound_categories"]
     EXPECTED_N_PROMPTS = cfg["expected_n"]
     COARSE_STRATA = cfg["coarse_strata"]
+    FLOOR_CHECK_THRESHOLD = cfg["floor_check_threshold"]
     SPEC_REF = cfg["spec"]
     return cfg
 
@@ -1344,15 +1353,51 @@ def secondary_contrast(prompts, per_pair, uids, iters, seed):
     }
 
 
+# ── §11.4 floor check ─────────────────────────────────────────────────────────
+
+
+def floor_effect_check(prompts, per_pair):
+    """§11.4 — the pre-committed Phase 0.5b floor check.
+
+    Phase 0.5 was uninterpretable because Llama scored exactly P-hat = 0 on 86% of
+    `nonexistent`: a model that almost never fails cannot supply a difficulty
+    ordering. §11.4 pre-commits the remedy *as a reporting rule* rather than leaving
+    it to be argued after the fact — above the threshold the run is INCONCLUSIVE, not
+    a negative, whatever tau_corr comes out at.
+
+    Measured over the WHOLE frozen manifest, not the post-§6.7 panel: §11.4 says "of
+    the 817 prompts", and restricting to the surviving panel would drop exactly the
+    degenerate strata the check exists to detect.
+    """
+    if FLOOR_CHECK_THRESHOLD is None:
+        return None
+    out = {"threshold": FLOOR_CHECK_THRESHOLD, "per_model": {}, "tripped": False}
+    for model in (MODEL_A, MODEL_B):
+        vals = [per_pair[(u, model)]["p_hat"] for u in sorted(prompts)
+                if (u, model) in per_pair]
+        n_zero = sum(1 for v in vals if v == 0.0)
+        frac = (n_zero / len(vals)) if vals else float("nan")
+        out["per_model"][model] = {"n_prompts": len(vals), "n_at_zero": n_zero,
+                                   "frac_at_zero": frac,
+                                   "mean_p_hat": (float(np.mean(vals)) if vals
+                                                  else float("nan"))}
+        if np.isfinite(frac) and frac > FLOOR_CHECK_THRESHOLD:
+            out["tripped"] = True
+    return out
+
+
 # ── §7 verdict ────────────────────────────────────────────────────────────────
 
 
-def verdict(point, boot):
+def verdict(point, boot, floor=None):
     """The pre-registered decision rule (§7). Order of evaluation matters.
 
     MEASUREMENT FAILURE is checked FIRST and returns inconclusive, not negative. Low
     reliability means we cannot see the signal at this k, which is a different fact
     from the signal being absent; conflating them would kill the paper on an artifact.
+
+    §11.4's floor check is evaluated next, ahead of the tau thresholds, because it is
+    pre-committed to bind "whatever tau_corr comes out at".
     """
     tsa, tsb = point["tau_selfA"], point["tau_selfB"]
     tc, ci_lo = point["tau_corr"], boot["tau_corr"]["ci_lower"]
@@ -1365,6 +1410,21 @@ def verdict(point, boot):
                        f"> {MEASUREMENT_FAILURE_TAU_SELF}"),
             "action": ("Inconclusive, NOT negative. Escalate k from 20 to 40 and "
                        "re-run before drawing any conclusion about the claim."),
+        }
+    if floor is not None and floor["tripped"]:
+        worst = max(floor["per_model"].items(),
+                    key=lambda kv: kv[1]["frac_at_zero"])
+        return {
+            "verdict": "INCONCLUSIVE — §11.4 floor effect",
+            "reason": (f"{MODEL_LABELS[worst[0]]} sits at exactly P-hat = 0 on "
+                       f"{worst[1]['frac_at_zero']*100:.1f}% of "
+                       f"{worst[1]['n_prompts']} prompts, above the pre-committed "
+                       f"{floor['threshold']*100:.0f}% threshold. §11.4 binds "
+                       f"whatever tau_corr comes out at (here {tc:.4f})."),
+            "action": ("Inconclusive on the same grounds as Phase 0.5, NOT negative. "
+                       "The remedy is a harder prompt set, NOT more samples — and if "
+                       "none exists, the honest conclusion is that the claim is not "
+                       "testable with these two models."),
         }
     if not np.isfinite(tc):
         return {"verdict": "MEASUREMENT FAILURE",
@@ -1788,6 +1848,31 @@ def render_report(R):
         w("")
 
     # ── verdict ──
+    FC = R.get("floor_check")
+    if FC:
+        w("## §11.4 floor-effect check (pre-committed, binds the verdict)")
+        w("")
+        w("Pre-committed on 2026-08-28, before any 0.5b label existed. A model at")
+        w("exactly P-hat = 0 on most prompts cannot supply a difficulty ordering, which")
+        w("is what made Phase 0.5 uninterpretable. Above the threshold the run is")
+        w(f"reported **inconclusive**, not negative, whatever tau_corr comes out at.")
+        w("Measured over the whole frozen manifest, not the post-§6.7 panel.")
+        w("")
+        w("| Model | n prompts | at exactly P-hat = 0 | mean P-hat | over "
+          f"{FC['threshold']*100:.0f}%? |")
+        w("|---|---|---|---|---|")
+        for m in (MODEL_A, MODEL_B):
+            e = FC["per_model"][m]
+            over = "**YES**" if e["frac_at_zero"] > FC["threshold"] else "no"
+            w(f"| {MODEL_LABELS[m]} | {e['n_prompts']:,} | {e['n_at_zero']:,} = "
+              f"{e['frac_at_zero']*100:.1f}% | {f(e['mean_p_hat'])} | {over} |")
+        w("")
+        w(f"**Check {'TRIPPED' if FC['tripped'] else 'PASSES'}.**"
+          + ("" if FC["tripped"] else " Neither model is floor-pinned, so the §7"
+             " verdict below stands on its own terms. Note the remedy for a trip"
+             " would be a harder prompt set, NOT more samples."))
+        w("")
+
     w("## §7 Pre-registered decision rule (binding)")
     w("")
     V = R["verdict"]
@@ -1797,6 +1882,9 @@ def render_report(R):
     w(f"| NO-GO | tau_corr < {GO_TAU_CORR}, or CI lower bound < {GO_CI_LOWER} |")
     w(f"| MEASUREMENT FAILURE | tau_selfA ≤ {MEASUREMENT_FAILURE_TAU_SELF} or "
       f"tau_selfB ≤ {MEASUREMENT_FAILURE_TAU_SELF} |")
+    if FC:
+        w(f"| INCONCLUSIVE (§11.4) | either model at P-hat = 0 on > "
+          f"{FC['threshold']*100:.0f}% of prompts, whatever tau_corr says |")
     w("")
     w(f"### VERDICT: {V['verdict']}")
     w("")
@@ -1816,7 +1904,14 @@ def render_report(R):
     if D:
         w("---")
         w("")
-        w("# Post-hoc diagnostics — WHY the tau is low")
+        # The tie-ceiling and floor tables were written to explain a NO-GO. They are
+        # equally load-bearing under a GO — there they show the headroom was real
+        # rather than an artifact of tie structure — so the heading follows the
+        # verdict instead of asserting the tau is low.
+        if V["verdict"] == "GO":
+            w("# Post-hoc diagnostics — is the tau REAL, or ceiling/floor structure?")
+        else:
+            w("# Post-hoc diagnostics — WHY the tau is low")
         w("")
         w("> **NOT PRE-REGISTERED.** Added 2026-08-26, after seeing the primary")
         w("> result. Nothing in this part feeds the §7 decision rule. It exists to")
@@ -2125,6 +2220,7 @@ def main():
             panels["primary"], prompts, per_pair)
 
     # ── §7 ──
+    R["floor_check"] = floor_effect_check(prompts, per_pair)
     if panels["primary"] is None:
         R["verdict"] = {"verdict": "NOT COMPUTABLE",
                         "reason": "the primary panel is empty after the §5.1 and "
@@ -2143,7 +2239,8 @@ def main():
                        "result is not pre-registered."),
         }
     else:
-        R["verdict"] = verdict(R["primary"]["point"], R["primary"]["bootstrap"])
+        R["verdict"] = verdict(R["primary"]["point"], R["primary"]["bootstrap"],
+                               R["floor_check"])
         if integrity["gate_tripped"]:
             R["verdict"]["provisional"] = True
 

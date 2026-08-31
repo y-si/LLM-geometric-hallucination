@@ -855,6 +855,35 @@ pre-registration.
   budget-dependent, so P̂ inherits a dependence on `max_tokens` under the primary
   treatment.
 
+- 2026-08-31 (**post-data — 0.5b judging complete, τ_corr already computed**) — **§11.4's
+  floor check was implemented in `analyze_phase05.py`. No threshold and no rule changed.**
+  Logged here because the timing must not be discovered later by a reviewer.
+
+  What happened: §11.4 was pre-registered on 2026-08-28 with the 70% threshold, the
+  "either model", the "of the 817 prompts" denominator and the "whatever τ_corr comes out
+  at" binding all fixed in writing — but it was never coded, so the first 0.5b analysis
+  emitted a §7 verdict without evaluating it. It is now computed by the analyzer,
+  evaluated **before** the τ thresholds (§11.4 binds regardless of τ), reported as its own
+  section, and gated per-dataset: Phase 0.5 predates §11.4 and is **not** retro-gated on
+  it, since that would re-adjudicate a pre-registered verdict under a later rule.
+
+  **Why this is a disclosure and not an amendment.** Every degree of freedom in the check
+  — threshold, direction, denominator, precedence, remedy — was fixed pre-data on
+  2026-08-28 and none was touched on 2026-08-31. The implementation had no discretion left
+  to exercise. It is logged as post-data anyway because the *order* (τ seen, then check
+  coded) is exactly the order in which a check can be quietly tuned, and the defence
+  against that suspicion is the 2026-08-28 text, not an assurance.
+
+  Result: **the check passes** — 39.2% (Llama) / 45.0% (gpt-oss) of 817 prompts at exactly
+  P̂ = 0, against the 70% threshold, and below the probe's 55% / 61%. The 0.5b verdict is
+  GO on both §7 and §11.4.
+
+  Also in this change, cosmetic and non-decisional: the analyzer's post-hoc diagnostics
+  heading ("WHY the tau is low") is now verdict-aware, because the tie-ceiling and
+  floor tables are equally load-bearing under a GO — there they establish that the
+  headroom was real rather than an artifact of tie structure. Phase 0.5's report
+  reproduces byte-identically after the change, which was verified.
+
 ---
 
 ## 11. Phase 0.5b — TruthfulQA replication (pre-registered 2026-08-28, pre-data)

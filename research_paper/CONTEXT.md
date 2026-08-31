@@ -45,9 +45,9 @@ Question everything. Double-check everything. Triple-check statistical claims.
 
 - **Thesis**: FROZEN. Submitted Mar 27, 2026. Gitignored — exists on the main machine only, not in any pulled checkout. Do NOT edit.
 - **Paper**: active. Lives in `research_paper/`. Reframed by Boaz on May 1, 2026.
-- **Current phase**: Phase 0 (Setup) → Phase 0.5 pilot design complete and pre-registered in `PHASE_0.5_SPEC.md`. Next: write pilot code.
-- **Blocking**: Sunny response (email sent ~Aug 24, 2026), Boaz credit clarification (email draft below, unsent). Neither blocks the Phase 0.5 pilot, which runs entirely on funded Together AI infrastructure.
-- **Venue**: ICML 2027 (~late Jan 2027 est.) is the honest primary target. ICLR 2027 was a stretch that was already gated on things that didn't happen — see `DEADLINES.md`.
+- **Current phase**: Phase 0.5 pilot **complete, twice**. Phase 0.5 (V3) returned NO-GO; **Phase 0.5b (TruthfulQA) returned GO on 2026-08-31** — τ_corr = 0.6007, CI [0.5389, 0.6851], §7 unchanged. Next: §11.3 judge validation under rubric v2 (the only open pre-registered obligation), then Phase 1 panel design.
+- **Blocking**: §11.3 judge validation (Sein, hand-labelling — gates belief in the τ and therefore Phase 1 spend). Sunny response (email sent ~Aug 24, 2026), Boaz credit clarification (email draft below, unsent) — advisors are the critical path now that the pilot has a positive verdict.
+- **Venue**: ICML 2027 (~late Jan 2027 est.) is the honest primary target. `DEADLINES.md`'s reopening clause needs *both* a strong GO and advisor replies; only the first has fired. See `HANDOFF.md`.
 
 ---
 
@@ -352,7 +352,86 @@ a small number of label disagreements between two judging routes as evidence tha
 routes differ — establish the self-consistency noise floor first
 (`scripts/check_judge_determinism.py`).
 
-### Asserted-fake ground truth is unverified — and the old patch did not hold
+### Phase 0.5b returned GO — and the pair of runs is a stronger result than either alone
+
+**Established 2026-08-31 on complete 0.5b data. Pre-registered §7 rule, unchanged
+thresholds, evaluated on the conservative native-38 blocking. Not provisional.**
+
+| Statistic | Phase 0.5 (V3) | **Phase 0.5b (TruthfulQA)** | §7 threshold |
+|---|---|---|---|
+| τ_corr | 0.3098 | **0.6007** | ≥ 0.50 |
+| CI lower (nested bootstrap) | 0.1913 | **0.5389** | ≥ 0.30 |
+| τ_cross (blocked τ_b) | 0.2488 | 0.4818 | — |
+| τ_selfA / τ_selfB | 0.826 / 0.781 | 0.803 / 0.801 | > 0.40 ✓ |
+| ρ_corr (licensed cross-check) | 0.3307 | 0.6266 | — |
+| **Verdict** | NO-GO | **GO** | |
+
+**The two runs together say something neither says alone: the Phase 0.5 NO-GO was
+benchmark-bound, not claim-bound.** Same estimator, same code path, same k, same two
+models, same judge model, same decision rule — only the prompt set changed, and τ_corr
+doubled. The V3 diagnosis (floor effects and the tie ceiling) predicted exactly this,
+and the prediction was written down *before* the 0.5b data existed. That is a
+pre-registered prediction that came true, which is worth more in the paper than the GO
+by itself.
+
+**Every escape hatch that would weaken the GO is closed:**
+
+- **Not a floor artifact.** The pre-committed §11.4 check passes with room: 39.2%
+  (Llama) / 45.0% (gpt-oss) of the 817 prompts at exactly P̂ = 0, against a 70%
+  threshold — and *better* than the probe's 55% / 61%.
+- **Not a tie-ceiling artifact.** Max reachable τ_cross on the primary is 0.948 and the
+  observed 0.482 is 51% of it. The headroom is real, not spent.
+- **Not the τ heuristic.** ρ_corr = 0.627 against τ_corr = 0.601 — a −0.026 gap. The
+  licensed estimator agrees, as it did (at the other end of the scale) on V3.
+- **Not the label boundary.** τ_corr = 0.601 / 0.585 / 0.592 across the three §6.1
+  definitions. Not load-bearing.
+- **Not refusals.** Llama's refusal rate over the whole run is **exactly 0.0000** (gpt-oss
+  0.0064), so τ_b between refusal rates is undefined and shared refusal behaviour cannot
+  be carrying the agreement. Residualising each P̂ on its own refusal rate moves τ_cross
+  0.4818 → 0.4779.
+- **Not marginal.** The CI *lower* bound (0.539) clears the τ_corr threshold itself, not
+  merely the 0.30 CI floor.
+
+r² via the §7 derivation: τ_corr ≈ 0.60 ⇒ r ≈ 0.81 ⇒ **~66% of prompt-level difficulty
+variance is model-invariant**, against the ≥50% the paper's framing needs. On V3 it was
+~22%. The CI lower bound alone (τ 0.539 ⇒ r² ≈ 0.56) already clears 50%.
+
+**Two banked secondaries changed under the new benchmark. Both must be re-checked before
+they go in the paper as general claims.**
+
+1. **Stratification inflation nearly vanished: +0.0155** (pooled τ_b 0.4967 vs blocked
+   0.4812), against **+0.110** on V3. The §2.1 argument — that pooling across strata
+   inflates apparent agreement — is a *benchmark-dependent* effect, not a constant. It
+   was large on V3 because V3's categories differed enormously in mean difficulty; it is
+   small on TruthfulQA because the 38 categories are more even. **Do not quote +0.110 as
+   "the" stratification inflation.** The honest claim is that the inflation exists and
+   its size is set by between-stratum difficulty spread — which is a better paper point
+   than a single number, and is demonstrable with these two runs as the contrast.
+2. **The §6.5.4 label-neutrality test now PASSES**, on a run with a *higher* truncation
+   rate than V3 (24.9% vs 19.6% for gpt-oss). Pooled MH odds ratio **1.183**, χ²(1) =
+   2.99, **p = 0.084** — against V3's OR 4.31 at p < 1e-5. Only 1 of 390 per-prompt
+   Fisher tables survives Bonferroni. So on 0.5b the truncation confound is *closed by
+   the test*, and "the pilot measured verbosity agreement rather than difficulty
+   agreement" is no longer a live alternative explanation for the GO. Two caveats to
+   keep: the model-A row is OR 0.254 at p = 0.002 but rests on **9** informative tables
+   and points the *opposite* way, and the V3 result's own interpretation is unchanged —
+   there the test could not separate corruption from the confabulation→length mediation.
+
+**Δ_artifact is not computable on 0.5b, by design and pre-registration.** §11.3 removes
+the judge-bound arm because TruthfulQA has no non-verifiable prompts. The V3 estimate
+(+0.118) stands as the measurement and must be attributed to the V3 run when cited.
+
+**One number to look at again before writing.** §6.5.1 finds essentially no rank
+association between P̂ and question length (τ_b 0.014–0.049 for both models), yet
+residualising both P̂s on length drops τ_cross 0.4818 → 0.2433. Those two facts do not
+sit together comfortably: a predictor with ~zero rank association should not halve the
+statistic when partialled out. The likely explanation is the residualisation procedure
+(stratum fixed effects with one pooled slope — a `CHOICE` marked in the source, not a
+spec requirement), not length itself, and the same pattern appeared on V3 (0.249 →
+0.174). The pre-registered primary is the raw τ_cross, so this does not touch the
+verdict, but it needs diagnosing before the confound section is written.
+
+
 
 **Discovered 2026-08-27 by inspecting prompts during §5.2 hand-labelling. Blocking for
 Phase 1. Does NOT explain the Phase 0.5 NO-GO — that was tested, see below.**

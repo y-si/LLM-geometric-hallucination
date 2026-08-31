@@ -34,12 +34,14 @@
       "tau_pB_vs_question_words": 0.06546012692904402
     }
   },
+  "dataset": "phase05",
   "delta_artifact": {
     "note": "Excluded from the \u00a77 decision rule. \u0394 > 0 is the expected direction and is the measurement of interest (\u00a74.2, \u00a76.2b).",
     "tau_corr_judgebound": 0.42802952365240843,
     "tau_corr_primary": 0.3097768671015803,
     "value": 0.11825265655082812
   },
+  "floor_check": null,
   "inputs": {
     "bootstrap_iters": 1000,
     "bootstrap_seed": 20260826,
@@ -734,9 +736,13 @@
   "secondary": {
     "blocked_n_pairs": 20290,
     "blocked_tau_b": 0.2610471280649876,
+    "coarse_n_pairs": null,
+    "coarse_n_strata": null,
+    "coarse_tau_b": null,
     "n_dropped_keff": 0,
     "n_final": 431,
     "n_requested": 431,
+    "n_strata": 7,
     "per_category": [
       {
         "bootstrap": {

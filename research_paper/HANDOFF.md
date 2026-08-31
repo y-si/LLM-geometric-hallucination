@@ -7,7 +7,7 @@ right now, what was just done, what to do next.
 Update this at the end of every session. If it disagrees with your memory, trust this
 file.
 
-**Last updated: 2026-08-27**
+**Last updated: 2026-08-31**
 
 ---
 
@@ -17,22 +17,147 @@ file.
 |---|---|---|---|---|
 | _(none)_ | — | — | — | — |
 
-**Generation is COMPLETE** — 28,160 / 28,160 completions, 1,408 / 1,408 (uid, model)
-pairs at exactly k=20, zero pairs short, zero absent. Packed and pushed (`fdab540`).
-
-**Judging is COMPLETE.** 28,157 of 28,160 completions labelled. All 1,408 (uid, model)
-pairs are at k_eff ≥ 19, zero below the 16 floor. The §5.1 gate is **cleared** at a
-0.01% unrecovered rate.
-
-**The pilot returned NO-GO, and it is not a measurement failure.** See below.
-
-`run_phase05_judging.py` still prints `cumulative judge failure rate: 24.68%` and a §5.1
-warning. **Ignore it** — that is the append-only reporting defect (stale failure rows
-are never removed when a retry succeeds). The real unrecovered rate is 0.01%.
+**Phase 0.5b is COMPLETE end to end.** Generation 32,662/32,680; judging 32,640/32,680
+labelled via the Batch API; analysis run.
 
 ---
 
-## THE RESULT (2026-08-26) — NO-GO
+## THE RESULT (2026-08-31) — **GO**
+
+Pre-registered §7 rule, unchanged thresholds, conservative native-38 blocking, complete
+data. Not provisional. Full report: `results/phase05b/analysis/report.md`.
+
+| Statistic | Phase 0.5 (V3) | **Phase 0.5b (TruthfulQA)** | §7 threshold |
+|---|---|---|---|
+| **τ_corr** | 0.3098 | **0.6007** | ≥ 0.50 |
+| **CI lower** (nested bootstrap) | 0.1913 | **0.5389** | ≥ 0.30 |
+| τ_cross (blocked τ_b) | 0.2488 | 0.4818 | — |
+| τ_selfA / τ_selfB | 0.826 / 0.781 | 0.803 / 0.801 | > 0.40 ✓ |
+| ρ_corr (licensed) | 0.3307 | 0.6266 | — |
+| **VERDICT** | NO-GO | **GO** | |
+
+95% CI on τ_corr: **[0.5389, 0.6851]**. The CI *lower* bound clears the τ_corr threshold
+itself, not merely the 0.30 CI floor.
+
+**§11.4 floor check PASSES** — 39.2% (Llama) / 45.0% (gpt-oss) of the 817 prompts at
+exactly P̂ = 0, against the pre-committed 70%. Better than the probe's 55%/61%. This was
+pre-registered on 2026-08-28 to bind *whatever* τ came out at, so it had to be run and
+it is now computed by `analyze_phase05.py` rather than by hand.
+
+**The headline is not the GO on its own — it is the pair.** Same estimator, same code,
+same k, same two models, same judge, same decision rule; only the prompt set changed and
+τ_corr doubled. The V3 diagnosis said the NO-GO was a floor artifact of the benchmark and
+predicted this *before* 0.5b existed. Durable write-up with every closed escape hatch:
+`CONTEXT.md` → "Phase 0.5b returned GO".
+
+r²: τ_corr 0.60 ⇒ r ≈ 0.81 ⇒ **~66% of prompt-level difficulty variance is
+model-invariant** (V3: ~22%), against the ≥50% the framing needs.
+
+### Two banked secondaries CHANGED — do not quote the V3 numbers as general
+
+1. **Stratification inflation collapsed to +0.0155** (pooled 0.4967 vs blocked 0.4812),
+   from +0.110 on V3. The §2.1 effect is benchmark-dependent, set by between-stratum
+   difficulty spread. Reframe it as that — the two runs are the contrast — rather than
+   quoting a single number.
+2. **The §6.5.4 label-neutrality test PASSES here**: pooled MH OR **1.183**, p = **0.084**,
+   on a run with a *higher* truncation rate than V3 (24.9% vs 19.6%). V3 was OR 4.31,
+   p < 1e-5. So the "you measured verbosity agreement" objection is closed for 0.5b by
+   the test itself. Caveat: Model A reads OR 0.254 at p = 0.002 but on **9** tables and in
+   the opposite direction; 1 of 390 Fisher tables survives Bonferroni.
+
+**Δ_artifact is not computable on 0.5b and that is correct** — §11.3 removes the
+judge-bound arm because TruthfulQA has no non-verifiable prompts. The V3 estimate
+(+0.118) stands and must be attributed to the V3 run when cited.
+
+### Data integrity — §5.1 gate cleared
+
+| Quantity | Value |
+|---|---|
+| Completions | 32,680 |
+| Labelled | 32,640 |
+| **Unrecovered (no label)** | **40 = 0.12%** (threshold 2%) |
+| Pairs with k_eff < 16 | 2 (`0433`, `0477`-class), dropped by §5.1 |
+| Panel | 817 → 815 (k_eff) → **734** (§6.7 degenerate rule) |
+
+The 40 split cleanly: **22 judge JSON-parse failures** and **18 empty completions** that
+were never judged. **Do not retry the 22** — every one is `unparseable: ...` at
+`JUDGE_TEMPERATURE = 0.0`, so a retry replays byte-identical malformed output. Same
+permanent class as Phase 0.5's 3. Judging is finished; there is nothing left to run.
+
+12 of 38 categories were eliminated by §6.7 (< 5 distinct P̂ for either model), holding
+83 of 817 prompts. Per-category τ_corr spans 0.076 (Indexical Error: Identity) to 0.955
+(Indexical Error: Time); `Confusion: People` (0.083) and `Confusion: Places` (0.116) are
+the notable low outliers inside the panel.
+
+---
+
+## THE ONE THING BLOCKING THE GO FROM BEING BELIEVABLE
+
+**§11.3 fresh judge validation under rubric v2 has NOT been done.**
+`results/phase05b/validation/` does not exist. The spec is explicit:
+
+> *"The §5.2 v1 validation does not license the v2 judge. Fresh hand-labelling under v2
+> is required before the 0.5b τ number is believed, on a fresh stratified draw."*
+
+The 150 existing labels are v1 and `run_judge_validation.py --score` will refuse to pool
+them. This was DO-NEXT item 9, was meant to run *during* generation, and was skipped. It
+is the single pre-registered obligation still open, and it now gates a **GO** rather than
+a NO-GO — i.e. it gates real Phase 1 spend, which is exactly the case §5.2 was written
+for. Do it before taking the number to Sunny.
+
+```bash
+python3 scripts/run_judge_validation.py --dataset phase05b --draw   # fresh stratified sample
+python3 scripts/run_judge_validation.py --dataset phase05b          # label by hand
+python3 scripts/run_judge_validation.py --dataset phase05b --score --rubric-version v2-2026-08-28
+```
+`--dataset phase05b` is already wired (verified 2026-08-31): the draw uses
+`proportional_allocation()` over the 38 TruthfulQA categories — **150 items**, no
+hand-weighting, because rubric v2 applies CATEGORY 5 uniformly and no stratum is one the
+rubric is silent on. Writes to `results/phase05b/validation/`.
+
+**The labels file is untracked and irreplaceable.** On 2026-08-27 a write-mode smoke test
+against the live file, followed by a cleanup delete, destroyed 8 real hand labels. Do not
+point a test at `human_labels.jsonl`.
+
+Keep in view while reading the κ: the judge disagrees with *itself* at T=0 on 2.5–7.5%
+of completions (`CONTEXT.md` → "Judge label instability at temperature 0"). The §6.2
+correction absorbs that as noise; it cannot absorb systematic per-model bias, which is
+what §5.2 measures.
+
+---
+
+## DO NEXT, in order
+
+1. **§11.3 judge validation under v2** — above. Blocks belief in the τ, blocks Phase 1.
+2. **Diagnose the §6.5.1 residualisation anomaly.** Length has ~zero rank association
+   with P̂ (τ_b 0.014–0.049) yet residualising on it halves τ_cross (0.4818 → 0.2433).
+   Same pattern on V3 (0.249 → 0.174). Almost certainly the procedure — stratum fixed
+   effects with one pooled slope, a `CHOICE` in the source, not a spec requirement — not
+   length. Does not touch the verdict; does need an answer before the confound section is
+   written.
+3. **Book the Sunny Zoom.** The old reason to wait was "so the τ number is in hand". It
+   is in hand and it is a GO on a public benchmark. Co-authorship is still formally
+   unresolved and is a hard blocker on any submission.
+4. **Send the Boaz credit email** (draft in `CONTEXT.md`). It decides whether Phase 1 can
+   use closed frontier models, and Phase 1 is now the live next phase rather than a
+   hypothetical.
+5. **Revisit the venue.** `DEADLINES.md` carries an explicit reopening clause for exactly
+   this case (*"pilot returns a strong GO"*). ICML 2027 (~late Jan) remains the honest
+   target; verify the real ICLR 2027 date once at
+   openreview.net/group?id=ICLR.cc/2027 and record it in `DEADLINES.md`, not here.
+6. **Write the measurement sections.** Now stronger than when they were banked: a
+   pre-registered protocol honoured when it went *against* us, followed by the same
+   protocol returning GO when the diagnosed defect was removed.
+
+### Superseded by the GO
+
+The Phase 0.5 NO-GO write-up below is still correct **as a statement about V3** and is
+load-bearing for the paper's methodology sections. It is no longer the project's verdict.
+Read it as the first half of a two-run story.
+
+---
+
+## Phase 0.5 (V3) — NO-GO, superseded 2026-08-31 by the 0.5b GO
 
 Pre-registered §7 rule, run on complete data. Not provisional.
 
@@ -104,14 +229,14 @@ samples, giving 0 informative tables.
 
 ---
 
-## Next action — the plan, and the exact to-do list
+## Why Phase 0.5b was run — the prediction that came true (historical, 2026-08-27)
 
-**The NO-GO is diagnosed and the diagnosis points at the benchmark, not the claim.**
-Llama scores exactly P̂ = 0 on 86% of `nonexistent` prompts. You cannot measure whether
+**The NO-GO was diagnosed and the diagnosis pointed at the benchmark, not the claim.**
+Llama scored exactly P̂ = 0 on 86% of `nonexistent` prompts. You cannot measure whether
 two models order prompts by difficulty when one of them almost never fails. Full
 write-up: `CONTEXT.md` → "Floor effects and the τ_b tie ceiling".
 
-**The fix is Phase 0.5b: re-run the pilot on TruthfulQA.** 817 prompts, 38 categories,
+**The fix was Phase 0.5b: re-run the pilot on TruthfulQA.** 817 prompts, 38 categories,
 adversarial by construction, and — decisively — **real sourced ground truth**
 (`"Best answer: X / Also acceptable: Y, Z"`), so it satisfies the §4.0 verifiability
 criterion that `factual` and `borderline_obscure_real` failed. Prior results in
@@ -119,9 +244,11 @@ criterion that `factual` and `borderline_obscure_real` failed. Prior results in
 the intermediate zone Phase 0.5 lacked. It is also public, which kills the otherwise
 fatal reviewer objection "you critiqued your own benchmark".
 
-Either outcome is publishable: high τ means the claim is alive *and* demonstrated on a
-standard benchmark, which is stronger than the original plan; low τ is a clean general
-negative on a benchmark everyone knows.
+Recorded at the time: *"Either outcome is publishable: high τ means the claim is alive
+and demonstrated on a standard benchmark; low τ is a clean general negative."* **It came
+back high — τ_corr 0.310 → 0.601 — which is the branch this text called the stronger
+one.** Keep this section: a diagnosis written down before the confirming data is a
+paper-grade result, not just project history.
 
 ---
 
@@ -372,37 +499,26 @@ generation, where a closed lid cost 1,527 rows.
 
 ---
 
-### DO NEXT — the 0.5b run, in this order
+### The 0.5b run — items 7–11, ALL DONE except item 9
 
-**7. Commit everything above before generating.** The manifest and the spec are the
-pre-registration; they must be in git *before* the data exists, or the paper loses its
-strongest methodological claim.
+**7. ✅ Committed before generating** (`40bc9dd` → `95f0539`). The manifest and the spec
+were in git before the data existed.
 
-**8. Generate** — 817 × 20 × 2 = **32,680 completions**, ~16 h, ~$10 Together.
-```bash
-python3 scripts/run_phase05_generation.py --dataset phase05b --preflight   # verify first
-caffeinate -i python3 scripts/run_phase05_generation.py --dataset phase05b
-```
-Lid open, mains power. Resumable — re-running skips what is already done.
+**8. ✅ Generated** — 32,662 / 32,680 (99.94%), ~$10 Together. Details in the generation
+section below.
 
-**9. Re-validate the judge under rubric v2, on a fresh sample.** The 150 existing labels
-were made under v1 and cannot be reused; `--score` will refuse to pool them. This is
-cheap to do while generation runs, and it is what licenses the τ number.
+**9. ❌ NOT DONE — re-validate the judge under rubric v2, on a fresh sample.** This is the
+one item that was skipped, and it is now the only open pre-registered obligation. See
+"THE ONE THING BLOCKING THE GO" at the top.
 
-**10. Judge** — ~3.5 h at 2.6/s, **~$70** Anthropic (up from ~$50: rubric v2 roughly
-doubled the system prompt at ~$20 over 32,680 calls, and TruthfulQA ground truth is
-longer than V3's one-liner).
-```bash
-python3 scripts/run_phase05_judging.py --dataset phase05b --preflight
-nohup python3 scripts/run_phase05_judging.py --dataset phase05b > results/phase05b/judge.log 2>&1 &
-```
-**Check the Anthropic balance first.** The Phase 0.5 run silently exhausted credit at
-row 1,896 and returned 33% of the run unlabelled.
+**10. ✅ Judged via the Batch API** — `run_phase05_judging_batch.py`, **~$63** instead of
+~$125, same labels (equivalence verified against the sync path — see the batch section
+below). 32,640 / 32,680 labelled, 0.12% unrecovered, §5.1 gate cleared. Nothing left to
+retry: all 22 judge failures are `unparseable` at T=0 and replay identically.
 
-**11. Analyse** — seconds. §7 applies unchanged, plus the §11.4 floor check.
-```bash
-python3 scripts/analyze_phase05.py --dataset phase05b
-```
+**11. ✅ Analysed** — `python3 scripts/analyze_phase05.py --dataset phase05b`.
+**GO.** The §11.4 floor check is now implemented in the analyzer (it was pre-registered
+but had never been coded) and passes at 39.2% / 45.0% against 70%.
 
 ---
 
@@ -433,13 +549,21 @@ Phase 0.5 could not test its own claim. TruthfulQA supplies this off the shelf f
 ### DO NOT DO
 
 - **Do not escalate k from 20 to 40.** That is the §7 row-3 remedy for measurement
-  failure. Reliabilities are ~0.8; this is not one, and more samples cannot raise τ when
-  one model does not fail enough to rank.
-- **Do not fund the Phase 1 panel** on the current result. §7 is binding.
-- **Do not retry the 3 unlabelled judgments.** JSON-parse failures at temperature 0
-  replay identically. Permanent, and harmless at k_eff = 19.
+  failure. Reliabilities are ~0.8 on both runs; neither is one.
+- **Do not fund the Phase 1 panel until §11.3 judge validation is done.** §7 now says GO,
+  so the binding constraint has moved: it is the unvalidated v2 judge, not the τ.
+- **Do not retry unlabelled judgments** — 3 on Phase 0.5, 22 on Phase 0.5b. All are
+  JSON-parse failures at temperature 0 and replay identically. Permanent, and harmless
+  at 0.01% / 0.12%.
+- **Do not re-judge Phase 0.5 under rubric v2.** That swaps a pre-registered result for a
+  post-hoc one. The two runs are compared as they were pre-registered, judge version
+  included, and the difference is disclosed.
+- **Do not quote the V3 secondaries as general.** Stratification inflation is +0.110 on
+  V3 and +0.0155 on 0.5b; the label-neutrality test fails on V3 and passes on 0.5b. Both
+  are benchmark-dependent — say so.
 - **Do not quote absolute hallucination rates from the Phase 0.5 run** in the paper.
   Ordering survives; the rates are measured against ground truth known to be wrong.
+  (0.5b rates *are* quotable — TruthfulQA has real sourced ground truth.)
 - **Do not regenerate the V3 benchmark expecting a repair.** `prompts.jsonl` is out of
   sync with today's entity lists, so regeneration produces a new dataset version whose
   results must not be mixed with these.
@@ -554,8 +678,9 @@ label-neutrality, run after judging.
 
 | Item | On whom | Since | Notes |
 |---|---|---|---|
-| Boaz credit clarification | Boaz | email drafted, **not sent** | Decides whether Phase 1 can use closed frontier models. Draft in `CONTEXT.md`. **This is now the older of the two contingencies that killed the ICLR option — send it.** |
-| Sunny Zoom | Sunny | she offered "next week" | **Book it this week.** The old advice was to wait "so the τ number is in hand" — it is in hand. Co-authorship still formally unresolved, which is a hard blocker on any submission. |
+| **§11.3 judge validation under rubric v2** | **Sein — hours of hand-labelling, nobody else can do it** | skipped during generation | **The only open pre-registered obligation, and it now gates a GO.** 150 items, `--dataset phase05b`. See the top of this file. |
+| Boaz credit clarification | Boaz | email drafted, **not sent** | Decides whether Phase 1 can use closed frontier models. Draft in `CONTEXT.md`. **Phase 1 is now the live next phase, not a hypothetical — send it.** |
+| Sunny Zoom | Sunny | she offered "next week" | **Book it this week.** The τ number is in hand *and* it is a GO on a public benchmark. Co-authorship still formally unresolved, which is a hard blocker on any submission. |
 
 **Venue: `DEADLINES.md` is authoritative on dates and it says ICML 2027 (~late Jan), with
 ICLR 2027 "effectively off the table".** An earlier version of this file listed "ICLR
@@ -571,14 +696,17 @@ unanswered" — is still true and is now the actual critical path.
 
 `DEADLINES.md` also carries a reopening clause: *"If circumstances change dramatically
 (pilot returns a strong GO within days, both advisors reply immediately), rebuild it
-then."* So the venue question is decidable rather than a judgement call, and the
-Phase 0.5b run decides it. Verify the real ICLR date once at
-openreview.net/group?id=ICLR.cc/2027 and record it there, not here.
+then."* **Half of that clause has now fired: the pilot returned a strong GO** (τ_corr
+0.601, CI lower 0.539, on a public benchmark, both runs pre-registered). The other half
+has not — both advisors are still unanswered, which is exactly why items 3 and 4 in
+"DO NEXT" are the ones that move the venue question. Do not reopen ICLR unilaterally on
+the GO alone; the clause requires both. Verify the real ICLR 2027 date once at
+openreview.net/group?id=ICLR.cc/2027 and record it in `DEADLINES.md`, not here.
 
 
 ---
 
-## Main remaining build (superseded — see "Next action" above)
+## Main remaining build (superseded — see "DO NEXT, in order" above)
 
 **Nothing. `scripts/analyze_phase05.py` is written** (2026-08-26) and covers all of
 §6–§7: blocked within-category τ_b, split-half noise ceiling, attenuation correction
@@ -613,6 +741,56 @@ The remaining work is running it on complete data.
 ---
 
 ## Session log
+
+### 2026-08-31 — **Phase 0.5b returned GO.** τ_corr 0.310 → 0.601
+
+Judging finished on the Batch API and the analysis ran. **The pilot has flipped: GO on
+the same pre-registered rule that returned NO-GO on V3.** Full numbers at the top of this
+file; durable write-up in `CONTEXT.md` → "Phase 0.5b returned GO".
+
+- **τ_corr = 0.6007, 95% CI [0.5389, 0.6851]** against thresholds 0.50 and 0.30. The CI
+  *lower* bound clears the point-estimate threshold. ρ_corr = 0.6266 confirms it is not
+  an artifact of the τ disattenuation heuristic (gap −0.026).
+- **The result is the pair, not the number.** Same estimator, same code, same k, same two
+  models, same judge, same rule — only the prompt set changed. The V3 floor-effect
+  diagnosis predicted this before 0.5b data existed. A pre-registered prediction that
+  came true is worth more than the GO alone.
+- **Judging: 32,640 / 32,680 labelled, 0.12% unrecovered, §5.1 gate cleared.** The 40
+  gaps are 22 judge JSON-parse failures (unretryable at T=0 — they replay byte-identical)
+  and 18 empty completions that were never judged. Nothing left to run. Batch API cost
+  **~$63** against the ~$125 sync estimate.
+- **Implemented the §11.4 floor check in `analyze_phase05.py` — it was pre-registered on
+  2026-08-28 and had never been coded.** That is the defect worth remembering from this
+  session: a pre-committed check that binds the verdict existed only in the spec, so the
+  first 0.5b analysis produced a GO without ever evaluating it. It now runs in the
+  analyzer, is gated per-dataset (Phase 0.5 predates it and is not retro-gated), is
+  evaluated *before* the τ thresholds because §11.4 binds "whatever τ_corr comes out at",
+  and prints as its own report section. **It passes: 39.2% / 45.0% at exactly P̂ = 0
+  against a 70% threshold** — better than the probe's 55% / 61%.
+- **Two banked secondaries changed under the new benchmark and must not be quoted as
+  general.** Stratification inflation collapsed from +0.110 to **+0.0155** — the §2.1
+  effect is set by between-stratum difficulty spread, so the two runs are the contrast
+  rather than one number being "the" answer. And the §6.5.4 label-neutrality test now
+  **passes** (MH OR 1.183, p = 0.084) on a run with a *higher* truncation rate than V3
+  (24.9% vs 19.6%), where V3 read OR 4.31 at p < 1e-5. The verbosity-agreement objection
+  is closed for 0.5b by the test itself.
+- **Refusals cannot be carrying the agreement:** Llama's refusal rate over the whole run
+  is exactly 0.0000 (gpt-oss 0.0064), so §6.5.3's τ_b is undefined; residualising each P̂
+  on its own refusal rate moves τ_cross 0.4818 → 0.4779.
+- **Regression check held:** `--dataset phase05` still reproduces `report.md`
+  byte-identically after all three edits. The post-hoc section heading was made
+  verdict-aware ("WHY the tau is low" is wrong under a GO) in a way that leaves the
+  Phase 0.5 text unchanged.
+- **The one obligation still open is item 9: §11.3 judge validation under rubric v2.** It
+  was meant to run during generation and was skipped. It now gates a GO — i.e. it gates
+  real Phase 1 spend, which is the case §5.2 was written for. It is at the top of this
+  file and at the top of the blocked table.
+- **Flagged for the write-up, not the verdict:** §6.5.1 finds ~zero rank association
+  between P̂ and question length (τ_b 0.014–0.049) yet residualising on length halves
+  τ_cross (0.4818 → 0.2433). Same pattern on V3. Almost certainly the residualisation
+  procedure (a `CHOICE` in the source, not a spec requirement), not length. Needs
+  diagnosing before the confound section is written.
+- Spend: ~$63 judging (batch). $0 this session beyond the retrieve.
 
 ### 2026-08-28 — probe COMMITted; rubric v2; Phase 0.5b pre-registered and tooled
 
