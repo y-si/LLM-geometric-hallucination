@@ -105,8 +105,8 @@ the notable low outliers inside the panel.
 
 ## THE ONE THING BLOCKING THE GO FROM BEING BELIEVABLE
 
-**§11.3 fresh judge validation under rubric v2 has NOT been done.**
-`results/phase05b/validation/` does not exist. The spec is explicit:
+**§11.3 fresh judge validation under rubric v2 has NOT been done.** The sample is drawn
+(2026-08-31); zero human labels exist. The spec is explicit:
 
 > *"The §5.2 v1 validation does not license the v2 judge. Fresh hand-labelling under v2
 > is required before the 0.5b τ number is believed, on a fresh stratified draw."*
@@ -159,12 +159,17 @@ what §5.2 measures.
 ## DO NEXT, in order
 
 1. **§11.3 judge validation under v2** — above. Blocks belief in the τ, blocks Phase 1.
-2. **Diagnose the §6.5.1 residualisation anomaly.** Length has ~zero rank association
-   with P̂ (τ_b 0.017–0.052) yet residualising on it halves τ_cross (0.4813 → 0.2466).
-   Same pattern on V3 (0.249 → 0.174). Almost certainly the procedure — stratum fixed
-   effects with one pooled slope, a `CHOICE` in the source, not a spec requirement — not
-   length. Does not touch the verdict; does need an answer before the confound section is
-   written.
+2. ✅ **DONE 2026-08-31 — the §6.5.1 residualisation anomaly is diagnosed.** It is
+   **tie-breaking, and the test has no power to see past it.** P̂ ties 21.9% / 29.7% of
+   within-stratum pairs on 0.5b (42.1% / 9.7% on V3) and τ_b excludes tied pairs from its
+   denominators, so residualising on *any* continuous covariate breaks nearly all of them
+   and admits thousands of near-randomly-ordered pairs. Against 500 covariates carrying
+   zero information about P̂, the residualised statistic spans **[0.21, 0.52]** on 0.5b and
+   **[0.12, 0.25]** on V3 — more than half the range τ_b can take. **Length sits at
+   one-sided p = 0.206 (0.5b) and p = 0.372 (V3): indistinguishable from noise on both.**
+   The null band now runs in `analyze_phase05.py`, labelled NOT PRE-REGISTERED.
+   **Correction to carry:** V3's "residualising does cost τ_cross 0.249 → 0.174" was
+   reported as a real cost. It is not — it is inside the noise band. Do not repeat it.
 3. **Book the Sunny Zoom.** The old reason to wait was "so the τ number is in hand". It
    is in hand and it is a GO on a public benchmark. Co-authorship is still formally
    unresolved and is a hard blocker on any submission.

@@ -439,15 +439,37 @@ verdict. **The lesson is procedural and should not be relearned: a pre-registere
 that lives only in prose is not a check.** When §11-style amendments are written, the
 analyzer change belongs in the same commit.
 
-**One number to look at again before writing.** §6.5.1 finds essentially no rank
-association between P̂ and question length (τ_b 0.017–0.052 for both models), yet
-residualising both P̂s on length drops τ_cross 0.4813 → 0.2466. Those two facts do not
-sit together comfortably: a predictor with ~zero rank association should not halve the
-statistic when partialled out. The likely explanation is the residualisation procedure
-(stratum fixed effects with one pooled slope — a `CHOICE` marked in the source, not a
-spec requirement), not length itself, and the same pattern appeared on V3 (0.249 →
-0.174). The pre-registered primary is the raw τ_cross, so this does not touch the
-verdict, but it needs diagnosing before the confound section is written.
+**§6.5.1's residualised row is uninterpretable on BOTH runs — resolved 2026-08-31, and
+the fix is a null band.** The puzzle was that length has essentially no rank association
+with P̂ (τ_b 0.017–0.052 on 0.5b) yet residualising both P̂s on it halves τ_cross
+(0.4813 → 0.2466). Same pattern on V3 (0.249 → 0.174). The cause is **tie-breaking, and
+the test has no power to see past it**:
+
+- P̂ is heavily tied — 21.9% (Llama) and 29.7% (gpt-oss) of within-stratum pairs on 0.5b;
+  42.1% and 9.7% on V3 — and `τ_b` **excludes tied pairs from its denominators**.
+- Residualising on *any* continuous covariate breaks nearly all those ties (down to
+  ~2–3%), admitting thousands of pairs whose order is set by the covariate and is
+  therefore near-random with respect to the other model.
+- Which pairs get admitted, and in what order, varies enormously draw to draw. Against a
+  null of 500 covariates carrying **zero** information about P̂, the residualised
+  statistic spans **[0.21, 0.52]** on 0.5b and **[0.12, 0.25]** on V3 — more than half the
+  range τ_b can take. A covariate that explains nothing and one that explains everything
+  produce overlapping values.
+
+**Length sits at one-sided p = 0.206 (0.5b) and p = 0.372 (V3): not distinguishable from
+noise on either run.** The residualised row therefore supports no conclusion in either
+direction, and the readable statement of §6.5.1 is the two association rows, where length
+carries essentially nothing.
+
+**Correct the earlier write-up accordingly:** "residualising on it does cost τ_cross
+0.249 → 0.174" was carried as a real cost on V3. It is not — it is inside the noise band.
+Do not repeat it.
+
+The null band is computed by `analyze_phase05.py` on every run and is labelled NOT
+PRE-REGISTERED in the source, the JSON and the report. It is also a transferable
+methodological point worth a paragraph in the paper: **any rank-based partial-association
+test on a heavily-tied variable needs a tie-breaking null, or it will read a mechanical
+denominator inflation as a confound.**
 
 
 

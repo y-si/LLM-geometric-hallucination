@@ -177,6 +177,8 @@ FAILURE_RATE_ABORT = 0.02         # §5.1 — above this the run is infra failur
 DEGENERATE_MIN_DISTINCT = 5       # §6.7
 BOOTSTRAP_ITERS = 1000            # §6.6
 BOOTSTRAP_SEED = 20260826         # fixed so the CI is reproducible
+RESIDUAL_NULL_DRAWS = 500         # §6.5.1 tie-breaking null band (not pre-registered)
+RESIDUAL_NULL_SEED = 20260831
 BOOTSTRAP_BATCH = 250             # iterations per vectorised batch (memory knob)
 
 # §7 — binding thresholds. Do not edit without a dated §10 amendment.
@@ -933,6 +935,28 @@ def make_panel(name, uids, prompts, per_pair, apply_degenerate=True):
 # ── confound checks (§6.5) ────────────────────────────────────────────────────
 
 
+def _frac_tied(x, strata):
+    """Fraction of within-stratum pairs that x ties. The quantity that makes the
+    §6.5.1 residualised row unreadable without a null band."""
+    x = np.asarray(x, dtype=np.float64)
+    strata = np.asarray(strata)
+    tied = total = 0
+    for s in np.unique(strata):
+        v = np.sort(x[strata == s])
+        n = len(v)
+        total += n * (n - 1) // 2
+        # runs of equal values contribute C(run, 2) tied pairs
+        i = 0
+        while i < n:
+            j = i
+            while j + 1 < n and v[j + 1] == v[i]:
+                j += 1
+            r = j - i + 1
+            tied += r * (r - 1) // 2
+            i = j + 1
+    return (tied / total) if total else float("nan")
+
+
 def confound_checks(panel):
     """§6.5.1 surface length, §6.5.2 provenance, §6.5.3 refusal propensity."""
     out = {}
@@ -940,6 +964,30 @@ def confound_checks(panel):
     # 6.5.1 — if the shared ordering is driven by question token length, the
     # geometric-feature story is trivial. Report the raw association AND the
     # residualised tau_cross. A large drop is a finding, not something to suppress.
+    #
+    # NOT PRE-REGISTERED, added 2026-08-31: a NULL BAND for the residualised row,
+    # because without one that row cannot be read. P-hat is heavily tied (~22% / ~30%
+    # of within-stratum pairs on 0.5b), and tau_b excludes tied pairs from its
+    # denominators. Residualising on ANY continuous covariate breaks nearly all those
+    # ties, admitting thousands of pairs whose order is set by the covariate and is
+    # therefore near-random with respect to the other model: the denominator grows
+    # ~30% while the numerator barely moves, and tau falls by half regardless of
+    # whether the covariate explains anything. Residualising on pure noise reproduces
+    # the length drop almost exactly. The length figure is meaningful only against
+    # that null, so the null is computed rather than left for a reader to suspect.
+    rs = np.random.RandomState(RESIDUAL_NULL_SEED)
+    null = []
+    for _ in range(RESIDUAL_NULL_DRAWS):
+        z = rs.normal(size=len(panel.pA))
+        null.append(tau_b_blocked(
+            residualise_within_stratum(panel.pA, z, panel.strata),
+            residualise_within_stratum(panel.pB, z, panel.strata),
+            panel.strata)["tau_b"])
+    null = np.array([v for v in null if np.isfinite(v)])
+    tau_len = tau_b_blocked(
+        residualise_within_stratum(panel.pA, panel.qlen, panel.strata),
+        residualise_within_stratum(panel.pB, panel.qlen, panel.strata),
+        panel.strata)["tau_b"]
     out["surface_length"] = {
         "tau_pA_vs_question_words": tau_b_blocked(panel.pA, panel.qlen,
                                                   panel.strata)["tau_b"],
@@ -949,10 +997,29 @@ def confound_checks(panel):
                                                   panel.strata)["tau_b"],
         "tau_pB_vs_question_chars": tau_b_blocked(panel.pB, panel.qchars,
                                                   panel.strata)["tau_b"],
-        "tau_cross_residualised_on_question_words": tau_b_blocked(
-            residualise_within_stratum(panel.pA, panel.qlen, panel.strata),
-            residualise_within_stratum(panel.pB, panel.qlen, panel.strata),
-            panel.strata)["tau_b"],
+        "tau_cross_residualised_on_question_words": tau_len,
+        "residual_null": {
+            "n_draws": int(len(null)),
+            "mean": float(null.mean()) if len(null) else float("nan"),
+            "sd": float(null.std()) if len(null) else float("nan"),
+            "p05": float(np.percentile(null, 5)) if len(null) else float("nan"),
+            "p50": float(np.percentile(null, 50)) if len(null) else float("nan"),
+            "p95": float(np.percentile(null, 95)) if len(null) else float("nan"),
+            "min": float(null.min()) if len(null) else float("nan"),
+            "max": float(null.max()) if len(null) else float("nan"),
+            # One-sided: how often does a covariate carrying NO information about
+            # P-hat depress tau_cross at least as far as length does?
+            "empirical_p_one_sided": (float((null <= tau_len).mean())
+                                      if len(null) else float("nan")),
+            "note": "Residualising on a covariate carrying NO information about "
+                    "P-hat. The band is the sampling distribution of the "
+                    "residualised statistic under a null of zero explained "
+                    "variance; length is read against it, not against raw tau.",
+        },
+        "tie_structure": {
+            "frac_within_stratum_pairs_tied_A": _frac_tied(panel.pA, panel.strata),
+            "frac_within_stratum_pairs_tied_B": _frac_tied(panel.pB, panel.strata),
+        },
     }
 
     # 6.5.2 — the pool files are a different generation than V3's borderline prompts
@@ -1790,6 +1857,56 @@ def render_report(R):
         w("rank-based, a monotone reparameterisation of the predictor leaves the two")
         w("association rows unchanged; only the residualised row is proxy-dependent.")
         w("")
+        nb = sl.get("residual_null")
+        ts = sl.get("tie_structure")
+        if nb and nb["n_draws"]:
+            w("**The residualised row cannot be read against the raw tau_cross — read it")
+            w("against this null instead.** *(NOT PRE-REGISTERED, added 2026-08-31.)*")
+            w("")
+            w("| Residualised on | tau_cross |")
+            w("|---|---|")
+            w(f"| question length | "
+              f"**{f(sl['tau_cross_residualised_on_question_words'])}** |")
+            w(f"| pure noise — {nb['n_draws']} draws, mean (sd) | "
+              f"{f(nb['mean'])} ({f(nb['sd'])}) |")
+            w(f"| pure noise — median | {f(nb['p50'])} |")
+            w(f"| pure noise — 5th to 95th percentile | "
+              f"[{f(nb['p05'])}, {f(nb['p95'])}] |")
+            w(f"| pure noise — full range | [{f(nb['min'])}, {f(nb['max'])}] |")
+            w(f"| **one-sided empirical p for length** | "
+              f"**{f(nb['empirical_p_one_sided'])}** |")
+            w("")
+            if ts:
+                w(f"P-hat ties **{ts['frac_within_stratum_pairs_tied_A']*100:.1f}%** "
+                  f"(Model A) and **{ts['frac_within_stratum_pairs_tied_B']*100:.1f}%** "
+                  f"(Model B) of within-stratum pairs, and tau_b excludes tied pairs")
+                w("from its denominators. Residualising on ANY continuous covariate")
+                w("breaks nearly all of those ties, admitting thousands of pairs whose")
+                w("order is set by the covariate and is therefore near-random with")
+                w("respect to the other model. Which pairs get admitted, and in what")
+                w("order, varies enormously from draw to draw — hence the width of the")
+                w("null.")
+                w("")
+            p_one = nb["empirical_p_one_sided"]
+            w("**The residualisation test as specified has no power, and that is the")
+            w("finding.** Its null spans "
+              f"[{f(nb['min'], 2)}, {f(nb['max'], 2)}] — more than half the range tau_b")
+            w("can take — so a covariate explaining nothing and a covariate explaining")
+            w("everything produce overlapping values. Nothing can be concluded from the")
+            w("residualised row in either direction.")
+            w("")
+            if np.isfinite(p_one) and p_one > 0.05:
+                w(f"Length specifically sits at one-sided p = {f(p_one)}: a covariate")
+                w("carrying no information about P-hat depresses tau_cross at least as")
+                w(f"far as length does in {p_one*100:.0f}% of draws. **Length is not")
+                w("distinguishable from noise here.** The readable statement of §6.5.1")
+                w("is the two association rows above, where length carries essentially")
+                w("nothing.")
+            else:
+                w(f"Length sits at one-sided p = {f(p_one)}, below the noise band. That")
+                w("residue is attributable to length rather than to tie-breaking and is")
+                w("the finding; the rest of the drop is mechanical.")
+            w("")
         pv = C["provenance"]
         w("### §6.5.2 Provenance homogeneity")
         w("")

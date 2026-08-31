@@ -18,11 +18,27 @@
       "tau_refusalA_vs_refusalB": NaN
     },
     "surface_length": {
+      "residual_null": {
+        "empirical_p_one_sided": 0.206,
+        "max": 0.5195261381637853,
+        "mean": 0.41077870376747705,
+        "min": 0.2113781940905021,
+        "n_draws": 500,
+        "note": "Residualising on a covariate carrying NO information about P-hat. The band is the sampling distribution of the residualised statistic under a null of zero explained variance; length is read against it, not against raw tau.",
+        "p05": 0.22873476134720022,
+        "p50": 0.4708313244713823,
+        "p95": 0.4987258075625043,
+        "sd": 0.10774022856750227
+      },
       "tau_cross_residualised_on_question_words": 0.2466221917902935,
       "tau_pA_vs_question_chars": 0.051505717212189404,
       "tau_pA_vs_question_words": 0.017206354158174487,
       "tau_pB_vs_question_chars": 0.04252062271965466,
-      "tau_pB_vs_question_words": 0.024558233207998794
+      "tau_pB_vs_question_words": 0.024558233207998794,
+      "tie_structure": {
+        "frac_within_stratum_pairs_tied_A": 0.21861009711412632,
+        "frac_within_stratum_pairs_tied_B": 0.29671464976926787
+      }
     }
   },
   "dataset": "phase05b",

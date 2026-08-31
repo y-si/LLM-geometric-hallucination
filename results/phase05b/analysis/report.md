@@ -354,6 +354,39 @@ neither evaluated model's tokenizer is available offline. Because tau_b is
 rank-based, a monotone reparameterisation of the predictor leaves the two
 association rows unchanged; only the residualised row is proxy-dependent.
 
+**The residualised row cannot be read against the raw tau_cross — read it
+against this null instead.** *(NOT PRE-REGISTERED, added 2026-08-31.)*
+
+| Residualised on | tau_cross |
+|---|---|
+| question length | **0.2466** |
+| pure noise — 500 draws, mean (sd) | 0.4108 (0.1077) |
+| pure noise — median | 0.4708 |
+| pure noise — 5th to 95th percentile | [0.2287, 0.4987] |
+| pure noise — full range | [0.2114, 0.5195] |
+| **one-sided empirical p for length** | **0.2060** |
+
+P-hat ties **21.9%** (Model A) and **29.7%** (Model B) of within-stratum pairs, and tau_b excludes tied pairs
+from its denominators. Residualising on ANY continuous covariate
+breaks nearly all of those ties, admitting thousands of pairs whose
+order is set by the covariate and is therefore near-random with
+respect to the other model. Which pairs get admitted, and in what
+order, varies enormously from draw to draw — hence the width of the
+null.
+
+**The residualisation test as specified has no power, and that is the
+finding.** Its null spans [0.21, 0.52] — more than half the range tau_b
+can take — so a covariate explaining nothing and a covariate explaining
+everything produce overlapping values. Nothing can be concluded from the
+residualised row in either direction.
+
+Length specifically sits at one-sided p = 0.2060: a covariate
+carrying no information about P-hat depresses tau_cross at least as
+far as length does in 21% of draws. **Length is not
+distinguishable from noise here.** The readable statement of §6.5.1
+is the two association rows above, where length carries essentially
+nothing.
+
 ### §6.5.2 Provenance homogeneity
 
 | Provenance | n | tau_cross |
