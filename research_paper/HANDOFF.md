@@ -334,6 +334,44 @@ default.
 
 ---
 
+### Judging route: BATCH API, verified equivalent (2026-08-31)
+
+Judging runs through `scripts/run_phase05_judging_batch.py` — **~$63 instead of ~$125**,
+same labels. Identical model, rubric-v2 system prompt, user content, temperature and
+max_tokens, and the *same* `parse_judge_response()` function rather than a copy. One
+request per completion, so label independence is untouched (packing several completions
+per call was considered and rejected: it would induce within-prompt correlation and
+corrupt τ_self, which is a split-half reliability).
+
+**Verified against the synchronous path, and the verification needed a noise floor to be
+readable.** `--verify` re-judged 40 completions that already had sync labels and found 2
+mismatches (5.0%). That looked alarming — the two labels appeared *swapped*, which is what
+a `custom_id` mapping bug would produce. Resolved by measuring self-consistency instead of
+arguing about it:
+
+| comparison | disagreement |
+|---|---|
+| sync vs sync | 2.5% |
+| **batch vs stored** | **5.0%** |
+| sync vs stored | **7.5%** |
+
+The sync path disagrees with its own stored labels *more* than the batch path does. A
+mapping bug would have shown ~0% for sync-vs-stored. **The routes are equivalent.**
+
+Full write-up of the judge-noise finding — including the part the §6.2 correction cannot
+absorb — is in `CONTEXT.md` → "Judge label instability at temperature 0".
+
+```bash
+python3 scripts/run_phase05_judging_batch.py --submit     # ~$63, 5 batches
+python3 scripts/run_phase05_judging_batch.py --status      # poll; safe to close terminal
+python3 scripts/run_phase05_judging_batch.py --retrieve    # writes judgments.jsonl
+```
+
+Runs server-side, so a closed lid or lost wifi does not matter — which it did for
+generation, where a closed lid cost 1,527 rows.
+
+---
+
 ### DO NEXT — the 0.5b run, in this order
 
 **7. Commit everything above before generating.** The manifest and the spec are the

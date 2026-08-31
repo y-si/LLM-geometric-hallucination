@@ -306,6 +306,52 @@ were 86% vs 49%, and the ceiling was a real constraint. A benchmark can have amp
 within-stratum dispersion and still cap τ below the threshold if the two models' floors
 are asymmetric.
 
+#### Judge label instability at temperature 0 — measured, 2026-08-31
+
+**Measured, not assumed, and never previously quantified for this project.** Re-judging
+the same completions through the same synchronous path at `temperature=0.0`:
+
+| comparison | disagreement |
+|---|---|
+| sync vs sync (repeats within one run) | **2.5%** (1/40) |
+| sync vs labels stored earlier | **7.5%** (3/40) |
+| Batch API vs labels stored earlier | **5.0%** (2/40) |
+
+**`temperature=0.0` is greedy decoding but NOT a determinism guarantee.**
+Floating-point non-associativity makes output depend on kernel scheduling and
+server-side batching, so identical requests can return different tokens. Any argument of
+the form "T=0, therefore identical requests must agree" is wrong; an early version of
+`run_phase05_judging_batch.py --verify` asserted exactly that and told the user to abort
+a run on the strength of it.
+
+Instability concentrates on low-confidence items — mean confidence 0.793 on unstable
+items vs 0.899 overall, and the flips cluster on prompts where the rubric is genuinely
+borderline (e.g. `truthfulqa_0144`, where the model names the best answer *and* two
+explicitly known-incorrect ones, so 1-vs-2 is a coin flip).
+
+**Why most of this is already handled, and which part is not.** This is the important
+half of the finding:
+
+- Judge noise that varies **per completion** adds independent noise to both split halves,
+  so it depresses τ_self, and the §6.2 attenuation correction inflates τ_corr to
+  compensate. The existing design absorbs it. This is a point in favour of having a
+  reliability term at all.
+- Judge ambiguity that is a **fixed property of a prompt** — the rubric is 50/50 on
+  prompt X regardless of which completion is sampled — is seen identically by both halves,
+  so it does NOT depress τ_self and the correction **cannot** remove it. Structurally the
+  same defect as a wrong ground truth (see the section above), and the same reason
+  split-half reliability is not a cure-all.
+- Worse, prompt-level judge ambiguity hits **both models on the same prompt**, so it adds
+  *correlated* noise and pushes τ_cross **upward**. That is the shared-judge artifact
+  §6.2b exists to measure, estimated at Δ_artifact = **+0.118** on the V3 run. Prompt-level
+  judge instability is one concrete mechanism behind that number.
+
+**Practical rule.** A single judge call is not a measurement; k = 20 with a reliability
+term is. Do not quote a per-completion label as if it were ground truth, and do not treat
+a small number of label disagreements between two judging routes as evidence that the
+routes differ — establish the self-consistency noise floor first
+(`scripts/check_judge_determinism.py`).
+
 ### Asserted-fake ground truth is unverified — and the old patch did not hold
 
 **Discovered 2026-08-27 by inspecting prompts during §5.2 hand-labelling. Blocking for
