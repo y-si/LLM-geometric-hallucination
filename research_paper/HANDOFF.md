@@ -25,24 +25,30 @@ labelled via the Batch API; analysis run.
 ## THE RESULT (2026-08-31) — **GO**
 
 Pre-registered §7 rule, unchanged thresholds, conservative native-38 blocking, complete
-data. Not provisional. Full report: `results/phase05b/analysis/report.md`.
+data, **§11.6 primary treatment of empty completions**. Not provisional. Full report:
+`results/phase05b/analysis/report.md`.
 
 | Statistic | Phase 0.5 (V3) | **Phase 0.5b (TruthfulQA)** | §7 threshold |
 |---|---|---|---|
-| **τ_corr** | 0.3098 | **0.6007** | ≥ 0.50 |
-| **CI lower** (nested bootstrap) | 0.1913 | **0.5389** | ≥ 0.30 |
-| τ_cross (blocked τ_b) | 0.2488 | 0.4818 | — |
+| **τ_corr** | 0.3098 | **0.5999** | ≥ 0.50 |
+| **CI lower** (nested bootstrap) | 0.1913 | **0.5382** | ≥ 0.30 |
+| τ_cross (blocked τ_b) | 0.2488 | 0.4813 | — |
 | τ_selfA / τ_selfB | 0.826 / 0.781 | 0.803 / 0.801 | > 0.40 ✓ |
-| ρ_corr (licensed) | 0.3307 | 0.6266 | — |
+| ρ_corr (licensed) | 0.3307 | 0.6264 | — |
 | **VERDICT** | NO-GO | **GO** | |
 
-95% CI on τ_corr: **[0.5389, 0.6851]**. The CI *lower* bound clears the τ_corr threshold
+95% CI on τ_corr: **[0.5382, 0.6857]**. The CI *lower* bound clears the τ_corr threshold
 itself, not merely the 0.30 CI floor.
 
 **§11.4 floor check PASSES** — 39.2% (Llama) / 45.0% (gpt-oss) of the 817 prompts at
 exactly P̂ = 0, against the pre-committed 70%. Better than the probe's 55%/61%. This was
 pre-registered on 2026-08-28 to bind *whatever* τ came out at, so it had to be run and
 it is now computed by `analyze_phase05.py` rather than by hand.
+
+**§11.6's two treatments AGREE on the verdict** — τ_corr 0.5999 (primary, empty =
+non-hallucination) vs 0.6007 (sensitivity, empty = missing), both GO. The
+empty-completion decision is not load-bearing here, which is worth saying precisely
+because it was pre-registered as though it might be. Only 18 completions were affected.
 
 **The headline is not the GO on its own — it is the pair.** Same estimator, same code,
 same k, same two models, same judge, same decision rule; only the prompt set changed and
@@ -51,23 +57,29 @@ predicted this *before* 0.5b existed. Durable write-up with every closed escape 
 `CONTEXT.md` → "Phase 0.5b returned GO".
 
 r²: τ_corr 0.60 ⇒ r ≈ 0.81 ⇒ **~66% of prompt-level difficulty variance is
-model-invariant** (V3: ~22%), against the ≥50% the framing needs.
+model-invariant** (V3: ~22%), against the ≥50% the framing needs. The CI lower bound
+alone (τ 0.538 ⇒ r² ≈ 0.56) already clears 50%.
 
 ### Two banked secondaries CHANGED — do not quote the V3 numbers as general
 
-1. **Stratification inflation collapsed to +0.0155** (pooled 0.4967 vs blocked 0.4812),
+1. **Stratification inflation collapsed to +0.0170** (pooled 0.4977 vs blocked 0.4807),
    from +0.110 on V3. The §2.1 effect is benchmark-dependent, set by between-stratum
    difficulty spread. Reframe it as that — the two runs are the contrast — rather than
    quoting a single number.
-2. **The §6.5.4 label-neutrality test PASSES here**: pooled MH OR **1.183**, p = **0.084**,
+2. **The §6.5.4 label-neutrality test PASSES here**: pooled MH OR **1.172**, p = **0.102**,
    on a run with a *higher* truncation rate than V3 (24.9% vs 19.6%). V3 was OR 4.31,
    p < 1e-5. So the "you measured verbosity agreement" objection is closed for 0.5b by
-   the test itself. Caveat: Model A reads OR 0.254 at p = 0.002 but on **9** tables and in
-   the opposite direction; 1 of 390 Fisher tables survives Bonferroni.
+   the test itself. Caveat: Model A reads OR 0.233 at p = 0.0006 but on **10** tables and
+   in the opposite direction; 1 of 390 Fisher tables survives Bonferroni.
 
 **Δ_artifact is not computable on 0.5b and that is correct** — §11.3 removes the
 judge-bound arm because TruthfulQA has no non-verifiable prompts. The V3 estimate
 (+0.118) stands and must be attributed to the V3 run when cited.
+
+Worth keeping for the paper: **τ_b between the two models' orderings of the 38 category
+means is 0.592** — coarse topic-level agreement, on the same order as the within-category
+τ_cross, which is a cleaner way to say "they find the same things hard" than the pooled
+number.
 
 ### Data integrity — §5.1 gate cleared
 
@@ -76,8 +88,8 @@ judge-bound arm because TruthfulQA has no non-verifiable prompts. The V3 estimat
 | Completions | 32,680 |
 | Labelled | 32,640 |
 | **Unrecovered (no label)** | **40 = 0.12%** (threshold 2%) |
-| Pairs with k_eff < 16 | 2 (`0433`, `0477`-class), dropped by §5.1 |
-| Panel | 817 → 815 (k_eff) → **734** (§6.7 degenerate rule) |
+| Pairs with k_eff < 16 | **0** under the §11.6 primary (2 under the sensitivity) |
+| Panel | 817 → 817 (k_eff) → **736** (§6.7 degenerate rule) |
 
 The 40 split cleanly: **22 judge JSON-parse failures** and **18 empty completions** that
 were never judged. **Do not retry the 22** — every one is `unparseable: ...` at
@@ -85,7 +97,7 @@ were never judged. **Do not retry the 22** — every one is `unparseable: ...` a
 permanent class as Phase 0.5's 3. Judging is finished; there is nothing left to run.
 
 12 of 38 categories were eliminated by §6.7 (< 5 distinct P̂ for either model), holding
-83 of 817 prompts. Per-category τ_corr spans 0.076 (Indexical Error: Identity) to 0.955
+81 of 817 prompts. Per-category τ_corr spans 0.076 (Indexical Error: Identity) to 0.955
 (Indexical Error: Time); `Confusion: People` (0.083) and `Confusion: Places` (0.116) are
 the notable low outliers inside the panel.
 
@@ -130,7 +142,7 @@ what §5.2 measures.
 
 1. **§11.3 judge validation under v2** — above. Blocks belief in the τ, blocks Phase 1.
 2. **Diagnose the §6.5.1 residualisation anomaly.** Length has ~zero rank association
-   with P̂ (τ_b 0.014–0.049) yet residualising on it halves τ_cross (0.4818 → 0.2433).
+   with P̂ (τ_b 0.017–0.052) yet residualising on it halves τ_cross (0.4813 → 0.2466).
    Same pattern on V3 (0.249 → 0.174). Almost certainly the procedure — stratum fixed
    effects with one pooled slope, a `CHOICE` in the source, not a spec requirement — not
    length. Does not touch the verdict; does need an answer before the confound section is
@@ -559,7 +571,7 @@ Phase 0.5 could not test its own claim. TruthfulQA supplies this off the shelf f
   post-hoc one. The two runs are compared as they were pre-registered, judge version
   included, and the difference is disclosed.
 - **Do not quote the V3 secondaries as general.** Stratification inflation is +0.110 on
-  V3 and +0.0155 on 0.5b; the label-neutrality test fails on V3 and passes on 0.5b. Both
+  V3 and +0.0170 on 0.5b; the label-neutrality test fails on V3 and passes on 0.5b. Both
   are benchmark-dependent — say so.
 - **Do not quote absolute hallucination rates from the Phase 0.5 run** in the paper.
   Ordering survives; the rates are measured against ground truth known to be wrong.
@@ -748,9 +760,9 @@ Judging finished on the Batch API and the analysis ran. **The pilot has flipped:
 the same pre-registered rule that returned NO-GO on V3.** Full numbers at the top of this
 file; durable write-up in `CONTEXT.md` → "Phase 0.5b returned GO".
 
-- **τ_corr = 0.6007, 95% CI [0.5389, 0.6851]** against thresholds 0.50 and 0.30. The CI
-  *lower* bound clears the point-estimate threshold. ρ_corr = 0.6266 confirms it is not
-  an artifact of the τ disattenuation heuristic (gap −0.026).
+- **τ_corr = 0.5999, 95% CI [0.5382, 0.6857]** against thresholds 0.50 and 0.30. The CI
+  *lower* bound clears the point-estimate threshold. ρ_corr = 0.6264 confirms it is not
+  an artifact of the τ disattenuation heuristic (gap −0.027).
 - **The result is the pair, not the number.** Same estimator, same code, same k, same two
   models, same judge, same rule — only the prompt set changed. The V3 floor-effect
   diagnosis predicted this before 0.5b data existed. A pre-registered prediction that
@@ -759,35 +771,44 @@ file; durable write-up in `CONTEXT.md` → "Phase 0.5b returned GO".
   gaps are 22 judge JSON-parse failures (unretryable at T=0 — they replay byte-identical)
   and 18 empty completions that were never judged. Nothing left to run. Batch API cost
   **~$63** against the ~$125 sync estimate.
-- **Implemented the §11.4 floor check in `analyze_phase05.py` — it was pre-registered on
-  2026-08-28 and had never been coded.** That is the defect worth remembering from this
-  session: a pre-committed check that binds the verdict existed only in the spec, so the
-  first 0.5b analysis produced a GO without ever evaluating it. It now runs in the
-  analyzer, is gated per-dataset (Phase 0.5 predates it and is not retro-gated), is
-  evaluated *before* the τ thresholds because §11.4 binds "whatever τ_corr comes out at",
-  and prints as its own report section. **It passes: 39.2% / 45.0% at exactly P̂ = 0
-  against a 70% threshold** — better than the probe's 55% / 61%.
+- **TWO pre-registered checks existed only in the spec and had to be coded after the
+  data — this is the defect to remember from this session.** §11.4's floor check was
+  simply absent, so the first 0.5b analysis emitted a §7 verdict without evaluating a
+  check pre-committed to bind whatever τ came out at. **§11.6 was worse: the wrong
+  treatment was running.** The analyzer counted k_eff as "completions carrying a label",
+  and an empty completion is never sent to the judge — so it silently applied §11.6's
+  *sensitivity* treatment as though it were the primary. Both are now implemented, both
+  are logged in the spec's amendment log as post-data implementations of pre-data rules,
+  and **neither changed the verdict.** The lesson is procedural: a pre-registered check
+  that lives only in prose is not a check. Ship the analyzer change in the same commit as
+  the amendment.
+- **§11.4 passes: 39.2% / 45.0% at exactly P̂ = 0 against a 70% threshold** — better than
+  the probe's 55% / 61%.
+- **§11.6's two treatments agree: τ_corr 0.5999 (primary) vs 0.6007 (sensitivity), both
+  GO.** 18 completions affected, all gpt-oss, over 6 pairs. Under the primary **no pair
+  falls below the k_eff floor at all**; the sensitivity loses 2 prompts and no strata.
+  §11.6 pre-committed to reporting a disagreement as the finding — there is none.
 - **Two banked secondaries changed under the new benchmark and must not be quoted as
-  general.** Stratification inflation collapsed from +0.110 to **+0.0155** — the §2.1
+  general.** Stratification inflation collapsed from +0.110 to **+0.0170** — the §2.1
   effect is set by between-stratum difficulty spread, so the two runs are the contrast
   rather than one number being "the" answer. And the §6.5.4 label-neutrality test now
-  **passes** (MH OR 1.183, p = 0.084) on a run with a *higher* truncation rate than V3
+  **passes** (MH OR 1.172, p = 0.102) on a run with a *higher* truncation rate than V3
   (24.9% vs 19.6%), where V3 read OR 4.31 at p < 1e-5. The verbosity-agreement objection
   is closed for 0.5b by the test itself.
 - **Refusals cannot be carrying the agreement:** Llama's refusal rate over the whole run
-  is exactly 0.0000 (gpt-oss 0.0064), so §6.5.3's τ_b is undefined; residualising each P̂
-  on its own refusal rate moves τ_cross 0.4818 → 0.4779.
-- **Regression check held:** `--dataset phase05` still reproduces `report.md`
-  byte-identically after all three edits. The post-hoc section heading was made
-  verdict-aware ("WHY the tau is low" is wrong under a GO) in a way that leaves the
-  Phase 0.5 text unchanged.
+  is exactly 0.0000 (gpt-oss 0.0074), so §6.5.3's τ_b is undefined; residualising each P̂
+  on its own refusal rate moves τ_cross 0.4813 → 0.4782.
+- **Regression check held throughout:** `--dataset phase05` still reproduces `report.md`
+  byte-identically after every edit, including the §11.6 rework of `build_per_pair`. The
+  post-hoc section heading was made verdict-aware ("WHY the tau is low" is wrong under a
+  GO) in a way that leaves the Phase 0.5 text unchanged.
 - **The one obligation still open is item 9: §11.3 judge validation under rubric v2.** It
   was meant to run during generation and was skipped. It now gates a GO — i.e. it gates
   real Phase 1 spend, which is the case §5.2 was written for. It is at the top of this
   file and at the top of the blocked table.
 - **Flagged for the write-up, not the verdict:** §6.5.1 finds ~zero rank association
-  between P̂ and question length (τ_b 0.014–0.049) yet residualising on length halves
-  τ_cross (0.4818 → 0.2433). Same pattern on V3. Almost certainly the residualisation
+  between P̂ and question length (τ_b 0.017–0.052) yet residualising on length halves
+  τ_cross (0.4813 → 0.2466). Same pattern on V3. Almost certainly the residualisation
   procedure (a `CHOICE` in the source, not a spec requirement), not length. Needs
   diagnosing before the confound section is written.
 - Spend: ~$63 judging (batch). $0 this session beyond the retrieve.

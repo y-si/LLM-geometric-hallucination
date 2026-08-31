@@ -21,7 +21,7 @@ P-hat is defined relative to this config — a scope statement for the paper.
 | Orphan judgments (no matching completion) | 0 |
 | (uid, model) pairs in manifest x models | 1,634 |
 | Pairs with k_eff = 0 | 0 |
-| Pairs with k_eff < 16 | 2 |
+| Pairs with k_eff < 16 | 0 |
 
 The gate is driven by the UNRECOVERED rate, not by failed rows over total
 rows. `run_phase05_judging.py` appends rather than rewrites, so a retried
@@ -33,21 +33,18 @@ k_eff distribution over the full manifest x models cross-product:
 
 | k_eff | pairs |
 |---|---|
-| 13 | 1 |
-| 14 | 1 |
-| 18 | 2 |
-| 19 | 23 |
-| 20 | 1,607 |
+| 19 | 22 |
+| 20 | 1,612 |
 
 ## Primary set — the decision surface (§4.1)
 
-Prompts requested 817 → after §5.1 k_eff filter 815 → after §6.7 degenerate rule **734**.
+Prompts requested 817 → after §5.1 k_eff filter 817 → after §6.7 degenerate rule **736**.
 
 | Category | requested | dropped by §5.1 k_eff < 16 | in panel |
 |---|---|---|---|
 | Advertising | 13 | 0 | 13 |
 | Confusion: Other — **category eliminated** | 8 | 0 | 0 |
-| Confusion: People | 23 | 1 | 22 |
+| Confusion: People | 23 | 0 | 23 |
 | Confusion: Places | 15 | 0 | 15 |
 | Conspiracies | 25 | 0 | 25 |
 | Distraction | 14 | 0 | 14 |
@@ -77,7 +74,7 @@ Prompts requested 817 → after §5.1 k_eff filter 815 → after §6.7 degenerat
 | Psychology | 19 | 0 | 19 |
 | Religion | 15 | 0 | 15 |
 | Science | 9 | 0 | 9 |
-| Sociology | 55 | 1 | 54 |
+| Sociology | 55 | 0 | 55 |
 | Statistics — **category eliminated** | 5 | 0 | 0 |
 | Stereotypes | 24 | 0 | 24 |
 | Subjective — **category eliminated** | 9 | 0 | 0 |
@@ -88,7 +85,7 @@ Prompts requested 817 → after §5.1 k_eff filter 815 → after §6.7 degenerat
 |---|---|---|---|---|
 | Advertising | 13 | 8 | 8 | no |
 | Confusion: Other | 8 | 4 | 6 | YES — excluded |
-| Confusion: People | 22 | 10 | 10 | no |
+| Confusion: People | 23 | 11 | 10 | no |
 | Confusion: Places | 15 | 6 | 6 | no |
 | Conspiracies | 25 | 6 | 8 | no |
 | Distraction | 14 | 9 | 9 | no |
@@ -118,21 +115,21 @@ Prompts requested 817 → after §5.1 k_eff filter 815 → after §6.7 degenerat
 | Psychology | 19 | 8 | 8 | no |
 | Religion | 15 | 7 | 7 | no |
 | Science | 9 | 7 | 5 | no |
-| Sociology | 54 | 13 | 23 | no |
+| Sociology | 55 | 14 | 23 | no |
 | Statistics | 5 | 1 | 3 | YES — excluded |
 | Stereotypes | 24 | 10 | 7 | no |
 | Subjective | 9 | 3 | 3 | YES — excluded |
 | Superstitions | 22 | 12 | 12 | no |
 | Weather | 17 | 10 | 11 | no |
 
-Within-stratum pairs: **14,443**
+Within-stratum pairs: **14,519**
 
 | Statistic | Value | bootstrap mean | 95% CI (nested bootstrap, §6.6) |
 |---|---|---|---|
-| tau_cross (blocked tau_b) | 0.4818 | 0.4592 | [0.4012, 0.5144] |
-| tau_selfA (split-half, Model A) | 0.8025 | 0.7682 | [0.7280, 0.8026] |
-| tau_selfB (split-half, Model B) | 0.8014 | 0.7347 | [0.6880, 0.7782] |
-| **tau_corr (attenuation-corrected)** | 0.6007 | 0.6114 | [0.5389, 0.6851] |
+| tau_cross (blocked tau_b) | 0.4813 | 0.4597 | [0.4029, 0.5136] |
+| tau_selfA (split-half, Model A) | 0.8032 | 0.7686 | [0.7311, 0.8077] |
+| tau_selfB (split-half, Model B) | 0.8014 | 0.7337 | [0.6875, 0.7796] |
+| **tau_corr (attenuation-corrected)** | 0.5999 | 0.6124 | [0.5382, 0.6857] |
 
 **Direction of the nested-bootstrap bias, and it points the wrong way for
 §7.** The bootstrap means of tau_selfA and tau_selfB sit BELOW their point
@@ -152,11 +149,11 @@ Licensed cross-check (§6.2) — Spearman rho with Spearman-Brown reliability:
 
 | Statistic | Value |
 |---|---|
-| rho_cross (stratified) | 0.5762 |
-| reliability A (half 0.8640 → full 0.9271) | 0.9271 |
-| reliability B (half 0.8386 → full 0.9122) | 0.9122 |
-| **rho_corr** | **0.6266** |
-| tau_corr − rho_corr | -0.0259 |
+| rho_cross (stratified) | 0.5763 |
+| reliability A (half 0.8648 → full 0.9275) | 0.9275 |
+| reliability B (half 0.8393 → full 0.9126) | 0.9126 |
+| **rho_corr** | **0.6264** |
+| tau_corr − rho_corr | -0.0265 |
 
 The tau disattenuation is a heuristic: Spearman's correction is derived for
 Pearson r under classical test theory. rho_corr is the formally licensed
@@ -172,9 +169,9 @@ tau_corr is internally consistent:
 
 | P-hat definition | tau_cross | tau_selfA | tau_selfB | tau_corr |
 |---|---|---|---|---|
-| label 2 only (PRE-REGISTERED PRIMARY) | 0.4818 | 0.8025 | 0.8014 | 0.6007 |
-| partial = 0.5 hallucination | 0.4843 | 0.8326 | 0.8229 | 0.5851 |
-| partial = full hallucination | 0.4946 | 0.8412 | 0.8295 | 0.5921 |
+| label 2 only (PRE-REGISTERED PRIMARY) | 0.4813 | 0.8032 | 0.8014 | 0.5999 |
+| partial = 0.5 hallucination | 0.4834 | 0.8330 | 0.8222 | 0.5841 |
+| partial = full hallucination | 0.4941 | 0.8419 | 0.8283 | 0.5917 |
 
 If tau_corr moves materially across these rows the label boundary is
 load-bearing and must be discussed in the paper (§6.1, §9.9).
@@ -189,14 +186,14 @@ Not computable: one of the two panels is not computable
 
 ## Stratification contrast (§6.3, secondary set)
 
-815 prompts across 38 categories (2 dropped by the k_eff filter).
+817 prompts across 38 categories (0 dropped by the k_eff filter).
 
 | Estimator | tau_b | pairs |
 |---|---|---|
-| **pooled** — *stratification-inflated, NOT a test of the claim* | 0.4967 | 331,705 |
-| coarse (13 merged strata, §11.2 — **secondary only, never the decision statistic**) | 0.4856 | 27,816 |
-| blocked (within-category) | 0.4812 | 14,755 |
-| **inflation (pooled − blocked)** | **0.0155** | |
+| **pooled** — *stratification-inflated, NOT a test of the claim* | 0.4977 | 333,336 |
+| coarse (13 merged strata, §11.2 — **secondary only, never the decision statistic**) | 0.4856 | 27,939 |
+| blocked (within-category) | 0.4807 | 14,831 |
+| **inflation (pooled − blocked)** | **0.0170** | |
 
 The three-rung ladder separates the inflation into its two parts, which a
 single pooled−blocked gap cannot: **pooled → coarse** is inflation from
@@ -210,8 +207,8 @@ control — degenerate variance is the expected result, reported not hidden):
 | Category | n | tau_cross | tau_selfA | tau_selfB | tau_corr | tau_corr 95% CI | §6.7 |
 |---|---|---|---|---|---|---|---|
 | Advertising | 13 | 0.7055 | 0.8553 | 0.8245 | 0.8401 | [0.5191, 1.0867] | ok |
-| Confusion: Other | 8 | 0.5991 | 0.8997 | 0.8341 | 0.6916 | [-0.1240, 1.7018] | degenerate |
-| Confusion: People | 22 | 0.0754 | 0.9178 | 0.9041 | 0.0828 | [-0.4100, 0.4995] | ok |
+| Confusion: Other | 8 | 0.5991 | 0.8997 | 0.8341 | 0.6916 | [-0.1240, 1.6363] | degenerate |
+| Confusion: People | 23 | 0.0590 | 0.9031 | 0.8940 | 0.0656 | [-0.3625, 0.4257] | ok |
 | Confusion: Places | 15 | 0.0949 | 0.7900 | 0.8466 | 0.1161 | [-0.4154, 0.7329] | ok |
 | Conspiracies | 25 | 0.5715 | 0.6442 | 0.8062 | 0.7930 | [0.2309, 1.1279] | ok |
 | Distraction | 14 | 0.6625 | 0.8831 | 0.9488 | 0.7238 | [0.5315, 1.0670] | ok |
@@ -241,7 +238,7 @@ control — degenerate variance is the expected result, reported not hidden):
 | Psychology | 19 | 0.4612 | 0.9383 | 0.8897 | 0.5047 | [0.1989, 0.9722] | ok |
 | Religion | 15 | 0.6080 | 0.9001 | 0.9571 | 0.6551 | [0.2686, 0.9968] | ok |
 | Science | 9 | 0.1293 | 0.8714 | 0.9310 | 0.1436 | [-0.4063, 0.8592] | ok |
-| Sociology | 54 | 0.5206 | 0.7533 | 0.8245 | 0.6606 | [0.4390, 0.9018] | ok |
+| Sociology | 55 | 0.5247 | 0.7641 | 0.8234 | 0.6615 | [0.4438, 0.8953] | ok |
 | Statistics | 5 | n/a | n/a | n/a | n/a | [n/a, n/a] | degenerate |
 | Stereotypes | 24 | 0.5952 | 0.8150 | 0.9390 | 0.6804 | [0.4864, 0.8992] | ok |
 | Subjective | 9 | 0.3333 | 0.9661 | 1.0000 | 0.3391 | [-0.2666, 1.0749] | degenerate |
@@ -258,79 +255,79 @@ compatibility is the whole point of the §1 rephrasing.
 | Advertising | Llama-3.3-70B (Model A) | 13 | 0.4556 | [0.3960, 0.5165] | 0.4538 | [0.2231, 0.6655] | 0.0000 |
 | Advertising | gpt-oss-120b (Model B) | 13 | 0.5615 | [0.5008, 0.6205] | 0.5615 | [0.3268, 0.7731] | 0.0000 |
 | Confusion: Other | Llama-3.3-70B (Model A) | 8 | 0.7250 | [0.6512, 0.7883] | 0.7250 | [0.3750, 0.9812] | 0.0000 |
-| Confusion: Other | gpt-oss-120b (Model B) | 8 | 0.3836 | [0.3117, 0.4611] | 0.3839 | [0.1526, 0.6563] | 0.0000 |
-| Confusion: People | Llama-3.3-70B (Model A) | 22 | 0.5909 | [0.5444, 0.6359] | 0.5909 | [0.4182, 0.7637] | 0.0000 |
-| Confusion: People | gpt-oss-120b (Model B) | 22 | 0.5776 | [0.5309, 0.6230] | 0.5765 | [0.4083, 0.7356] | 0.0114 |
-| Confusion: Places | Llama-3.3-70B (Model A) | 15 | 0.2667 | [0.2198, 0.3194] | 0.2667 | [0.0833, 0.4600] | 0.0000 |
-| Confusion: Places | gpt-oss-120b (Model B) | 15 | 0.1733 | [0.1347, 0.2202] | 0.1733 | [0.0300, 0.3500] | 0.0000 |
-| Conspiracies | Llama-3.3-70B (Model A) | 25 | 0.1420 | [0.1141, 0.1753] | 0.1420 | [0.0399, 0.2720] | 0.0000 |
-| Conspiracies | gpt-oss-120b (Model B) | 25 | 0.1280 | [0.1015, 0.1601] | 0.1280 | [0.0400, 0.2360] | 0.0040 |
-| Distraction | Llama-3.3-70B (Model A) | 14 | 0.5500 | [0.4914, 0.6072] | 0.5500 | [0.3357, 0.7750] | 0.0000 |
-| Distraction | gpt-oss-120b (Model B) | 14 | 0.4301 | [0.3734, 0.4888] | 0.4303 | [0.2303, 0.6481] | 0.0000 |
-| Economics | Llama-3.3-70B (Model A) | 31 | 0.3226 | [0.2870, 0.3604] | 0.3226 | [0.1968, 0.4548] | 0.0000 |
-| Economics | gpt-oss-120b (Model B) | 31 | 0.3306 | [0.2948, 0.3686] | 0.3306 | [0.2048, 0.4613] | 0.0000 |
-| Education | Llama-3.3-70B (Model A) | 10 | 0.5950 | [0.5258, 0.6606] | 0.5950 | [0.3150, 0.8700] | 0.0000 |
+| Confusion: Other | gpt-oss-120b (Model B) | 8 | 0.3812 | [0.3096, 0.4585] | 0.3812 | [0.1500, 0.6562] | 0.0063 |
+| Confusion: People | Llama-3.3-70B (Model A) | 23 | 0.6065 | [0.5612, 0.6501] | 0.6065 | [0.4368, 0.7717] | 0.0000 |
+| Confusion: People | gpt-oss-120b (Model B) | 23 | 0.5783 | [0.5327, 0.6226] | 0.5783 | [0.4261, 0.7413] | 0.0304 |
+| Confusion: Places | Llama-3.3-70B (Model A) | 15 | 0.2667 | [0.2198, 0.3194] | 0.2667 | [0.0900, 0.4700] | 0.0000 |
+| Confusion: Places | gpt-oss-120b (Model B) | 15 | 0.1733 | [0.1347, 0.2202] | 0.1733 | [0.0267, 0.3534] | 0.0000 |
+| Conspiracies | Llama-3.3-70B (Model A) | 25 | 0.1420 | [0.1141, 0.1753] | 0.1420 | [0.0380, 0.2740] | 0.0000 |
+| Conspiracies | gpt-oss-120b (Model B) | 25 | 0.1280 | [0.1015, 0.1601] | 0.1280 | [0.0400, 0.2380] | 0.0040 |
+| Distraction | Llama-3.3-70B (Model A) | 14 | 0.5500 | [0.4914, 0.6072] | 0.5500 | [0.3429, 0.7857] | 0.0000 |
+| Distraction | gpt-oss-120b (Model B) | 14 | 0.4301 | [0.3734, 0.4888] | 0.4303 | [0.2267, 0.6429] | 0.0000 |
+| Economics | Llama-3.3-70B (Model A) | 31 | 0.3226 | [0.2870, 0.3604] | 0.3226 | [0.1952, 0.4581] | 0.0000 |
+| Economics | gpt-oss-120b (Model B) | 31 | 0.3306 | [0.2948, 0.3686] | 0.3306 | [0.2032, 0.4629] | 0.0000 |
+| Education | Llama-3.3-70B (Model A) | 10 | 0.5950 | [0.5258, 0.6606] | 0.5950 | [0.3150, 0.8701] | 0.0000 |
 | Education | gpt-oss-120b (Model B) | 10 | 0.5930 | [0.5236, 0.6588] | 0.5947 | [0.2947, 0.8947] | 0.0000 |
-| Fiction | Llama-3.3-70B (Model A) | 30 | 0.4200 | [0.3811, 0.4599] | 0.4200 | [0.2667, 0.5683] | 0.0000 |
-| Fiction | gpt-oss-120b (Model B) | 30 | 0.3700 | [0.3323, 0.4093] | 0.3700 | [0.2467, 0.5033] | 0.0017 |
+| Fiction | Llama-3.3-70B (Model A) | 30 | 0.4200 | [0.3811, 0.4599] | 0.4200 | [0.2750, 0.5667] | 0.0000 |
+| Fiction | gpt-oss-120b (Model B) | 30 | 0.3700 | [0.3323, 0.4093] | 0.3700 | [0.2467, 0.5067] | 0.0017 |
 | Finance | Llama-3.3-70B (Model A) | 9 | 0.0889 | [0.0555, 0.1395] | 0.0889 | [0.0000, 0.2444] | 0.0000 |
-| Finance | gpt-oss-120b (Model B) | 9 | 0.1278 | [0.0867, 0.1844] | 0.1278 | [0.0000, 0.3389] | 0.0167 |
-| Health | Llama-3.3-70B (Model A) | 55 | 0.2200 | [0.1965, 0.2454] | 0.2200 | [0.1355, 0.3118] | 0.0000 |
-| Health | gpt-oss-120b (Model B) | 55 | 0.1184 | [0.1006, 0.1389] | 0.1186 | [0.0566, 0.1919] | 0.0164 |
-| History | Llama-3.3-70B (Model A) | 24 | 0.2812 | [0.2429, 0.3231] | 0.2812 | [0.1458, 0.4417] | 0.0000 |
-| History | gpt-oss-120b (Model B) | 24 | 0.1315 | [0.1042, 0.1647] | 0.1329 | [0.0542, 0.2279] | 0.0000 |
+| Finance | gpt-oss-120b (Model B) | 9 | 0.1278 | [0.0867, 0.1844] | 0.1278 | [0.0111, 0.3389] | 0.0167 |
+| Health | Llama-3.3-70B (Model A) | 55 | 0.2200 | [0.1965, 0.2454] | 0.2200 | [0.1273, 0.3118] | 0.0000 |
+| Health | gpt-oss-120b (Model B) | 55 | 0.1184 | [0.1006, 0.1389] | 0.1186 | [0.0564, 0.1940] | 0.0164 |
+| History | Llama-3.3-70B (Model A) | 24 | 0.2812 | [0.2429, 0.3231] | 0.2812 | [0.1499, 0.4313] | 0.0000 |
+| History | gpt-oss-120b (Model B) | 24 | 0.1315 | [0.1042, 0.1647] | 0.1329 | [0.0542, 0.2283] | 0.0000 |
 | Indexical Error: Identity | Llama-3.3-70B (Model A) | 9 | 0.0222 | [0.0087, 0.0557] | 0.0222 | [0.0000, 0.0556] | 0.0000 |
-| Indexical Error: Identity | gpt-oss-120b (Model B) | 9 | 0.1167 | [0.0776, 0.1718] | 0.1167 | [0.0222, 0.2278] | 0.0000 |
-| Indexical Error: Location | Llama-3.3-70B (Model A) | 11 | 0.2227 | [0.1728, 0.2822] | 0.2227 | [0.0545, 0.4136] | 0.0000 |
+| Indexical Error: Identity | gpt-oss-120b (Model B) | 9 | 0.1167 | [0.0776, 0.1718] | 0.1167 | [0.0278, 0.2278] | 0.0000 |
+| Indexical Error: Location | Llama-3.3-70B (Model A) | 11 | 0.2227 | [0.1728, 0.2822] | 0.2227 | [0.0545, 0.4137] | 0.0000 |
 | Indexical Error: Location | gpt-oss-120b (Model B) | 11 | 0.0318 | [0.0155, 0.0642] | 0.0318 | [0.0000, 0.0955] | 0.0000 |
-| Indexical Error: Other | Llama-3.3-70B (Model A) | 21 | 0.0857 | [0.0626, 0.1164] | 0.0857 | [0.0119, 0.1929] | 0.0000 |
-| Indexical Error: Other | gpt-oss-120b (Model B) | 21 | 0.3476 | [0.3036, 0.3944] | 0.3476 | [0.2000, 0.5000] | 0.0024 |
-| Indexical Error: Time | Llama-3.3-70B (Model A) | 16 | 0.3063 | [0.2583, 0.3588] | 0.3063 | [0.1031, 0.5157] | 0.0000 |
-| Indexical Error: Time | gpt-oss-120b (Model B) | 16 | 0.3844 | [0.3327, 0.4387] | 0.3844 | [0.1531, 0.6251] | 0.0000 |
-| Language | Llama-3.3-70B (Model A) | 21 | 0.4511 | [0.4041, 0.4989] | 0.4500 | [0.2952, 0.6072] | 0.0000 |
-| Language | gpt-oss-120b (Model B) | 21 | 0.1603 | [0.1282, 0.1985] | 0.1599 | [0.0694, 0.2675] | 0.0000 |
-| Law | Llama-3.3-70B (Model A) | 64 | 0.6461 | [0.6195, 0.6718] | 0.6461 | [0.5430, 0.7438] | 0.0000 |
-| Law | gpt-oss-120b (Model B) | 64 | 0.4914 | [0.4641, 0.5188] | 0.4908 | [0.3901, 0.5930] | 0.0148 |
-| Logical Falsehood | Llama-3.3-70B (Model A) | 14 | 0.3011 | [0.2502, 0.3573] | 0.3034 | [0.1393, 0.4817] | 0.0000 |
-| Logical Falsehood | gpt-oss-120b (Model B) | 14 | 0.2179 | [0.1735, 0.2698] | 0.2179 | [0.0606, 0.4108] | 0.0000 |
+| Indexical Error: Other | Llama-3.3-70B (Model A) | 21 | 0.0857 | [0.0626, 0.1164] | 0.0857 | [0.0095, 0.1952] | 0.0000 |
+| Indexical Error: Other | gpt-oss-120b (Model B) | 21 | 0.3476 | [0.3036, 0.3944] | 0.3476 | [0.2023, 0.4953] | 0.0024 |
+| Indexical Error: Time | Llama-3.3-70B (Model A) | 16 | 0.3063 | [0.2583, 0.3588] | 0.3063 | [0.1000, 0.5095] | 0.0000 |
+| Indexical Error: Time | gpt-oss-120b (Model B) | 16 | 0.3844 | [0.3327, 0.4387] | 0.3844 | [0.1844, 0.6281] | 0.0000 |
+| Language | Llama-3.3-70B (Model A) | 21 | 0.4511 | [0.4041, 0.4989] | 0.4500 | [0.2905, 0.6001] | 0.0000 |
+| Language | gpt-oss-120b (Model B) | 21 | 0.1603 | [0.1282, 0.1985] | 0.1599 | [0.0738, 0.2667] | 0.0000 |
+| Law | Llama-3.3-70B (Model A) | 64 | 0.6461 | [0.6195, 0.6718] | 0.6461 | [0.5453, 0.7430] | 0.0000 |
+| Law | gpt-oss-120b (Model B) | 64 | 0.4914 | [0.4641, 0.5188] | 0.4908 | [0.3860, 0.5894] | 0.0148 |
+| Logical Falsehood | Llama-3.3-70B (Model A) | 14 | 0.3011 | [0.2502, 0.3573] | 0.3034 | [0.1428, 0.4921] | 0.0000 |
+| Logical Falsehood | gpt-oss-120b (Model B) | 14 | 0.2179 | [0.1735, 0.2698] | 0.2179 | [0.0571, 0.4107] | 0.0000 |
 | Mandela Effect | Llama-3.3-70B (Model A) | 6 | 0.0500 | [0.0231, 0.1048] | 0.0500 | [0.0000, 0.1333] | 0.0000 |
 | Mandela Effect | gpt-oss-120b (Model B) | 6 | 0.0417 | [0.0179, 0.0938] | 0.0417 | [0.0000, 0.1250] | 0.0000 |
 | Misconceptions | Llama-3.3-70B (Model A) | 100 | 0.2635 | [0.2447, 0.2832] | 0.2635 | [0.1940, 0.3335] | 0.0000 |
-| Misconceptions | gpt-oss-120b (Model B) | 100 | 0.0905 | [0.0787, 0.1039] | 0.0906 | [0.0535, 0.1316] | 0.0000 |
+| Misconceptions | gpt-oss-120b (Model B) | 100 | 0.0905 | [0.0787, 0.1039] | 0.0906 | [0.0536, 0.1316] | 0.0000 |
 | Misconceptions: Topical | Llama-3.3-70B (Model A) | 4 | 0.1125 | [0.0603, 0.2002] | 0.1125 | [0.0000, 0.3000] | 0.0000 |
 | Misconceptions: Topical | gpt-oss-120b (Model B) | 4 | 0.2250 | [0.1473, 0.3279] | 0.2250 | [0.0000, 0.6750] | 0.0000 |
-| Misinformation | Llama-3.3-70B (Model A) | 12 | 0.2250 | [0.1767, 0.2819] | 0.2250 | [0.1000, 0.3875] | 0.0000 |
-| Misinformation | gpt-oss-120b (Model B) | 12 | 0.2542 | [0.2033, 0.3128] | 0.2542 | [0.0833, 0.4418] | 0.0000 |
-| Misquotations | Llama-3.3-70B (Model A) | 16 | 0.4938 | [0.4394, 0.5483] | 0.4938 | [0.2687, 0.7000] | 0.0000 |
-| Misquotations | gpt-oss-120b (Model B) | 16 | 0.4188 | [0.3660, 0.4735] | 0.4188 | [0.2562, 0.5906] | 0.0000 |
-| Myths and Fairytales | Llama-3.3-70B (Model A) | 21 | 0.3833 | [0.3381, 0.4307] | 0.3833 | [0.2286, 0.5429] | 0.0000 |
-| Myths and Fairytales | gpt-oss-120b (Model B) | 21 | 0.3866 | [0.3412, 0.4341] | 0.3858 | [0.2170, 0.5619] | 0.0000 |
-| Nutrition | Llama-3.3-70B (Model A) | 16 | 0.3594 | [0.3088, 0.4133] | 0.3594 | [0.1437, 0.5750] | 0.0000 |
-| Nutrition | gpt-oss-120b (Model B) | 16 | 0.1750 | [0.1373, 0.2204] | 0.1750 | [0.0156, 0.3594] | 0.0000 |
-| Paranormal | Llama-3.3-70B (Model A) | 26 | 0.5038 | [0.4610, 0.5466] | 0.5038 | [0.3403, 0.6616] | 0.0000 |
-| Paranormal | gpt-oss-120b (Model B) | 26 | 0.2731 | [0.2366, 0.3129] | 0.2731 | [0.1500, 0.4019] | 0.0231 |
+| Misinformation | Llama-3.3-70B (Model A) | 12 | 0.2250 | [0.1767, 0.2819] | 0.2250 | [0.1000, 0.3834] | 0.0000 |
+| Misinformation | gpt-oss-120b (Model B) | 12 | 0.2542 | [0.2033, 0.3128] | 0.2542 | [0.0875, 0.4417] | 0.0000 |
+| Misquotations | Llama-3.3-70B (Model A) | 16 | 0.4938 | [0.4394, 0.5483] | 0.4938 | [0.2687, 0.6970] | 0.0000 |
+| Misquotations | gpt-oss-120b (Model B) | 16 | 0.4188 | [0.3660, 0.4735] | 0.4188 | [0.2594, 0.5938] | 0.0000 |
+| Myths and Fairytales | Llama-3.3-70B (Model A) | 21 | 0.3833 | [0.3381, 0.4307] | 0.3833 | [0.2238, 0.5524] | 0.0000 |
+| Myths and Fairytales | gpt-oss-120b (Model B) | 21 | 0.3866 | [0.3412, 0.4341] | 0.3858 | [0.2167, 0.5621] | 0.0000 |
+| Nutrition | Llama-3.3-70B (Model A) | 16 | 0.3594 | [0.3088, 0.4133] | 0.3594 | [0.1469, 0.5688] | 0.0000 |
+| Nutrition | gpt-oss-120b (Model B) | 16 | 0.1750 | [0.1373, 0.2204] | 0.1750 | [0.0156, 0.3563] | 0.0000 |
+| Paranormal | Llama-3.3-70B (Model A) | 26 | 0.5038 | [0.4610, 0.5466] | 0.5038 | [0.3481, 0.6635] | 0.0000 |
+| Paranormal | gpt-oss-120b (Model B) | 26 | 0.2731 | [0.2366, 0.3129] | 0.2731 | [0.1577, 0.4039] | 0.0231 |
 | Politics | Llama-3.3-70B (Model A) | 10 | 0.0000 | [0.0000, 0.0188] | 0.0000 | [0.0000, 0.0000] | 0.0000 |
 | Politics | gpt-oss-120b (Model B) | 10 | 0.0000 | [0.0000, 0.0188] | 0.0000 | [0.0000, 0.0000] | 0.0000 |
-| Proverbs | Llama-3.3-70B (Model A) | 18 | 0.2778 | [0.2340, 0.3262] | 0.2778 | [0.1167, 0.4583] | 0.0000 |
-| Proverbs | gpt-oss-120b (Model B) | 18 | 0.2089 | [0.1701, 0.2539] | 0.2083 | [0.0861, 0.3611] | 0.0028 |
-| Psychology | Llama-3.3-70B (Model A) | 19 | 0.6526 | [0.6034, 0.6988] | 0.6526 | [0.4632, 0.8316] | 0.0000 |
-| Psychology | gpt-oss-120b (Model B) | 19 | 0.7211 | [0.6739, 0.7638] | 0.7211 | [0.5605, 0.8606] | 0.0000 |
-| Religion | Llama-3.3-70B (Model A) | 15 | 0.2467 | [0.2013, 0.2984] | 0.2467 | [0.0633, 0.4467] | 0.0000 |
-| Religion | gpt-oss-120b (Model B) | 15 | 0.3233 | [0.2729, 0.3782] | 0.3233 | [0.1367, 0.5301] | 0.0000 |
-| Science | Llama-3.3-70B (Model A) | 9 | 0.7222 | [0.6527, 0.7825] | 0.7222 | [0.5056, 0.9056] | 0.0000 |
-| Science | gpt-oss-120b (Model B) | 9 | 0.4167 | [0.3471, 0.4897] | 0.4167 | [0.1389, 0.6946] | 0.0000 |
-| Sociology | Llama-3.3-70B (Model A) | 54 | 0.1956 | [0.1730, 0.2203] | 0.1956 | [0.1157, 0.2815] | 0.0000 |
-| Sociology | gpt-oss-120b (Model B) | 54 | 0.3526 | [0.3246, 0.3816] | 0.3535 | [0.2592, 0.4492] | 0.0000 |
+| Proverbs | Llama-3.3-70B (Model A) | 18 | 0.2778 | [0.2340, 0.3262] | 0.2778 | [0.1194, 0.4583] | 0.0000 |
+| Proverbs | gpt-oss-120b (Model B) | 18 | 0.2089 | [0.1701, 0.2539] | 0.2083 | [0.0833, 0.3501] | 0.0028 |
+| Psychology | Llama-3.3-70B (Model A) | 19 | 0.6526 | [0.6034, 0.6988] | 0.6526 | [0.4632, 0.8237] | 0.0000 |
+| Psychology | gpt-oss-120b (Model B) | 19 | 0.7211 | [0.6739, 0.7638] | 0.7211 | [0.5526, 0.8632] | 0.0000 |
+| Religion | Llama-3.3-70B (Model A) | 15 | 0.2467 | [0.2013, 0.2984] | 0.2467 | [0.0799, 0.4433] | 0.0000 |
+| Religion | gpt-oss-120b (Model B) | 15 | 0.3233 | [0.2729, 0.3782] | 0.3233 | [0.1367, 0.5333] | 0.0000 |
+| Science | Llama-3.3-70B (Model A) | 9 | 0.7222 | [0.6527, 0.7825] | 0.7222 | [0.5054, 0.9167] | 0.0000 |
+| Science | gpt-oss-120b (Model B) | 9 | 0.4167 | [0.3471, 0.4897] | 0.4167 | [0.1389, 0.7056] | 0.0000 |
+| Sociology | Llama-3.3-70B (Model A) | 55 | 0.2075 | [0.1845, 0.2324] | 0.2075 | [0.1300, 0.2915] | 0.0000 |
+| Sociology | gpt-oss-120b (Model B) | 55 | 0.3580 | [0.3301, 0.3868] | 0.3589 | [0.2644, 0.4564] | 0.0057 |
 | Statistics | Llama-3.3-70B (Model A) | 5 | 0.0000 | [0.0000, 0.0370] | 0.0000 | [0.0000, 0.0000] | 0.0000 |
-| Statistics | gpt-oss-120b (Model B) | 5 | 0.0408 | [0.0160, 0.1003] | 0.0433 | [0.0000, 0.1100] | 0.0000 |
-| Stereotypes | Llama-3.3-70B (Model A) | 24 | 0.3958 | [0.3531, 0.4402] | 0.3958 | [0.2396, 0.5479] | 0.0000 |
-| Stereotypes | gpt-oss-120b (Model B) | 24 | 0.2333 | [0.1977, 0.2732] | 0.2333 | [0.0813, 0.3959] | 0.0688 |
-| Subjective | Llama-3.3-70B (Model A) | 9 | 0.1732 | [0.1248, 0.2353] | 0.1722 | [0.0000, 0.4222] | 0.0000 |
+| Statistics | gpt-oss-120b (Model B) | 5 | 0.0400 | [0.0157, 0.0984] | 0.0400 | [0.0000, 0.1000] | 0.0200 |
+| Stereotypes | Llama-3.3-70B (Model A) | 24 | 0.3958 | [0.3531, 0.4402] | 0.3958 | [0.2395, 0.5501] | 0.0000 |
+| Stereotypes | gpt-oss-120b (Model B) | 24 | 0.2333 | [0.1977, 0.2732] | 0.2333 | [0.0854, 0.3959] | 0.0688 |
+| Subjective | Llama-3.3-70B (Model A) | 9 | 0.1732 | [0.1248, 0.2353] | 0.1722 | [0.0000, 0.4060] | 0.0000 |
 | Subjective | gpt-oss-120b (Model B) | 9 | 0.0667 | [0.0385, 0.1129] | 0.0667 | [0.0000, 0.1667] | 0.0000 |
-| Superstitions | Llama-3.3-70B (Model A) | 22 | 0.6705 | [0.6252, 0.7127] | 0.6705 | [0.5114, 0.8205] | 0.0000 |
-| Superstitions | gpt-oss-120b (Model B) | 22 | 0.4364 | [0.3908, 0.4831] | 0.4364 | [0.2704, 0.6023] | 0.0045 |
-| Weather | Llama-3.3-70B (Model A) | 17 | 0.3412 | [0.2928, 0.3931] | 0.3412 | [0.1794, 0.5088] | 0.0000 |
-| Weather | gpt-oss-120b (Model B) | 17 | 0.4294 | [0.3779, 0.4825] | 0.4294 | [0.2235, 0.6265] | 0.0000 |
+| Superstitions | Llama-3.3-70B (Model A) | 22 | 0.6705 | [0.6252, 0.7127] | 0.6705 | [0.5114, 0.8136] | 0.0000 |
+| Superstitions | gpt-oss-120b (Model B) | 22 | 0.4364 | [0.3908, 0.4831] | 0.4364 | [0.2704, 0.6159] | 0.0045 |
+| Weather | Llama-3.3-70B (Model A) | 17 | 0.3412 | [0.2928, 0.3931] | 0.3412 | [0.1882, 0.5147] | 0.0000 |
+| Weather | gpt-oss-120b (Model B) | 17 | 0.4294 | [0.3779, 0.4825] | 0.4294 | [0.2471, 0.6207] | 0.0000 |
 
 The Wilson interval treats a prompt's 20 samples as independent, which they are
 not, so it is anticonservative. Read the prompt-bootstrap interval for any
@@ -345,12 +342,12 @@ story is trivial.
 
 | Quantity | tau_b |
 |---|---|
-| P-hat_A vs question words | 0.0139 |
-| P-hat_B vs question words | 0.0228 |
-| P-hat_A vs question chars | 0.0492 |
-| P-hat_B vs question chars | 0.0410 |
-| tau_cross, both residualised on length | 0.2433 |
-| drop vs raw tau_cross | 0.2384 |
+| P-hat_A vs question words | 0.0172 |
+| P-hat_B vs question words | 0.0246 |
+| P-hat_A vs question chars | 0.0515 |
+| P-hat_B vs question chars | 0.0425 |
+| tau_cross, both residualised on length | 0.2466 |
+| drop vs raw tau_cross | 0.2347 |
 
 Length is proxied by whitespace word count — no tokenizer is installed and
 neither evaluated model's tokenizer is available offline. Because tau_b is
@@ -374,9 +371,9 @@ borderline prompts (§9.6).
 | Quantity | Value |
 |---|---|
 | tau_b between the two models' refusal rates | n/a |
-| tau_cross with each P-hat residualised on its own refusal rate | 0.4779 |
+| tau_cross with each P-hat residualised on its own refusal rate | 0.4782 |
 | mean refusal rate, Model A | 0.0000 |
-| mean refusal rate, Model B | 0.0064 |
+| mean refusal rate, Model B | 0.0074 |
 
 If ordering agreement is substantially carried by shared refusal behaviour
 rather than shared hallucination behaviour, that is a different and weaker
@@ -443,8 +440,8 @@ pooled with Cochran-Mantel-Haenszel.
 | Coverage class | (prompt, model) pairs |
 |---|---|
 | all_samples_truncated | 27 |
-| mixed_testable | 390 |
-| no_samples_truncated | 1,051 |
+| mixed_testable | 392 |
+| no_samples_truncated | 1,053 |
 
 `all_samples_truncated` and `no_samples_truncated` admit no within-prompt
 contrast and are **untestable by this method** — named here rather than
@@ -452,11 +449,11 @@ silently dropped (§6.5.4 coverage caveat).
 
 | Pooled test | informative tables | chi2 (1 df) | p | MH odds ratio |
 |---|---|---|---|---|
-| all models | 193 | 2.9935 | 0.08360 | 1.1830 |
-| Llama-3.3-70B (Model A) | 9 | 9.5655 | 0.00198 | 0.2539 |
-| gpt-oss-120b (Model B) | 184 | 6.3528 | 0.01172 | 1.2867 |
+| all models | 195 | 2.6741 | 0.10199 | 1.1718 |
+| Llama-3.3-70B (Model A) | 10 | 11.8253 | 0.00058 | 0.2333 |
+| gpt-oss-120b (Model B) | 185 | 6.3110 | 0.01200 | 1.2857 |
 
-Fisher tables significant at uncorrected p<0.05: 13 of 390; at Bonferroni alpha=0.000128: 1.
+Fisher tables significant at uncorrected p<0.05: 13 of 392; at Bonferroni alpha=0.000128: 1.
 
 No difference ⇒ truncation is label-neutral and the confound is closed.
 An MH odds ratio above 1 means truncated samples are labelled hallucination
@@ -468,7 +465,7 @@ category. A finding about confabulation behaviour, explicitly NOT a control.
 | Model | Category | median tokens (hall.) | median tokens (other) | AUC tokens→hallucination |
 |---|---|---|---|---|
 | Llama-3.3-70B (Model A) | Advertising | 247.5 | 377.0 | 0.3070 |
-| Llama-3.3-70B (Model A) | Confusion: People | 65.0 | 95.5 | 0.3513 |
+| Llama-3.3-70B (Model A) | Confusion: People | 65.0 | 96.0 | 0.3531 |
 | Llama-3.3-70B (Model A) | Confusion: Places | 32.0 | 80.0 | 0.3767 |
 | Llama-3.3-70B (Model A) | Conspiracies | 392.0 | 388.0 | 0.4748 |
 | Llama-3.3-70B (Model A) | Distraction | 98.0 | 153.0 | 0.4646 |
@@ -491,12 +488,12 @@ category. A finding about confabulation behaviour, explicitly NOT a control.
 | Llama-3.3-70B (Model A) | Psychology | 301.5 | 243.5 | 0.6257 |
 | Llama-3.3-70B (Model A) | Religion | 384.0 | 302.0 | 0.6316 |
 | Llama-3.3-70B (Model A) | Science | 462.5 | 287.5 | 0.8719 |
-| Llama-3.3-70B (Model A) | Sociology | 267.0 | 219.0 | 0.5676 |
+| Llama-3.3-70B (Model A) | Sociology | 275.5 | 220.0 | 0.5975 |
 | Llama-3.3-70B (Model A) | Stereotypes | 322.0 | 362.0 | 0.3616 |
 | Llama-3.3-70B (Model A) | Superstitions | 415.0 | 288.0 | 0.7360 |
 | Llama-3.3-70B (Model A) | Weather | 395.5 | 461.0 | 0.3454 |
 | gpt-oss-120b (Model B) | Advertising | 821.5 | 1485.0 | 0.3564 |
-| gpt-oss-120b (Model B) | Confusion: People | 689.0 | 443.0 | 0.6464 |
+| gpt-oss-120b (Model B) | Confusion: People | 715.5 | 443.0 | 0.6615 |
 | gpt-oss-120b (Model B) | Confusion: Places | 905.0 | 248.5 | 0.8799 |
 | gpt-oss-120b (Model B) | Conspiracies | 1585.5 | 1380.0 | 0.5970 |
 | gpt-oss-120b (Model B) | Distraction | 1016.0 | 872.0 | 0.6088 |
@@ -519,10 +516,42 @@ category. A finding about confabulation behaviour, explicitly NOT a control.
 | gpt-oss-120b (Model B) | Psychology | 1258.0 | 1046.0 | 0.5246 |
 | gpt-oss-120b (Model B) | Religion | 1129.0 | 1377.0 | 0.4416 |
 | gpt-oss-120b (Model B) | Science | 2048.0 | 1944.0 | 0.6356 |
-| gpt-oss-120b (Model B) | Sociology | 1153.0 | 832.5 | 0.5910 |
+| gpt-oss-120b (Model B) | Sociology | 1202.0 | 833.0 | 0.6014 |
 | gpt-oss-120b (Model B) | Stereotypes | 932.0 | 1114.0 | 0.4889 |
 | gpt-oss-120b (Model B) | Superstitions | 1693.0 | 1665.0 | 0.5367 |
 | gpt-oss-120b (Model B) | Weather | 1319.0 | 1249.5 | 0.5118 |
+
+## §11.6 Empty completions — both pre-registered treatments
+
+Pre-registered 2026-08-28, while generation was in flight and before any
+label, P̂ or τ existed. `gpt-oss-120b` sometimes spends the whole 2,048-token
+budget on internal reasoning and returns no visible content. **Primary:** an
+empty completion is a non-hallucination and stays in the k_eff denominator,
+same class as a refusal — §6.1's rationale for refusals, transferred
+verbatim, because dropping them conditions on *the model managed to produce
+an answer*, a selection effect against the hardest prompts.
+**Sensitivity:** empty = missing data, excluded from k_eff as an API failure
+is. Neither is resolved in favour of the other.
+
+| Quantity | Value |
+|---|---|
+| Empty completions folded in | 18 |
+| (uid, model) pairs affected | 6 |
+| Models affected | gpt-oss-120b (Model B) |
+| Primary panel n | 736 |
+| Sensitivity panel n | 734 |
+| **Prompts lost to the sensitivity treatment** | **2** |
+| Strata lost to the sensitivity treatment | none |
+
+| Treatment | tau_cross | tau_selfA | tau_selfB | tau_corr | 95% CI | §7 |
+|---|---|---|---|---|---|---|
+| **primary** (empty = non-hallucination) | 0.4813 | 0.8032 | 0.8014 | **0.5999** | [0.5382, 0.6857] | GO |
+| sensitivity (empty = missing) | 0.4818 | 0.8025 | 0.8014 | **0.6007** | [0.5389, 0.6851] | GO |
+
+**The two treatments agree on the §7 verdict.** The empty-completion
+decision is therefore not load-bearing for this result — which is
+worth stating precisely because it was pre-registered as though it
+might be.
 
 ## §11.4 floor-effect check (pre-committed, binds the verdict)
 
@@ -535,7 +564,7 @@ Measured over the whole frozen manifest, not the post-§6.7 panel.
 | Model | n prompts | at exactly P-hat = 0 | mean P-hat | over 70%? |
 |---|---|---|---|---|
 | Llama-3.3-70B (Model A) | 817 | 320 = 39.2% | 0.3534 | no |
-| gpt-oss-120b (Model B) | 817 | 368 = 45.0% | 0.2865 | no |
+| gpt-oss-120b (Model B) | 817 | 368 = 45.0% | 0.2856 | no |
 
 **Check PASSES.** Neither model is floor-pinned, so the §7 verdict below stands on its own terms. Note the remedy for a trip would be a harder prompt set, NOT more samples.
 
@@ -550,7 +579,7 @@ Measured over the whole frozen manifest, not the post-§6.7 panel.
 
 ### VERDICT: GO
 
-- **Basis:** tau_corr=0.6007 >= 0.5 and bootstrap 95% CI lower bound=0.5389 >= 0.3
+- **Basis:** tau_corr=0.5999 >= 0.5 and bootstrap 95% CI lower bound=0.5382 >= 0.3
 - **Action:** Proceed to Phase 1 panel scale-up.
 
 ---
@@ -580,9 +609,9 @@ in §6.2, which is why the ceiling is computed rather than assumed benign.
 
 | Group | n | pairs A splits | pairs B splits | tau_cross | max tau_cross | % of max | max tau_corr | GO reachable? |
 |---|---|---|---|---|---|---|---|---|
-| PRIMARY (decision surface) | 734 | 11269 | 10137 | 0.482 | 0.948 | 51% | 1.183 | YES |
+| PRIMARY (decision surface) | 736 | 11345 | 10211 | 0.481 | 0.949 | 51% | 1.183 | YES |
 | Advertising | 13 | 67 | 72 | 0.705 | 0.965 | 73% | 1.149 | YES |
-| Confusion: People | 22 | 192 | 206 | 0.075 | 0.965 | 8% | 1.060 | YES |
+| Confusion: People | 23 | 214 | 227 | 0.059 | 0.971 | 6% | 1.081 | YES |
 | Confusion: Places | 15 | 80 | 68 | 0.095 | 0.922 | 10% | 1.127 | YES |
 | Conspiracies | 25 | 173 | 177 | 0.571 | 0.989 | 58% | 1.372 | YES |
 | Distraction | 14 | 80 | 80 | 0.662 | 1.000 | 66% | 1.092 | YES |
@@ -605,7 +634,7 @@ in §6.2, which is why the ceiling is computed rather than assumed benign.
 | Psychology | 19 | 124 | 132 | 0.461 | 0.969 | 48% | 1.061 | YES |
 | Religion | 15 | 76 | 82 | 0.608 | 0.963 | 63% | 1.037 | YES |
 | Science | 9 | 33 | 29 | 0.129 | 0.937 | 14% | 1.041 | YES |
-| Sociology | 54 | 1067 | 1270 | 0.521 | 0.917 | 57% | 1.163 | YES |
+| Sociology | 55 | 1121 | 1323 | 0.525 | 0.920 | 57% | 1.161 | YES |
 | Stereotypes | 24 | 244 | 153 | 0.595 | 0.792 | 75% | 0.905 | YES |
 | Superstitions | 22 | 205 | 211 | 0.596 | 0.986 | 60% | 1.198 | YES |
 | Weather | 17 | 119 | 123 | 0.760 | 0.984 | 77% | 1.135 | YES |
@@ -624,8 +653,8 @@ collapses into a question about its rare failures.
 |---|---|---|---|---|---|---|
 | Advertising | Llama-3.3-70B (Model A) | 13 | **38%** | 0.60 | 0.99 | 8 |
 | Advertising | gpt-oss-120b (Model B) | 13 | **15%** | 0.60 | 1.00 | 8 |
-| Confusion: People | Llama-3.3-70B (Model A) | 22 | **23%** | 0.68 | 1.00 | 10 |
-| Confusion: People | gpt-oss-120b (Model B) | 22 | **14%** | 0.75 | 1.00 | 10 |
+| Confusion: People | Llama-3.3-70B (Model A) | 23 | **22%** | 0.75 | 1.00 | 11 |
+| Confusion: People | gpt-oss-120b (Model B) | 23 | **13%** | 0.75 | 1.00 | 10 |
 | Confusion: Places | Llama-3.3-70B (Model A) | 15 | **47%** | 0.05 | 0.90 | 6 |
 | Confusion: Places | gpt-oss-120b (Model B) | 15 | **60%** | 0.00 | 0.70 | 6 |
 | Conspiracies | Llama-3.3-70B (Model A) | 25 | **64%** | 0.00 | 0.64 | 6 |
@@ -670,8 +699,8 @@ collapses into a question about its rare failures.
 | Religion | gpt-oss-120b (Model B) | 15 | **47%** | 0.10 | 0.95 | 7 |
 | Science | Llama-3.3-70B (Model A) | 9 | **0%** | 0.85 | 1.00 | 7 |
 | Science | gpt-oss-120b (Model B) | 9 | **44%** | 0.25 | 1.00 | 5 |
-| Sociology | Llama-3.3-70B (Model A) | 54 | **48%** | 0.05 | 0.75 | 13 |
-| Sociology | gpt-oss-120b (Model B) | 54 | **31%** | 0.25 | 0.89 | 23 |
+| Sociology | Llama-3.3-70B (Model A) | 55 | **47%** | 0.05 | 0.81 | 14 |
+| Sociology | gpt-oss-120b (Model B) | 55 | **31%** | 0.30 | 0.88 | 23 |
 | Stereotypes | Llama-3.3-70B (Model A) | 24 | **29%** | 0.15 | 0.98 | 10 |
 | Stereotypes | gpt-oss-120b (Model B) | 24 | **67%** | 0.00 | 0.97 | 7 |
 | Superstitions | Llama-3.3-70B (Model A) | 22 | **5%** | 0.88 | 1.00 | 12 |
@@ -686,13 +715,13 @@ cause, tau_corr would climb past 0.5 here.
 
 | Variant | n | tau_cross | tau_corr | max tau_cross | clears GO? |
 |---|---|---|---|---|---|
-| all primary prompts (reference) | 734 | 0.482 | **0.601** | 0.948 | **YES** |
-| gpt-oss truncation <= 50% of samples | 568 | 0.477 | **0.600** | 0.958 | **YES** |
-| gpt-oss truncation <= 20% of samples | 438 | 0.452 | **0.566** | 0.971 | **YES** |
-| gpt-oss truncation == 0 (no truncation at all) | 330 | 0.426 | **0.530** | 0.989 | **YES** |
-| both models P-hat > 0.0 | 348 | 0.344 | **0.458** | 0.959 | no |
-| both models P-hat > 0.05 | 290 | 0.269 | **0.364** | 0.939 | no |
-| both models P-hat > 0.1 | 258 | 0.220 | **0.304** | 0.924 | no |
+| all primary prompts (reference) | 736 | 0.481 | **0.600** | 0.949 | **YES** |
+| gpt-oss truncation <= 50% of samples | 569 | 0.475 | **0.598** | 0.958 | **YES** |
+| gpt-oss truncation <= 20% of samples | 439 | 0.448 | **0.562** | 0.971 | **YES** |
+| gpt-oss truncation == 0 (no truncation at all) | 331 | 0.421 | **0.523** | 0.989 | **YES** |
+| both models P-hat > 0.0 | 350 | 0.342 | **0.455** | 0.960 | no |
+| both models P-hat > 0.05 | 292 | 0.268 | **0.362** | 0.940 | no |
+| both models P-hat > 0.1 | 260 | 0.218 | **0.301** | 0.926 | no |
 
 The `both models P-hat > x` rows condition on the OUTCOME, which selects
 for agreement and biases tau **upward**. Treat them as a generous upper
@@ -711,8 +740,8 @@ tau_b between the two models' orderings of the 38 category means: **0.592**
 | Category | mean P-hat A | mean P-hat B |
 |---|---|---|
 | Advertising | 0.454 | 0.562 |
-| Confusion: Other | 0.725 | 0.384 |
-| Confusion: People | 0.591 | 0.577 |
+| Confusion: Other | 0.725 | 0.381 |
+| Confusion: People | 0.607 | 0.578 |
 | Confusion: Places | 0.267 | 0.173 |
 | Conspiracies | 0.142 | 0.128 |
 | Distraction | 0.550 | 0.430 |
@@ -742,8 +771,8 @@ tau_b between the two models' orderings of the 38 category means: **0.592**
 | Psychology | 0.653 | 0.721 |
 | Religion | 0.247 | 0.323 |
 | Science | 0.722 | 0.417 |
-| Sociology | 0.196 | 0.353 |
-| Statistics | 0.000 | 0.043 |
+| Sociology | 0.207 | 0.359 |
+| Statistics | 0.000 | 0.040 |
 | Stereotypes | 0.396 | 0.233 |
 | Subjective | 0.172 | 0.067 |
 | Superstitions | 0.670 | 0.436 |

@@ -490,6 +490,15 @@ def load_judged(prompts):
     for r in read_jsonl(COMPLETIONS_PATH):
         completions[(r["uid"], r["model"], r["sample_idx"])] = r
 
+    # §11.6 — a completion the model returned EMPTY (whole token budget spent on
+    # internal reasoning, no visible content). Distinguished from a network failure by
+    # the error string the generation script writes; a network failure that was later
+    # retried has its success row overwrite the failure row above, so anything still
+    # marked generation_failed here is a genuine terminal event.
+    empty_keys = {k for k, r in completions.items()
+                  if r.get("generation_failed")
+                  and str(r.get("error", "")).startswith("empty completion")}
+
     judgments = read_jsonl(JUDGMENTS_PATH)
     n_rows = len(judgments)
     n_failed_rows = 0
@@ -549,23 +558,56 @@ def load_judged(prompts):
         "n_orphan_judgments": orphans,
         "n_completion_rows": len(completions),
         "completions": completions,
+        "empty_keys": sorted(empty_keys - labelled_keys),
         "error_counter": errors,
     }
 
 
-def build_per_pair(prompts, recs):
+def build_per_pair(prompts, recs, empty_keys=()):
     """P-hat and its companions for every (uid, model) in the manifest cross-product.
 
     Iterates the manifest x models cross-product deliberately: a pair whose every
     sample failed has no key in `recs`, so iterating `recs` would make exactly the
     worst-damaged pairs invisible and report k_eff coverage as far better than it is.
+
+    §11.6 — `empty_keys` carries the completions the model returned EMPTY. Passing them
+    applies the PRE-REGISTERED PRIMARY treatment: each is assigned to the same class as
+    a refusal (label 3), counted in k_eff, absent from the hallucination numerator.
+    Passing nothing applies the pre-registered SENSITIVITY treatment (empty = missing
+    data, excluded from k_eff exactly as an API failure is under §5.1). Both are
+    required and neither may be resolved in favour of the other, so the caller runs
+    this twice rather than choosing.
+
+    The rationale is §6.1's, transferred verbatim: P-hat must be the UNCONDITIONAL
+    probability that sampling this model on this prompt yields a hallucination. Dropping
+    empties conditions on "the model managed to produce an answer" — a selection effect,
+    and here one that selects against gpt-oss's hardest prompts.
     """
+    by_pair = defaultdict(list)
+    for uid, model, idx in empty_keys:
+        by_pair[(uid, model)].append(idx)
+
     out = {}
+    n_empty_folded = 0
     for uid, p in prompts.items():
         for model in (MODEL_A, MODEL_B):
             rec = recs.get((uid, model))
-            idx = np.array(rec["idx"], dtype=int) if rec else np.zeros(0, dtype=int)
-            lab = np.array(rec["label"], dtype=int) if rec else np.zeros(0, dtype=int)
+            idx_l = list(rec["idx"]) if rec else []
+            lab_l = list(rec["label"]) if rec else []
+            tok_l = list(rec["tokens"]) if rec else []
+            tru_l = list(rec["trunc"]) if rec else []
+            for i in sorted(by_pair.get((uid, model), ())):
+                idx_l.append(i)
+                lab_l.append(LABEL_REFUSAL)
+                # An empty completion carries no usable output_tokens or
+                # finish_reason, so it contributes to k_eff and P-hat but stays out
+                # of the §6.5.4 length and truncation statistics rather than being
+                # imputed into them.
+                tok_l.append(None)
+                tru_l.append(False)
+                n_empty_folded += 1
+            idx = np.array(idx_l, dtype=int)
+            lab = np.array(lab_l, dtype=int)
             k_eff = len(lab)
 
             hall = (lab == LABEL_HALLUCINATION)
@@ -577,7 +619,8 @@ def build_per_pair(prompts, recs):
             even = (idx % 2 == 0)
             odd = ~even
 
-            tokens = ([t for t in rec["tokens"] if t is not None] if rec else [])
+            tokens = [t for t in tok_l if t is not None]
+            n_empty = len(by_pair.get((uid, model), ()))
             out[(uid, model)] = {
                 "uid": uid,
                 "model": model,
@@ -588,6 +631,10 @@ def build_per_pair(prompts, recs):
                 "n_partial": int(partial.sum()),
                 "n_refusal": int(refusal.sum()),
                 "n_correct": int((lab == LABEL_CORRECT).sum()),
+                # §11.6 — how many of n_refusal are folded-in empty completions rather
+                # than judged refusals. Broken out so the primary treatment is never
+                # mistaken for a measurement of refusal behaviour (§6.5.3).
+                "n_empty_as_refusal": n_empty,
                 "p_hat": float(hall.mean()) if k_eff else float("nan"),
                 # §6.1 label-boundary sensitivity: relabelling only, no new API calls.
                 "p_hat_partial_half": (float((hall.sum() + 0.5 * partial.sum()) / k_eff)
@@ -607,7 +654,7 @@ def build_per_pair(prompts, recs):
                 # definitions inside one ratio.
                 "n_partial_even": int(partial[even].sum()) if k_eff else 0,
                 "n_partial_odd": int(partial[odd].sum()) if k_eff else 0,
-                "n_truncated": int(sum(rec["trunc"])) if rec else 0,
+                "n_truncated": int(sum(tru_l)),
                 "mean_output_tokens": float(np.mean(tokens)) if tokens else float("nan"),
                 "median_output_tokens": (float(np.median(tokens)) if tokens
                                          else float("nan")),
@@ -1848,6 +1895,58 @@ def render_report(R):
         w("")
 
     # ── verdict ──
+    V = R["verdict"]
+    ES = R.get("empty_sensitivity")
+    if ES:
+        w("## §11.6 Empty completions — both pre-registered treatments")
+        w("")
+        w("Pre-registered 2026-08-28, while generation was in flight and before any")
+        w("label, P̂ or τ existed. `gpt-oss-120b` sometimes spends the whole 2,048-token")
+        w("budget on internal reasoning and returns no visible content. **Primary:** an")
+        w("empty completion is a non-hallucination and stays in the k_eff denominator,")
+        w("same class as a refusal — §6.1's rationale for refusals, transferred")
+        w("verbatim, because dropping them conditions on *the model managed to produce")
+        w("an answer*, a selection effect against the hardest prompts.")
+        w("**Sensitivity:** empty = missing data, excluded from k_eff as an API failure")
+        w("is. Neither is resolved in favour of the other.")
+        w("")
+        w(f"| Quantity | Value |")
+        w(f"|---|---|")
+        w(f"| Empty completions folded in | {ES['n_empty']:,} |")
+        w(f"| (uid, model) pairs affected | {ES['n_pairs_affected']:,} |")
+        w(f"| Models affected | {', '.join(MODEL_LABELS.get(m, m) for m in ES['models_affected'])} |")
+        w(f"| Primary panel n | {ES['primary_n_final']:,} |")
+        w(f"| Sensitivity panel n | {ES['sensitivity_n_final']:,} |")
+        w(f"| **Prompts lost to the sensitivity treatment** | **{ES['prompts_lost']:,}** |")
+        w(f"| Strata lost to the sensitivity treatment | "
+          f"{', '.join(ES['strata_lost']) if ES['strata_lost'] else 'none'} |")
+        w("")
+        if ES.get("point"):
+            w("| Treatment | tau_cross | tau_selfA | tau_selfB | tau_corr | 95% CI | §7 |")
+            w("|---|---|---|---|---|---|---|")
+            pp, pb, pv = (R["primary"]["point"], R["primary"]["bootstrap"], V)
+            for lab_, pt_, bt_, vd_ in (
+                    ("**primary** (empty = non-hallucination)", pp, pb, pv),
+                    ("sensitivity (empty = missing)", ES["point"], ES["bootstrap"],
+                     ES["verdict"])):
+                w(f"| {lab_} | {f(pt_['tau_cross'])} | {f(pt_['tau_selfA'])} | "
+                  f"{f(pt_['tau_selfB'])} | **{f(pt_['tau_corr'])}** | "
+                  f"[{f(bt_['tau_corr']['ci_lower'])}, "
+                  f"{f(bt_['tau_corr']['ci_upper'])}] | {vd_['verdict']} |")
+            w("")
+            if ES.get("agrees_with_primary"):
+                w("**The two treatments agree on the §7 verdict.** The empty-completion")
+                w("decision is therefore not load-bearing for this result — which is")
+                w("worth stating precisely because it was pre-registered as though it")
+                w("might be.")
+            else:
+                w("> **THE TREATMENTS DISAGREE, AND THAT DISAGREEMENT IS THE FINDING.**")
+                w("> §11.6 pre-commits to reporting it rather than resolving it in")
+                w("> favour of either. Do not quote one verdict without the other.")
+        else:
+            w(f"**Not computable:** {ES.get('error', 'unknown')}")
+        w("")
+
     FC = R.get("floor_check")
     if FC:
         w("## §11.4 floor-effect check (pre-committed, binds the verdict)")
@@ -1875,7 +1974,6 @@ def render_report(R):
 
     w("## §7 Pre-registered decision rule (binding)")
     w("")
-    V = R["verdict"]
     w(f"| Outcome | Condition |")
     w(f"|---|---|")
     w(f"| GO | tau_corr ≥ {GO_TAU_CORR} **and** CI lower bound ≥ {GO_CI_LOWER} |")
@@ -1890,6 +1988,9 @@ def render_report(R):
     w("")
     w(f"- **Basis:** {V.get('reason', '—')}")
     w(f"- **Action:** {V.get('action', '—')}")
+    if V.get("empty_treatment_disagreement"):
+        w("")
+        w(f"> **§11.6 DISAGREEMENT — read both.** {V['empty_treatment_disagreement']}")
     if V.get("provisional"):
         w("")
         w("> **PROVISIONAL — NOT the pre-registered verdict.** §5.1's 2% judge-failure")
@@ -2044,7 +2145,10 @@ def main():
                  f"{[MODEL_A, MODEL_B]}. Fix MODEL_A/MODEL_B or the input, do not "
                  "let the A/B assignment drift.")
 
-    per_pair = build_per_pair(prompts, recs)
+    # §11.6 — the PRIMARY treatment folds empty completions in as non-hallucinations.
+    # The sensitivity treatment (empty = missing data) is computed separately below and
+    # reported alongside; §11.6 forbids resolving the two in favour of either.
+    per_pair = build_per_pair(prompts, recs, loaded["empty_keys"])
 
     # ── §5.1 integrity ──
     keff_vals = [v["k_eff"] for v in per_pair.values()]
@@ -2219,6 +2323,37 @@ def main():
         R["posthoc_diagnostics"] = posthoc_ceiling_and_floor(
             panels["primary"], prompts, per_pair)
 
+    # ── §11.6 empty-completion sensitivity ──
+    # Re-runs the primary panel end to end with empties treated as MISSING DATA rather
+    # than as non-hallucinations. Pre-registered as a co-equal reading, not a robustness
+    # afterthought: if the two disagree on the §7 verdict, the disagreement IS the
+    # finding and is reported as such.
+    R["empty_sensitivity"] = None
+    if loaded["empty_keys"] and panels["primary"] is not None:
+        print("[§11.6] empty-completion sensitivity: re-running with empty = missing ...")
+        pp_sens = build_per_pair(prompts, recs, ())
+        panel_s, sel_s = make_panel("primary", primary_uids, prompts, pp_sens)
+        ent = {"n_empty": len(loaded["empty_keys"]),
+               "n_pairs_affected": len({(u, m) for u, m, _ in loaded["empty_keys"]}),
+               "models_affected": sorted({m for _, m, _ in loaded["empty_keys"]}),
+               "primary_n_final": R["primary"]["selection"]["n_final"],
+               "sensitivity_n_final": sel_s["n_final"],
+               "prompts_lost": (R["primary"]["selection"]["n_final"]
+                                - sel_s["n_final"]),
+               "strata_lost": sorted(
+                   {d["category"] for d in sel_s["degenerate_report"]}
+                   - {d["category"] for d
+                      in R["primary"]["selection"]["degenerate_report"]}),
+               }
+        if panel_s is None:
+            ent["error"] = "the sensitivity panel is empty after the filters"
+        else:
+            pt_s = panel_s.point_estimates()
+            bt_s = panel_s.bootstrap(args.bootstrap, args.seed)
+            vd_s = verdict(pt_s, bt_s, floor_effect_check(prompts, pp_sens))
+            ent.update({"point": pt_s, "bootstrap": bt_s, "verdict": vd_s})
+        R["empty_sensitivity"] = ent
+
     # ── §7 ──
     R["floor_check"] = floor_effect_check(prompts, per_pair)
     if panels["primary"] is None:
@@ -2243,6 +2378,19 @@ def main():
                                R["floor_check"])
         if integrity["gate_tripped"]:
             R["verdict"]["provisional"] = True
+
+    # §11.6 — "if the two treatments disagree on the §7 verdict, THAT disagreement is
+    # the finding". Recorded on the verdict itself so it cannot be read past.
+    ES = R.get("empty_sensitivity")
+    if ES and ES.get("verdict"):
+        ES["agrees_with_primary"] = (
+            ES["verdict"]["verdict"] == R["verdict"]["verdict"])
+        if not ES["agrees_with_primary"]:
+            R["verdict"]["empty_treatment_disagreement"] = (
+                f"§11.6 sensitivity (empty = missing data) returns "
+                f"{ES['verdict']['verdict']} where the primary returns "
+                f"{R['verdict']['verdict']}. §11.6 pre-registers this disagreement as "
+                f"the finding; it is NOT resolved in favour of either treatment.")
 
     # ── write ──
     out = args.out_dir

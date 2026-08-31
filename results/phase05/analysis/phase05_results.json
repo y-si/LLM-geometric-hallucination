@@ -41,6 +41,7 @@
     "tau_corr_primary": 0.3097768671015803,
     "value": 0.11825265655082812
   },
+  "empty_sensitivity": null,
   "floor_check": null,
   "inputs": {
     "bootstrap_iters": 1000,

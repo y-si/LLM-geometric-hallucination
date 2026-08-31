@@ -856,27 +856,51 @@ pre-registration.
   treatment.
 
 - 2026-08-31 (**post-data — 0.5b judging complete, τ_corr already computed**) — **§11.4's
-  floor check was implemented in `analyze_phase05.py`. No threshold and no rule changed.**
-  Logged here because the timing must not be discovered later by a reviewer.
+  floor check and §11.6's primary treatment were implemented in `analyze_phase05.py`. No
+  threshold and no rule changed.** Logged here because the timing must not be discovered
+  later by a reviewer.
 
-  What happened: §11.4 was pre-registered on 2026-08-28 with the 70% threshold, the
-  "either model", the "of the 817 prompts" denominator and the "whatever τ_corr comes out
-  at" binding all fixed in writing — but it was never coded, so the first 0.5b analysis
-  emitted a §7 verdict without evaluating it. It is now computed by the analyzer,
-  evaluated **before** the τ thresholds (§11.4 binds regardless of τ), reported as its own
+  What happened: both subsections were pre-registered on 2026-08-28 with every degree of
+  freedom fixed in writing — and **neither was ever coded**. §11.4 was simply absent, so
+  the first 0.5b analysis emitted a §7 verdict without evaluating a check pre-committed to
+  bind whatever τ came out at. §11.6 was worse: the analyzer's k_eff counted labelled
+  completions only, which is the *sensitivity* treatment, so the run silently applied it
+  as the primary. Both are now computed by the analyzer. §11.4 is
+  evaluated **before** the τ thresholds (it binds regardless of τ), reported as its own
   section, and gated per-dataset: Phase 0.5 predates §11.4 and is **not** retro-gated on
   it, since that would re-adjudicate a pre-registered verdict under a later rule.
 
-  **Why this is a disclosure and not an amendment.** Every degree of freedom in the check
-  — threshold, direction, denominator, precedence, remedy — was fixed pre-data on
-  2026-08-28 and none was touched on 2026-08-31. The implementation had no discretion left
+  **Why this is a disclosure and not an amendment.** Every degree of freedom in both
+  subsections — §11.4's threshold, direction, denominator, precedence and remedy; §11.6's
+  choice of which treatment is primary and what each does to k_eff — was fixed pre-data on
+  2026-08-28 and none was touched on 2026-08-31. The implementations had no discretion left
   to exercise. It is logged as post-data anyway because the *order* (τ seen, then check
   coded) is exactly the order in which a check can be quietly tuned, and the defence
   against that suspicion is the 2026-08-28 text, not an assurance.
 
-  Result: **the check passes** — 39.2% (Llama) / 45.0% (gpt-oss) of 817 prompts at exactly
+  Result: **§11.4 passes** — 39.2% (Llama) / 45.0% (gpt-oss) of 817 prompts at exactly
   P̂ = 0, against the 70% threshold, and below the probe's 55% / 61%. The 0.5b verdict is
-  GO on both §7 and §11.4.
+  GO on §7, §11.4 and both §11.6 treatments.
+
+  **§11.6 had the same defect, and it was worse: the wrong treatment was running.**
+  `analyze_phase05.py` computed k_eff as "completions carrying a label", so an empty
+  completion — which is never sent to the judge — silently left the denominator. That is
+  §11.6's pre-registered **sensitivity** treatment being applied as though it were the
+  primary, and it was doing so unannounced. Both treatments are now computed and reported
+  side by side as §11.6 requires. **They agree: τ_corr = 0.5999 (primary) vs 0.6007
+  (sensitivity), both GO.** 18 completions were affected, all `gpt-oss-120b`, over 6
+  (uid, model) pairs; the primary loses no pair to the k_eff floor, the sensitivity loses
+  2 prompts and no strata. Per §11.6 a disagreement would have been the finding; there is
+  none, and the empty-completion decision is therefore not load-bearing for this result.
+
+  Two implementation choices §11.6's text left open, marked in the source and recorded
+  here rather than left to a reader to reverse-engineer: a folded-in empty is counted in
+  `n_refusal` (the text says "assigned to the same class as a refusal (label 3)", read
+  literally) but is also broken out as `n_empty_as_refusal` so §6.5.3's refusal-propensity
+  diagnostic can never be mistaken for a measurement of refusal *behaviour*; and an empty
+  contributes to k_eff and P̂ but stays out of the §6.5.4 length and truncation statistics,
+  since it carries no usable `output_tokens` or `finish_reason` and imputing one would
+  invent data. Both affect 18 rows of 32,680.
 
   Also in this change, cosmetic and non-decisional: the analyzer's post-hoc diagnostics
   heading ("WHY the tau is low") is now verdict-aware, because the tie-ceiling and
