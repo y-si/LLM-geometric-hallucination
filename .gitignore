@@ -105,3 +105,9 @@ results/phase05b_probe/*.jsonl
 # how results/phase05/decoding_config.json is handled.
 results/*/gen.log
 results/*/judge.log
+
+# Batch API operational state: batch IDs plus the submitted custom_id lists (~1 MB,
+# rewritten on every submit). Not a result. If it is lost, the batches are still
+# recoverable -- client.messages.batches.list() enumerates them, and custom_ids are
+# self-describing (promptid-A|B-sampleidx), so results can be mapped back without it.
+results/*/batch_state.json

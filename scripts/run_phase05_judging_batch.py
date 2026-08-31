@@ -351,7 +351,8 @@ def retrieve(P, client, verify=False):
             if verify:
                 prev = existing.get((uid, model, sample_idx))
                 if prev is not None and prev["label"] != row["label"]:
-                    mismatches.append((cid, prev["label"], row["label"]))
+                    mismatches.append((cid, prev["label"], row["label"],
+                                       prev.get("confidence")))
 
         missing = expected - seen
         print(f"{b['id']}: {n_ok:,} labelled, {n_fail:,} failed, "
@@ -366,8 +367,44 @@ def retrieve(P, client, verify=False):
                            and (r["uid"], r["model"], r["sample_idx"]) in existing)
             print(f"  compared            : {compared}")
             print(f"  label mismatches    : {len(mismatches)}")
-            for cid, a, bl in mismatches[:8]:
-                print(f"      {cid}: sync={a} batch={bl}")
+            for cid, a, bl, conf in mismatches[:8]:
+                print(f"      {cid}: sync={a} batch={bl}  sync_conf={conf}")
+
+            # DIAGNOSTIC THAT SEPARATES THE TWO HYPOTHESES. A custom_id mapping bug
+            # attaches labels to the wrong completions, so its mismatches are drawn at
+            # random from the population and their confidences look like the population's.
+            # Judge non-determinism at T=0 only flips items the judge was unsure about,
+            # so its mismatches concentrate at the bottom of the confidence distribution.
+            # Reporting the two distributions makes the distinction visible instead of
+            # leaving it to be argued.
+            if mismatches:
+                mc = [c for *_, c in mismatches if c is not None]
+                allc = [r.get("confidence") for r in existing.values()
+                        if r.get("confidence") is not None]
+                if mc and allc:
+                    allc_sorted = sorted(allc)
+                    def pct(x):
+                        return 100 * sum(1 for v in allc_sorted if v < x) / len(allc_sorted)
+                    print()
+                    print(f"  mean sync confidence, MISMATCHED items : "
+                          f"{sum(mc)/len(mc):.3f}")
+                    print(f"  mean sync confidence, all judged items : "
+                          f"{sum(allc)/len(allc):.3f}")
+                    print(f"  confidence percentiles of the mismatches: "
+                          f"{[f'{pct(c):.0f}th' for c in mc]}")
+                    print()
+                    if sum(mc)/len(mc) < sum(allc)/len(allc) - 0.05:
+                        print("  -> mismatches concentrate on LOW-confidence items. That is")
+                        print("     the signature of judge non-determinism at T=0, not of a")
+                        print("     mapping bug (which would draw mismatches at random and")
+                        print("     look like the population). CONFIRM with:")
+                        print("       python3 scripts/check_judge_determinism.py")
+                        print("     which re-judges via the SYNC path only and measures")
+                        print("     whether it agrees with itself. If sync-vs-sync")
+                        print("     instability is comparable, the batch route is fine.")
+                    else:
+                        print("  -> mismatches do NOT concentrate on low-confidence items.")
+                        print("     That is consistent with a MAPPING BUG. Do not submit.")
             if compared == 0:
                 print("  NOTHING COMPARED — run --verify only after some rows have been")
                 print("  judged synchronously, otherwise this proves nothing.")
@@ -375,9 +412,12 @@ def retrieve(P, client, verify=False):
                 print("  -> the custom_id round-trip is exact and the two routes agree.")
                 print("     Safe to --submit the full run.")
             else:
-                print("  -> MISMATCHES. Do NOT submit the full run. Either the id mapping")
-                print("     is wrong or the request is not identical to the sync call.")
-                print("     Note temperature is 0.0, so identical requests must agree.")
+                print("  -> MISMATCHES. Read the confidence diagnostic above before acting:")
+                print("     temperature 0.0 is greedy decoding but NOT a determinism")
+                print("     guarantee -- floating-point non-associativity means identical")
+                print("     requests can yield different tokens. So a few mismatches on")
+                print("     LOW-confidence items are expected and harmless; mismatches on")
+                print("     confident items are not.")
             print("=" * 74)
             print("\n--verify does not write to judgments.jsonl.")
             b["retrieved"] = True
