@@ -855,6 +855,66 @@ pre-registration.
   budget-dependent, so P̂ inherits a dependence on `max_tokens` under the primary
   treatment.
 
+- 2026-08-31 (**pre-label — the §11.3 sample is drawn, ZERO human labels exist, and no
+  agreement, κ or per-model gap has been computed under rubric v2**) — **§11.3's
+  validation sample is 300, balanced 150 per model, not §5.2's 150.** Two separate
+  reasons, one a bug and one a power argument.
+
+  **The bug.** `run_judge_validation.py`'s draw imposed a floor of 2 items on every
+  non-empty (category × model × judge-label) cell, so rare judge labels could not be
+  missed. Phase 0.5 had 3 categories → 24 cells → a floor of 48, comfortably inside the
+  150 target. TruthfulQA has 38 categories → **234 non-empty cells → a floor of 468**, so
+  the 150 target became unreachable, the reconciliation loop gave up, and the draw
+  silently returned **466 items**, 224 of them in cells of exactly 2. Three times the
+  hand-labelling, in cells too thin to estimate anything per-category. The floor did not
+  scale and the failure was silent. Fixed rather than worked around.
+
+  **The power argument, which is the substantive part.** §5.2's decision rule flags the τ
+  as confounded if per-model agreement differs by more than 5 percentage points. At
+  n = 150 (75 per model) and an agreement near 0.94, the standard error of that
+  *difference* is ≈ 3.9 pp — the threshold sits 1.3 SE away, so the rule is close to a
+  coin flip. Phase 0.5 duly landed at **5.3 pp**, i.e. on the line, and was reported as
+  "marginal" for exactly this reason. At n = 300 the SE falls to ≈ 2.7 pp and the
+  threshold moves to 1.8 SE. **This is a defect in §5.2 that was invisible until its
+  output had to gate a GO**, and it is named here rather than absorbed.
+
+  | n | per model | SE(diff) | 5 pp threshold |
+  |---|---|---|---|
+  | 150 (§5.2) | 75 | 3.9 pp | 1.3 SE |
+  | **300 (§11.3)** | **150** | **2.7 pp** | **1.8 SE** |
+  | 466 (the buggy draw) | 233 | 2.2 pp | 2.3 SE |
+
+  300 rather than 466 because 466 was never a design — it was the floor, and its extra
+  precision came from 234 cells of 2 that carry no per-category information.
+
+  **What the new allocation does, and why each choice follows §5.2's text.** Exactly
+  `per_model` items per model, because §5.2 names the per-model gap as "the number that
+  matters" and the SE of a difference is minimised at equal arms. Half of each model's
+  quota on judge-label 2, because §6.1 pins P̂ to `label == 2` and the 2-vs-not boundary
+  is the only quantity the estimator consumes. A floor of 20 on Partial and Refusal,
+  because they are ~4% and ~0.3% of the population and proportional allocation would draw
+  one refusal, leaving κ's off-diagonal inestimable. **Category remains a stratification
+  variable but not an allocation variable** — a cell's quota is spread over categories
+  proportional to that cell's own category sizes.
+
+  Consequence for the weights, stated because it is the one thing that could silently go
+  wrong: the inverse-probability weighting cell is now **(model, judge label)**, not
+  (category, model, judge label). Inclusion probability is constant across a (model,
+  label) cell by construction, so pop/sampled at that level is the exact IPW; weighting at
+  the finer level would drop the categories a plan allocates 0 to out of the population
+  the weights reconstruct. **Verified: the sample's weights sum to 32,640, the eligible
+  population, exactly.**
+
+  Coverage cost, disclosed: 35 of 38 categories appear in the sample. The three absent —
+  `Mandela Effect`, `Misconceptions: Topical`, `Statistics` — are the three smallest
+  (6, 4 and 5 prompts) and **all three are already excluded from the primary panel by the
+  §6.7 degenerate-stratum rule**, so no category that feeds the decision statistic is
+  unvalidated.
+
+  Phase 0.5's path is untouched: `--dataset phase05` still draws 150 on the §5.2
+  allocation, and re-scoring its existing 150 labels reproduces 0.966 / 0.913, gap 5.3 pp
+  and κ = 0.835 unchanged.
+
 - 2026-08-31 (**post-data — 0.5b judging complete, τ_corr already computed**) — **§11.4's
   floor check and §11.6's primary treatment were implemented in `analyze_phase05.py`. No
   threshold and no rule changed.** Logged here because the timing must not be discovered

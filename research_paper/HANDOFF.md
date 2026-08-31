@@ -118,14 +118,32 @@ a NO-GO — i.e. it gates real Phase 1 spend, which is exactly the case §5.2 wa
 for. Do it before taking the number to Sunny.
 
 ```bash
-python3 scripts/run_judge_validation.py --dataset phase05b --draw   # fresh stratified sample
 python3 scripts/run_judge_validation.py --dataset phase05b          # label by hand
 python3 scripts/run_judge_validation.py --dataset phase05b --score --rubric-version v2-2026-08-28
 ```
-`--dataset phase05b` is already wired (verified 2026-08-31): the draw uses
-`proportional_allocation()` over the 38 TruthfulQA categories — **150 items**, no
-hand-weighting, because rubric v2 applies CATEGORY 5 uniformly and no stratum is one the
-rubric is silent on. Writes to `results/phase05b/validation/`.
+
+**The sample is DRAWN — 300 items, `results/phase05b/validation/sample.jsonl` (2026-08-31).**
+Just run the middle command and start labelling; `--draw` is done and will refuse to
+redraw.
+
+**It is 300, not §5.2's 150, and that was a deliberate amendment logged before any label
+existed.** Two reasons, both in the spec's amendment log:
+ - **A bug.** The draw imposed a floor of 2 items per (category × model × label) cell.
+   That was written for Phase 0.5's 3 categories → 24 cells → floor 48. TruthfulQA has 38
+   categories → **234 cells → floor 468**, so the 150 target was unreachable and the draw
+   silently returned **466** items, 224 of them in cells of exactly 2. Fixed.
+ - **§5.2's own decision rule is underpowered at 150.** The 5 pp per-model gap threshold
+   sits 1.3 SE away at n=150 — a coin flip, which is why Phase 0.5 landed on the line at
+   5.3 pp. At 300 it is 1.8 SE. This defect was invisible until the output had to gate a
+   GO.
+
+The sample is balanced **150 per model** and **50/50 across the hallucination boundary**
+(150 of the 300 are judge-label 2), with Partial and Refusal floored at 20 so κ's
+off-diagonal is estimable. Category is a spreading variable, not an allocation variable.
+The IPW cell is now (model, label); verified the weights sum to 32,640, the eligible
+population, exactly. 35 of 38 categories appear — the 3 absent are the smallest and are
+already §6.7-excluded from the primary panel, so nothing that feeds the decision
+statistic is unvalidated.
 
 **The labels file is untracked and irreplaceable.** On 2026-08-27 a write-mode smoke test
 against the live file, followed by a cleanup delete, destroyed 8 real hand labels. Do not

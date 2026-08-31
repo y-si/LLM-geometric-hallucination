@@ -123,6 +123,92 @@ def configure(dataset):
     LABELS_PATH = OUT_DIR / "human_labels.jsonl"
 
 
+def label_balanced_plan(cells, per_model, min_rare, hallucination_share=0.5):
+    """§11.3 allocation for a 38-category benchmark. Returns {(cat, model, label): n}.
+
+    WHY NOT THE PER-CATEGORY ALLOCATION THIS REPLACES. `draw()` used to impose a floor
+    of 2 items on every non-empty (category x model x label) cell. That was written when
+    there were 3 categories and therefore 24 cells: a floor of 48, comfortably inside the
+    150 target. TruthfulQA has 38 categories and **234 non-empty cells**, so the floor is
+    468 and the 150 target is unreachable — the reconciliation loop gave up and silently
+    returned 466 items, 224 of them in cells of exactly 2. Three times the hand-labelling
+    for cells too thin to estimate anything per-category. The floor did not scale and the
+    failure was silent, which is the part worth remembering.
+
+    WHAT THIS DOES INSTEAD, and why each choice follows §5.2 rather than convenience:
+
+    - **Balanced per model.** §5.2's deliverable is the per-model agreement GAP and its
+      5-percentage-point threshold. The SE of a difference is minimised when the two arms
+      are equal, so both models get exactly `per_model` items regardless of their
+      population share.
+    - **Balanced across the hallucination boundary.** §6.1 pins P-hat to `label == 2`, so
+      agreement on the 2-vs-not boundary is the only quantity the estimator consumes.
+      Half of each model's quota goes to label 2 and half to everything else, which
+      buys precision exactly where it is spent.
+    - **A floor on the rare classes.** Partial and Refusal are ~4% and ~0.3% of the
+      population; proportional allocation would draw 1 refusal and kappa's off-diagonal
+      would be inestimable. They are oversampled to `min_rare`, capped at availability.
+    - **Category is a spreading variable, not an allocation variable.** Within a
+      (model, label) cell the quota is spread over categories proportional to the cell's
+      own category sizes, so inclusion probability is constant within the cell and the
+      inverse-probability weight is exactly pop(model, label) / n(model, label).
+
+    Deterministic — largest-remainder apportionment, no RNG.
+    """
+    def apportion(total, sizes):
+        """Largest-remainder split of `total` over {key: population}, capped at pop."""
+        live = {k: v for k, v in sizes.items() if v > 0}
+        if not live or total <= 0:
+            return {}
+        pool = sum(live.values())
+        exact = {k: total * v / pool for k, v in live.items()}
+        out = {k: min(live[k], int(v)) for k, v in exact.items()}
+        order = sorted(live, key=lambda k: (-(exact[k] - int(exact[k])), str(k)))
+        i = 0
+        while sum(out.values()) < total and i < len(order) * 64:
+            k = order[i % len(order)]
+            if out[k] < live[k]:
+                out[k] += 1
+            elif all(out[j] >= live[j] for j in live):
+                break
+            i += 1
+        return out
+
+    by_ml = defaultdict(int)
+    for (cat, model, label), items in cells.items():
+        by_ml[(model, label)] += len(items)
+
+    plan = {}
+    for model in sorted({m for _, m, _ in cells}):
+        labels = {lb: by_ml[(model, lb)] for lb in (0, 1, 2, 3)
+                  if by_ml.get((model, lb), 0) > 0}
+        quota = {}
+        n_hall = min(labels.get(LABEL_HALLUCINATION, 0),
+                     int(round(per_model * hallucination_share)))
+        if n_hall:
+            quota[LABEL_HALLUCINATION] = n_hall
+        rest = {lb: n for lb, n in labels.items() if lb != LABEL_HALLUCINATION}
+        budget = per_model - sum(quota.values())
+        # Rare classes first, up to the floor, then the remainder proportionally.
+        for lb in sorted(rest):
+            if lb in (LABEL_PARTIAL, LABEL_REFUSAL):
+                take = min(rest[lb], min_rare, budget - sum(
+                    v for k, v in quota.items() if k != LABEL_HALLUCINATION))
+                if take > 0:
+                    quota[lb] = take
+        left = per_model - sum(quota.values())
+        remaining = {lb: n - quota.get(lb, 0) for lb, n in rest.items()}
+        for lb, n in apportion(left, remaining).items():
+            quota[lb] = quota.get(lb, 0) + n
+
+        for lb, n in quota.items():
+            cat_sizes = {cat: len(v) for (cat, m, l), v in cells.items()
+                         if m == model and l == lb}
+            for cat, n_cat in apportion(n, cat_sizes).items():
+                plan[(cat, model, lb)] = n_cat
+    return plan
+
+
 def proportional_allocation(total=None):
     """Allocate `total` labels across the manifest's categories, proportional to size.
 
@@ -172,6 +258,14 @@ def proportional_allocation(total=None):
 
 SAMPLE_SEED = 20260826
 TOTAL_N = 150
+# §11.3 (amended 2026-08-31, pre-label) — 0.5b validates on 300, balanced 150 per model.
+# §5.2's own 5-pp gap rule is underpowered at 150: SE(diff) ~3.9 pp, so the threshold
+# sits 1.3 SE away and Phase 0.5 duly landed on it at 5.3 pp. 300 moves it to 1.8 SE.
+TOTAL_N_PHASE05B = 300
+MIN_RARE_LABEL = 20             # floor per rare (model x label) cell, §11.3
+LABEL_PARTIAL = 1
+LABEL_HALLUCINATION = 2
+LABEL_REFUSAL = 3
 PER_MODEL_GAP_THRESHOLD = 5.0   # percentage points, §5.2
 
 LABEL_NAMES = {0: "Correct", 1: "Partial", 2: "Hallucination", 3: "Refusal"}
@@ -264,8 +358,13 @@ def read_jsonl(path):
 # ── drawing the sample ────────────────────────────────────────────────────────
 
 
-def draw(allocation, seed, out_path):
-    """Stratified draw over (model x category x judge label), deterministic."""
+def draw(allocation, seed, out_path, plan_fn=None):
+    """Stratified draw over (model x category x judge label), deterministic.
+
+    `plan_fn(cells) -> {(cat, model, label): n}` overrides the per-category allocation
+    path. §11.3 uses it because the min-2-per-cell floor below does not scale past a
+    handful of categories — see `label_balanced_plan`.
+    """
     prompts = {r["uid"]: r for r in read_jsonl(MANIFEST_PATH)}
     primary = {u for u, r in prompts.items() if r.get("in_primary")}
     if not primary:
@@ -304,6 +403,27 @@ def draw(allocation, seed, out_path):
     population = {k: len(v) for k, v in cells.items()}
     picked = []
 
+    if plan_fn is not None:
+        # §11.3 path. The weighting cell is (model, label), not (category, model,
+        # label): the plan spreads a cell's quota over categories proportional to that
+        # cell's own category sizes, so inclusion probability is constant across the
+        # (model, label) cell and pop/sampled at that level is the exact IPW. Weighting
+        # at the finer level would be wrong, because categories the plan happens to
+        # allocate 0 to would drop out of the population the weights reconstruct.
+        plan = plan_fn(cells)
+        ml_pop = defaultdict(int)
+        ml_n = defaultdict(int)
+        for (cat, model, label), items in cells.items():
+            ml_pop[(model, label)] += len(items)
+        for (cat, model, label), n in plan.items():
+            ml_n[(model, label)] += n
+        for k in sorted(plan):
+            for judgment, comp in rng.sample(cells[k], plan[k]):
+                picked.append(_sample_row(judgment, comp, k, prompts,
+                                          ml_pop[(k[1], k[2])], ml_n[(k[1], k[2])]))
+        _write_sample(picked, out_path, population)
+        return
+
     for cat, n_target in sorted(allocation.items()):
         cat_cells = {k: v for k, v in cells.items() if k[0] == cat}
         if not cat_cells:
@@ -337,27 +457,37 @@ def draw(allocation, seed, out_path):
 
         for k, n in sorted(alloc.items()):
             for judgment, comp in rng.sample(cat_cells[k], n):
-                picked.append({
-                    # blinded fields — safe for the labelling UI
-                    "item_id": f"{judgment['uid']}|{judgment['model']}|{judgment['sample_idx']}",
-                    "uid": judgment["uid"],
-                    "model": judgment["model"],
-                    "sample_idx": judgment["sample_idx"],
-                    "category": k[0],
-                    "question": comp.get("question") or prompts[judgment["uid"]]["question"],
-                    "ground_truth": prompts[judgment["uid"]].get("ground_truth", ""),
-                    "completion": comp["completion"],
-                    "output_tokens": comp.get("output_tokens"),
-                    "finish_reason": comp.get("finish_reason"),
-                    # NOT shown while labelling — used only by --score
-                    "judge_label": k[2],
-                    "judge_confidence": judgment.get("confidence"),
-                    # inverse-probability weight, so --score can recover population
-                    # quantities from this deliberately non-representative sample
-                    "cell_population": population[k],
-                    "cell_sampled": n,
-                })
+                picked.append(_sample_row(judgment, comp, k, prompts,
+                                          population[k], n))
 
+    _write_sample(picked, out_path, population)
+
+
+def _sample_row(judgment, comp, cell, prompts, cell_population, cell_sampled):
+    return {
+        # blinded fields — safe for the labelling UI
+        "item_id": f"{judgment['uid']}|{judgment['model']}|{judgment['sample_idx']}",
+        "uid": judgment["uid"],
+        "model": judgment["model"],
+        "sample_idx": judgment["sample_idx"],
+        "category": cell[0],
+        "question": comp.get("question") or prompts[judgment["uid"]]["question"],
+        "ground_truth": prompts[judgment["uid"]].get("ground_truth", ""),
+        "completion": comp["completion"],
+        "output_tokens": comp.get("output_tokens"),
+        "finish_reason": comp.get("finish_reason"),
+        # NOT shown while labelling — used only by --score
+        "judge_label": cell[2],
+        "judge_confidence": judgment.get("confidence"),
+        # inverse-probability weight, so --score can recover population quantities
+        # from this deliberately non-representative sample
+        "cell_population": cell_population,
+        "cell_sampled": cell_sampled,
+    }
+
+
+def _write_sample(picked, out_path, population):
+    rng = random.Random(SAMPLE_SEED)
     rng.shuffle(picked)   # present in mixed order so you cannot pattern-match a cell
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -367,10 +497,19 @@ def draw(allocation, seed, out_path):
 
     print(f"drew {len(picked)} items -> {out_path.relative_to(BASE_DIR)}")
     print()
-    print("Allocation actually drawn (category x model x judge label):")
+    print("Per model x judge label (the cells §5.2's decision rule is computed over):")
+    ml = Counter((r["model"], r["judge_label"]) for r in picked)
+    for m in sorted({r["model"] for r in picked}):
+        tot = sum(v for (mm, _), v in ml.items() if mm == m)
+        parts = "  ".join(f"{LABEL_NAMES[lb]}={ml[(m, lb)]}"
+                          for lb in sorted(LABEL_NAMES) if ml.get((m, lb)))
+        print(f"  {m:22s} n={tot:4d}   {parts}")
+    print()
+    print("Category spread (a spreading variable, not an allocation variable):")
     by_cat = Counter(r["category"] for r in picked)
-    for cat in sorted(by_cat):
-        print(f"  {cat:28s} {by_cat[cat]:3d}")
+    print(f"  {len(by_cat)} categories, min {min(by_cat.values())}, "
+          f"max {max(by_cat.values())}, median "
+          f"{sorted(by_cat.values())[len(by_cat)//2]}")
     print()
     print("  judge label distribution in the sample (deliberately NOT population "
           "proportions —")
@@ -1016,6 +1155,9 @@ def main():
                     help="phase05 = V3 pilot; phase05b = TruthfulQA replication (§11). "
                          "Reads results/<dataset>/ and writes its validation/ subdir.")
     ap.add_argument("--seed", type=int, default=SAMPLE_SEED)
+    ap.add_argument("--total", type=int, default=None, metavar="N",
+                    help="sample size for --draw. Defaults to 150 (§5.2) for phase05 "
+                         "and 300 (§11.3, amended 2026-08-31) for phase05b.")
     ap.add_argument("--out-dir", type=Path, default=None,
                     help="defaults to results/<dataset>/validation")
     args = ap.parse_args()
@@ -1024,6 +1166,8 @@ def main():
     configure(args.dataset)
     if args.out_dir is None:
         args.out_dir = OUT_DIR
+    if args.total is None:
+        args.total = TOTAL_N_PHASE05B if args.dataset == "phase05b" else TOTAL_N
 
     sample_path = args.out_dir / "sample.jsonl"
     labels_path = args.out_dir / "human_labels.jsonl"
@@ -1051,19 +1195,25 @@ def main():
             sys.exit(f"{sample_path} already exists. Redrawing would invalidate any "
                      "labels already collected against the old sample. Delete it "
                      "deliberately if that is what you want.")
+        plan_fn = None
         if args.dataset == "phase05b":
-            # 38 categories, rubric v2 applies CATEGORY 5 uniformly, so there is no
-            # stratum where the rubric is silent and no reason to hand-weight one.
-            alloc = proportional_allocation()
-            print(f"allocation: proportional over {len(alloc)} TruthfulQA categories, "
-                  f"{sum(alloc.values())} labels")
-            for c, n in sorted(alloc.items(), key=lambda x: (-x[1], x[0])):
-                print(f"    {n:3d}  {c}")
+            # §11.3 (amended 2026-08-31, pre-label). 38 categories, rubric v2 applies
+            # CATEGORY 5 uniformly, so no stratum is one the rubric is silent on and
+            # there is no reason to hand-weight one. Category stays as a spreading
+            # variable; the allocation is balanced per model and across the
+            # hallucination boundary, which is what §5.2's decision rule consumes.
+            alloc = proportional_allocation(args.total)
+            per_model = args.total // 2
+            plan_fn = (lambda cells: label_balanced_plan(
+                cells, per_model=per_model, min_rare=MIN_RARE_LABEL))
+            print(f"allocation: {args.total} items, {per_model} per model, balanced "
+                  f"50/50 across the hallucination boundary, rare labels floored at "
+                  f"{MIN_RARE_LABEL}; category is a spreading variable")
         else:
             alloc = ALLOCATION_ESTIMATOR if args.skip_degenerate else ALLOCATION_SPEC
             print(f"allocation: {alloc}"
                   f"{'  (--skip-degenerate: departs from the §5.2 suggestion)' if args.skip_degenerate else '  (§5.2 suggested)'}")
-        draw(alloc, args.seed, sample_path)
+        draw(alloc, args.seed, sample_path, plan_fn=plan_fn)
     elif args.score:
         score(sample_path, labels_path, args.out_dir,
               only_rubric_version=args.rubric_version)
