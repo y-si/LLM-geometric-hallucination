@@ -1199,6 +1199,10 @@ def show_recent(labels_path, sample_path, n, around=None):
     print("To correct one:")
     print("  python3 scripts/run_judge_validation.py --fix-q <question_number> <0|1|2|3>")
     print("  python3 scripts/run_judge_validation.py --fix last <0|1|2|3>")
+    print()
+    print("To flag one's GROUND TRUTH as wrong without touching the label (§11.3):")
+    print("  python3 scripts/run_judge_validation.py --flag-gt <item_id>")
+    print("  python3 scripts/run_judge_validation.py --flag-gt last")
 
 
 def resolve_question(labels_path, qnum):
@@ -1209,6 +1213,41 @@ def resolve_question(labels_path, qnum):
                  "so far.")
     return order[qnum - 1]
 
+
+
+def flag_gt(labels_path, item_id, note=None, clear=False):
+    """Retroactively set (or clear) the §11.3 ground-truth-doubt flag on a label.
+
+    Exists because the flag was added after labelling had already started, and there is
+    no other way to attach it to an item already done: `--fix` only supersedes a LABEL
+    and refuses a no-op change. Without this, items labelled before the flag existed
+    could never contribute to the ground-truth error rate, and the honest alternative
+    was re-labelling work that is otherwise perfectly valid.
+
+    Appends, like everything else here; score() is last-write-wins per item_id and the
+    original record stays on disk as the audit trail. The human_label is carried over
+    unchanged -- this touches ONLY the flag, so it cannot disturb the agreement
+    statistic.
+    """
+    rows = read_jsonl(labels_path)
+    if not rows:
+        sys.exit(f"no labels at {labels_path}")
+    target = rows[-1] if item_id == "last" else next(
+        (r for r in reversed(rows) if r["item_id"] == item_id), None)
+    if target is None:
+        sys.exit(f"no label recorded for item_id {item_id!r}. Run --show-recent 10 "
+                 "to see recent item_ids.")
+    rec = {k: v for k, v in target.items()}
+    rec["gt_doubt"] = not clear
+    if note:
+        rec["note"] = note
+    line = json.dumps(rec, sort_keys=True) + "\n"
+    for path in (labels_path, labels_path.with_suffix(".backup.jsonl")):
+        with open(path, "a") as f:
+            f.write(line)
+    print(f"{'cleared' if clear else 'set'} ground-truth doubt on {rec['item_id']} "
+          f"(label {rec['human_label']} = {LABEL_NAMES[int(rec['human_label'])]}, "
+          "unchanged)")
 
 
 def fix_label(labels_path, item_id, new_label, note=None):
@@ -1285,6 +1324,12 @@ def main():
                          "Preferred over --fix: question number is resolved through "
                          "unique-item order, so it stays correct after earlier "
                          "corrections have shifted raw record positions.")
+    ap.add_argument("--flag-gt", default=None, metavar="ITEM_ID",
+                    help="retroactively flag an already-labelled item's GROUND TRUTH "
+                         "as doubtful (§11.3). Use 'last' for the most recent. The "
+                         "label is untouched. --clear-gt to unset.")
+    ap.add_argument("--clear-gt", action="store_true",
+                    help="with --flag-gt, unset the flag instead of setting it")
     ap.add_argument("--fix-note", default=None,
                     help="optional note to attach to a --fix correction")
     ap.add_argument("--dataset", choices=sorted(DATASETS), default="phase05",
@@ -1326,6 +1371,8 @@ def main():
         if lab not in ("0", "1", "2", "3"):
             sys.exit(f"label must be 0, 1, 2 or 3 (got {lab!r})")
         fix_label(labels_path, item_id, int(lab), args.fix_note)
+    elif args.flag_gt:
+        flag_gt(labels_path, args.flag_gt, args.fix_note, clear=args.clear_gt)
     elif args.draw:
         if sample_path.exists():
             sys.exit(f"{sample_path} already exists. Redrawing would invalidate any "
