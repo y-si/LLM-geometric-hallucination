@@ -328,6 +328,17 @@ THE JUDGE'S RUBRIC — apply these rules, not your own private standard.
 """
 
 
+def _wilson(k, n, z=1.959963984540054):
+    """Wilson score interval. Local copy — scipy is not installed on this machine."""
+    if n == 0:
+        return [float("nan"), float("nan")]
+    ph = k / n
+    d = 1 + z * z / n
+    c = ph + z * z / (2 * n)
+    h = z * math.sqrt(ph * (1 - ph) / n + z * z / (4 * n * n))
+    return [max(0.0, (c - h) / d), min(1.0, (c + h) / d)]
+
+
 def show_rubric():
     """Print the rubric the judge is ACTUALLY sent, verbatim.
 
@@ -581,6 +592,15 @@ def label_session(sample_path, labels_path):
     print("         m = show the full completion    r = show the rubric")
     print("         s = skip (stays in the queue)   q = save and quit")
     print("         u = undo the label you just entered and re-do that item")
+    print("         g = flag the GROUND TRUTH as wrong (toggle, then still label)")
+    print()
+    print("  On `g`: label the item the way the rubric says — the reference lists are")
+    print("  authoritative even when you disagree with them, because this measures")
+    print("  whether the JUDGE read the dataset the way you do, not whether the dataset")
+    print("  is right. Use `g` to record that you think the dataset itself is wrong.")
+    print("  That is a separate, also-important measurement: a wrong reference answer")
+    print("  that both models contradict correctly inflates tau, so --score turns these")
+    print("  flags into a rate and a list of prompts to drop and refit.")
     print()
     print("  Progress is saved after every single label. Quit whenever; re-run to")
     print("  pick up exactly where you left off.")
@@ -603,6 +623,7 @@ def label_session(sample_path, labels_path):
         row = redo.pop() if redo else queue.pop(0)
         i += 1
         show_all = False
+        gt_doubt = False
         while True:
             print()
             print("=" * 92)
@@ -651,7 +672,29 @@ def label_session(sample_path, labels_path):
                       "models.")
             print("  " + "─" * 90)
             print()
-            choice = ask("  label [0/1/2/3]  or  m / r / s / u / q  >  ")
+            if gt_doubt:
+                print("  [g] GROUND TRUTH FLAGGED as doubtful for this item. Press g "
+                      "again to clear.")
+                print()
+            choice = ask("  label [0/1/2/3]  or  g / m / r / s / u / q  >  ")
+
+            if choice == "g":
+                # §11.3 addition. Ground-truth error is NOT neutral for tau: if a
+                # reference answer is wrong and BOTH models give the truly-correct
+                # answer, both are scored as hallucinating on that prompt for a reason
+                # unrelated to difficulty — a shared component that inflates
+                # tau_cross. V3's hand-labelling found ~12 such items in 150 (~8%) and
+                # that only surfaced as anecdote. Flagging it here turns 300 labelled
+                # items into an estimated RATE on a sample drawn from the eligible
+                # population, plus a drop-these-and-recompute sensitivity.
+                #
+                # Deliberately SEPARATE from the label. You still label the item the
+                # authoritative-lists way, exactly as the judge had to; the flag records
+                # your disagreement with the dataset WITHOUT contaminating the
+                # agreement statistic, which measures judge-vs-human on identical
+                # rules and would be corrupted by a private standard.
+                gt_doubt = not gt_doubt
+                continue
 
             if choice == "u":
                 if last_item is None:
@@ -687,6 +730,11 @@ def label_session(sample_path, labels_path):
                        "model": row["model"], "sample_idx": row["sample_idx"],
                        "category": row["category"], "human_label": int(choice),
                        "rubric_version": JUDGE_RUBRIC_VERSION}
+                # Always written, even when false, so a record that PREDATES this flag
+                # (no key at all) is distinguishable from one where you looked and did
+                # not flag. Without that the rate's denominator silently includes items
+                # that never had the option, biasing it downward.
+                rec["gt_doubt"] = bool(gt_doubt)
                 if note:
                     rec["note"] = note
                 line = json.dumps(rec, sort_keys=True) + "\n"
@@ -796,7 +844,10 @@ def score(sample_path, labels_path, out_dir, only_rubric_version=None):
                      "category": s["category"], "human": int(h["human_label"]),
                      "judge": int(s["judge_label"]), "weight": w,
                      "malformed": bool(PLACEHOLDER.search(s.get("question", ""))),
-                     "note": h.get("note", "")})
+                     "note": h.get("note", ""),
+                     "uid": s["uid"],
+                     "gt_doubt": bool(h.get("gt_doubt")),
+                     "gt_doubt_asked": ("gt_doubt" in h)})
 
     n = len(rows)
     coverage = n / len(sample) if sample else 0.0
@@ -882,6 +933,35 @@ def score(sample_path, labels_path, out_dir, only_rubric_version=None):
     R["confusion_human_rows_judge_cols"] = {
         f"{h}->{j}": c for (h, j), c in sorted(conf.items())}
     R["notes"] = [r for r in rows if r["note"]]
+
+    # §11.3 addition — ground-truth doubt as a RATE, not anecdote. Weighted with the
+    # same IPW as everything else, because the sample deliberately over-represents rare
+    # judge labels and the unweighted fraction would not estimate the population rate.
+    # Reported with the affected uids so the tau sensitivity (drop these prompts, refit)
+    # is a one-liner rather than a re-read of the notes.
+    # Denominator is items where the flag EXISTED, not every label. Records written
+    # before the flag was added carry no `gt_doubt` key; counting them as "not flagged"
+    # would bias the rate downward by however many predate it.
+    asked = [r for r in rows if r["gt_doubt_asked"]]
+    flagged = [r for r in asked if r["gt_doubt"]]
+    wsum = sum(r["weight"] for r in asked)
+    R["ground_truth_doubt"] = {
+        "n_flagged": len(flagged),
+        "n_labelled": len(asked),
+        "n_predating_flag": len(rows) - len(asked),
+        "raw_rate": (len(flagged) / len(asked)) if asked else float("nan"),
+        "weighted_rate": ((sum(r["weight"] for r in flagged) / wsum)
+                          if wsum else float("nan")),
+        "wilson95_raw": _wilson(len(flagged), len(asked)),
+        "by_category": dict(Counter(r["category"] for r in flagged)),
+        "uids": sorted({r["uid"] for r in flagged}),
+        "note": "Flagged by the human as a reference answer they judge WRONG. The "
+                "label itself was still made the authoritative-lists way, so this "
+                "does not touch the agreement statistic. Ground-truth error is not "
+                "neutral for tau: a wrong best-answer on which BOTH models give the "
+                "truly-correct answer scores both as hallucinating for a reason "
+                "unrelated to difficulty, which INFLATES tau_cross.",
+    }
 
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "validation.json", "w") as f:
@@ -971,6 +1051,62 @@ def render(R):
         flag = "" if h == j else "  ← disagreement"
         w(f"| {h} {LABEL_NAMES[int(h)]} | {j} {LABEL_NAMES[int(j)]} | {v:.0f}{flag} |")
     w("")
+    gd = R.get("ground_truth_doubt")
+    if gd and (gd["n_labelled"] or gd["n_predating_flag"]):
+        w("## Ground-truth doubt (§11.3 addition, flagged with `g` while labelling)")
+        w("")
+        w("**This does NOT affect the agreement statistic above.** Every item was still")
+        w("labelled the authoritative-lists way, exactly as the judge had to. The flag")
+        w("records where you judge the *dataset* wrong, which is a different question")
+        w("from whether the judge read the dataset correctly.")
+        w("")
+        w("**Why it is not a neutral nuisance either.** A wrong reference answer on")
+        w("which BOTH models give the truly-correct answer scores both as hallucinating,")
+        w("for a reason unrelated to prompt difficulty. That is a shared component")
+        w("injected into both P-hats, and it **inflates tau_cross** — the same shape as")
+        w("the shared-judge artifact §6.2b measures. So ground-truth error is a")
+        w("candidate explanation for a GO, not only a threat to absolute rates.")
+        w("")
+        if not gd["n_labelled"]:
+            w(f"**Not measured on this run.** All {gd['n_predating_flag']} labels were")
+            w("made before the flag existed, so there is no denominator. The rate simply")
+            w("cannot be computed from these labels.")
+            w("")
+        else:
+            w("| Quantity | Value |")
+            w("|---|---|")
+            w(f"| Items flagged | {gd['n_flagged']} of {gd['n_labelled']} |")
+            if gd["n_predating_flag"]:
+                w(f"| Labels predating the flag (excluded from the rate) | "
+                  f"{gd['n_predating_flag']} |")
+            w(f"| Raw rate | {gd['raw_rate']*100:.1f}% |")
+            w(f"| Wilson 95% (raw) | [{gd['wilson95_raw'][0]*100:.1f}%, "
+              f"{gd['wilson95_raw'][1]*100:.1f}%] |")
+            w(f"| **IPW-weighted rate** (estimates the population) | "
+              f"**{gd['weighted_rate']*100:.1f}%** |")
+            w("")
+            if gd["n_flagged"]:
+                w("Affected prompts, for the drop-and-refit sensitivity:")
+                w("")
+                w("```")
+                for u in gd["uids"]:
+                    w(u)
+                w("```")
+                w("")
+                w("By category: " + ", ".join(
+                    f"{c} ({n})" for c, n in sorted(gd["by_category"].items(),
+                                                    key=lambda kv: (-kv[1], kv[0]))))
+                w("")
+                w("For comparison: V3 hand-labelling found ~12 ground-truth errors in")
+                w("150 items (~8%), which is why V3's absolute rates are unquotable.")
+                w("TruthfulQA was chosen because its reference answers are *sourced*")
+                w("rather than asserted — this is the check on whether that held.")
+            else:
+                w("**Nothing flagged.** You judged no reference answer wrong on this")
+                w("sample. That is a positive result about TruthfulQA and belongs in the")
+                w("paper as a measured quantity rather than an assumption — the V3")
+                w("comparison is ~8% on 150 items.")
+            w("")
     if R["notes"]:
         w("## Your notes")
         w("")

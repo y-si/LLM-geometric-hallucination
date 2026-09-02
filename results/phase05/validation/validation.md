@@ -65,6 +65,24 @@ actually built from, and therefore the more load-bearing of the two.
 | 2 Hallucination | 0 Correct | 3  ← disagreement |
 | 2 Hallucination | 1 Partial | 1  ← disagreement |
 
+## Ground-truth doubt (§11.3 addition, flagged with `g` while labelling)
+
+**This does NOT affect the agreement statistic above.** Every item was still
+labelled the authoritative-lists way, exactly as the judge had to. The flag
+records where you judge the *dataset* wrong, which is a different question
+from whether the judge read the dataset correctly.
+
+**Why it is not a neutral nuisance either.** A wrong reference answer on
+which BOTH models give the truly-correct answer scores both as hallucinating,
+for a reason unrelated to prompt difficulty. That is a shared component
+injected into both P-hats, and it **inflates tau_cross** — the same shape as
+the shared-judge artifact §6.2b measures. So ground-truth error is a
+candidate explanation for a GO, not only a threat to absolute rates.
+
+**Not measured on this run.** All 150 labels were
+made before the flag existed, so there is no denominator. The rate simply
+cannot be computed from these labels.
+
 ## Your notes
 
 - `borderline_plausible_fake` human=0 judge=0 — ground truth seems a little off, added an umlaut to the name
