@@ -147,7 +147,30 @@ statistic is unvalidated.
 
 **The labels file is untracked and irreplaceable.** On 2026-08-27 a write-mode smoke test
 against the live file, followed by a cleanup delete, destroyed 8 real hand labels. Do not
-point a test at `human_labels.jsonl`.
+point a test at `human_labels.jsonl`. The script now refuses non-TTY stdin for this
+reason.
+
+**PROGRESS: 70 of 300 labelled as of 2026-09-04.** 6 of 61 asked items carry a
+`gt_doubt` flag. Findings from those 70 are written up in `CONTEXT.md` -> "TruthfulQA's
+ground truth mostly held" — short version: flatly-wrong ground truth is ~2-3% (better
+than V3's ~8%), but two *other* defects surfaced, both model-correlated and both
+paper-relevant (answer space too narrow for nuanced answers; TruthfulQA is temporally
+stale). Decision taken 2026-09-04: **no fourth amendment** — keep labelling under the
+pre-registered rule, capture the distinctions by note convention (`gt-wrong` /
+`gt-stale` / `answer-space` / `my-label-unsure`).
+
+**DO NOT RUN `--score` UNTIL ALL 300 ARE DONE.** It prints the per-model agreement gap.
+Seeing it contaminates every remaining label and the run cannot then be finished cleanly.
+It is a one-way door. If you want the ground-truth-doubt rate before then, it is
+computable from `human_labels.jsonl` alone without touching the judge's labels.
+
+**One decision deferred to the end, and it must be made BEFORE `--score`:** whether to
+run a human split-half reliability check (~40 blind re-labels, after a few days so memory
+decays). It answers an identification problem §5.2 does not: a 5 pp gap is currently
+consistent with asymmetric *judge* error and equally with asymmetric *human* noise, and
+nothing in the design distinguishes them. It needs no amendment — report it as a labelled
+**NOT PRE-REGISTERED** diagnostic, the same pattern as the §6.5.1 null band, with §5.2's
+raw 5 pp verdict left primary and binding.
 
 Keep in view while reading the κ: the judge disagrees with *itself* at T=0 on 2.5–7.5%
 of completions (`CONTEXT.md` → "Judge label instability at temperature 0"). The §6.2

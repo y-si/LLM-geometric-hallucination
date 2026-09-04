@@ -352,6 +352,62 @@ a small number of label disagreements between two judging routes as evidence tha
 routes differ — establish the self-consistency noise floor first
 (`scripts/check_judge_determinism.py`).
 
+### TruthfulQA's ground truth mostly held — but two other defects surfaced instead
+
+**From §11.3 hand-labelling, first 70 items (2026-09-04). Both findings are paper
+material; neither was anticipated in the spec.**
+
+The worry going in was ground-truth error, because V3's was an unverified assertion and
+hand-labelling found ~12 errors in 150 items (~8%). On 0.5b, 6 of the first 61 items were
+flagged as doubtful — 9.8%, apparently *worse*. **Inspecting them shows that is not a
+ground-truth error rate.** They are three different things:
+
+| kind | n | what it is |
+|---|---|---|
+| reference answer **flatly wrong** | 1–2 | `truthfulqa_0386` (clear), `truthfulqa_0187` (arguable) |
+| **answer space too narrow** | 3–4 | GT correct but no slot for a correct-but-differently-framed answer |
+| **labeller's own uncertainty** | 1 | `truthfulqa_0658` — GT is sound, the doubt is about the label |
+
+So **flatly-wrong is ~2–3%, better than V3's ~8%.** TruthfulQA's sourced reference
+answers largely did their job, which is what §4.0 selected it for. Read the raw flag rate
+as an upper bound, not an estimate: the §11.3 sample deliberately over-samples
+judge-label-2, which is exactly where a wrong reference answer pushes an item.
+
+**Finding 1 — the answer space is too narrow, and it penalises the verbose model.**
+Every answer-space flag landed on `gpt-oss-120b`. The pattern: a terse answer key has no
+entry for a nuanced answer that is *epistemically better* than the listed one. On
+`truthfulqa_0049` ("born under Saturn") a model that describes the astrological tradition
+while disclaiming its predictive validity scores worse than one that says "nothing",
+because only the latter matches. On `truthfulqa_0097` ("child raised by wolves") "no
+well-verified case exists" is defensible but contradicts the best answer.
+
+This is **not** ground-truth error and **not** judge error. It is a benchmark-design
+limitation that is **model-correlated** — gpt-oss writes a median 1,349 tokens against
+Llama's 315, so it hits the edges of the answer key far more often. Nothing in the spec
+measures it, and it is a live alternative explanation for any per-model agreement gap
+§5.2 reports. Write it up as a limitation regardless of what the gap comes out at.
+
+**Finding 2 — TruthfulQA is temporally stale, and the staleness is model-correlated.**
+`truthfulqa_0386` asks which European countries have legal weed. The reference answer,
+from 2021, is "illegal in all European countries except Georgia." **Germany legalised
+recreational cannabis in April 2024; Malta in 2021; Luxembourg in 2023.** So the
+reference answer is now wrong, and a model is penalised **for having more current
+knowledge than the benchmark.**
+
+That generalises: any 2021 benchmark scored in 2026 penalises recency, and if the
+evaluated models have different knowledge cutoffs the penalty is **asymmetric between
+them** — a confound on τ itself, not merely on absolute rates. This is a clean, citable
+methodological point about using TruthfulQA today and it appears nowhere in
+`PHASE_0.5_SPEC.md`. **Verify the cannabis dates against a source before publishing.**
+
+**Consequence for §11.3's design, decided 2026-09-04:** keep labelling under the
+pre-registered rule (no fourth amendment). The four kinds are captured by *note
+convention* — `gt-wrong` / `gt-stale` / `answer-space` / `my-label-unsure` — which is not
+a design change, since `--score` already reports notes verbatim. A human split-half
+reliability check (~40 blind re-labels) stays available as a labelled
+**NOT PRE-REGISTERED** diagnostic, to be decided after 300 items and **before** `--score`
+is ever run. See [[preregistration-discipline]].
+
 ### Phase 0.5b returned GO — and the pair of runs is a stronger result than either alone
 
 **Established 2026-08-31 on complete 0.5b data. Pre-registered §7 rule, unchanged
