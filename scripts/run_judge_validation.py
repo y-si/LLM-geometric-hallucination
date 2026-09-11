@@ -60,6 +60,7 @@ import random
 import re
 import sys
 from collections import Counter, defaultdict
+import pathlib
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
@@ -357,6 +358,13 @@ def show_rubric():
     print("anything you remember from an earlier session, the prompt is correct and")
     print("your memory is of a superseded rubric version.")
     print()
+
+
+def rel(path):
+    try:
+        return str(pathlib.Path(path).relative_to(BASE_DIR))
+    except ValueError:
+        return str(path)
 
 
 def read_jsonl(path):
@@ -1547,6 +1555,20 @@ def main():
         args.out_dir = OUT_DIR
     if args.total is None:
         args.total = TOTAL_N_PHASE05B if args.dataset == "phase05b" else TOTAL_N
+
+    # --dataset defaults to phase05, which is the SUPERSEDED run. Omitting the flag
+    # silently scores the wrong validation set -- it happened on 2026-09-11, and the
+    # only clue was a rubric-version banner that reads as a caveat rather than an
+    # error. Say the dataset out loud, and if the other one has more labels, say so.
+    print(f"dataset: {args.dataset}   ->  {rel(args.out_dir)}")
+    other = "phase05b" if args.dataset == "phase05" else "phase05"
+    mine = len(read_jsonl(args.out_dir / "human_labels.jsonl"))
+    theirs = len(read_jsonl(BASE_DIR / "results" / other / "validation"
+                            / "human_labels.jsonl"))
+    if theirs > mine:
+        print(f"  !! {other} has {theirs} label records against {args.dataset}'s "
+              f"{mine}. Did you mean --dataset {other} ?")
+    print()
 
     sample_path = args.out_dir / "sample.jsonl"
     labels_path = args.out_dir / "human_labels.jsonl"
