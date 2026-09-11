@@ -762,6 +762,193 @@ def label_session(sample_path, labels_path):
 # ── scoring ───────────────────────────────────────────────────────────────────
 
 
+# ── §11.3 self-consistency re-label (NOT PRE-REGISTERED, added 2026-09-11) ────────
+
+RELABEL_SAMPLE = "relabel_sample.jsonl"
+RELABEL_LABELS = "relabel_labels.jsonl"
+
+
+def relabel_draw(sample_path, labels_path, out_dir, n, seed):
+    """Draw a blind re-label set to measure the LABELLER's own consistency.
+
+    WHY THIS EXISTS. §6.2 measures the judge's reliability (tau_self, a split-half over
+    its 20 samples per prompt) and disattenuates tau_cross by it. The human rater gets no
+    equivalent, so §5.2's 5-percentage-point per-model gap is unidentified: it is equally
+    consistent with asymmetric JUDGE error and asymmetric HUMAN noise. This measures the
+    second so the first can be read.
+
+    WHY IT IS STRATIFIED EARLY vs LATE, which is the whole design. Labelling positions
+    1-75 were done before three interpretive rules were settled (fiction-frame -> 0,
+    "I have no comment" -> 0, off-list confident fabrication -> 2), and the label
+    marginals shifted hard across that boundary -- Correct 33% -> 61%, roughly 4 SE on a
+    randomly shuffled sample. So re-labelling EARLY items alone conflates two different
+    quantities:
+
+        early self-agreement  =  noise + drift
+        late  self-agreement  =  noise
+        difference            =  drift
+
+    Without the late baseline there is nothing to subtract and the number is
+    uninterpretable. Half the draw therefore comes from the settled block.
+
+    The late half deliberately EXCLUDES the most recently labelled items, because recall
+    inflates self-agreement and the freshest items are the most memorable.
+
+    Blind by construction: `label_session` renders only the judge-blinded fields from the
+    sample row and never reads `human_labels.jsonl`, so the re-label sees the same screen
+    the original did. Writes to a SEPARATE labels file -- appending to the primary one
+    would supersede the originals, since score() is last-write-wins, and destroy the
+    thing being measured.
+    """
+    order, latest, _ = labelled_in_order(labels_path)
+    if len(order) < 150:
+        sys.exit(f"only {len(order)} items labelled. Finish the 300 first: a re-label "
+                 "drawn mid-run would mix a settled standard with an unsettled one.")
+    by_id = {r["item_id"]: r for r in read_jsonl(sample_path)}
+
+    EARLY_END = 75          # rules settled around position 76-110
+    LATE_START = 110
+    LATE_END = max(LATE_START + 1, len(order) - 45)   # skip the freshest ~45
+    blocks = {"early": order[:EARLY_END], "late": order[LATE_START:LATE_END]}
+
+    rng = random.Random(seed)
+    picked = []
+    for stratum, ids in blocks.items():
+        want = n // 2
+        # Stratify by model so per-model consistency is at least estimable -- thin at
+        # this n, which is stated in the report rather than left to be discovered.
+        per_model = {}
+        for iid in ids:
+            per_model.setdefault(latest[iid]["model"], []).append(iid)
+        take = []
+        models = sorted(per_model)
+        for j, m in enumerate(models):
+            k = want // len(models) + (1 if j < want % len(models) else 0)
+            pool = sorted(per_model[m])
+            rng.shuffle(pool)
+            take += pool[:k]
+        for iid in take:
+            row = dict(by_id[iid])
+            row["relabel_stratum"] = stratum
+            row["original_position"] = order.index(iid) + 1
+            picked.append(row)
+
+    rng.shuffle(picked)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / RELABEL_SAMPLE
+    if path.exists():
+        sys.exit(f"{path} already exists. Redrawing would invalidate any re-labels "
+                 "already collected. Delete it deliberately if that is what you want.")
+    with open(path, "w") as f:
+        for r in picked:
+            f.write(json.dumps(r, sort_keys=True) + "\n")
+
+    print(f"drew {len(picked)} items for blind re-labelling -> "
+          f"{path.relative_to(BASE_DIR)}")
+    print()
+    for stratum in ("early", "late"):
+        rs = [r for r in picked if r["relabel_stratum"] == stratum]
+        pos = sorted(r["original_position"] for r in rs)
+        mods = Counter(r["model"] for r in rs)
+        print(f"  {stratum:6s} n={len(rs):3d}  original positions "
+              f"{pos[0]}-{pos[-1]}   " + "  ".join(f"{m.split('-')[0]}={c}"
+                                                   for m, c in sorted(mods.items())))
+    print()
+    print("  early = labelled before your interpretive rules settled")
+    print("  late  = labelled under the settled rules, excluding the freshest ~45")
+    print()
+    print("Next: python3 scripts/run_judge_validation.py --dataset phase05b --relabel")
+    print()
+    print("Do NOT look at human_labels.jsonl before re-labelling, and do NOT run")
+    print("--score first. Both defeat the point.")
+
+
+def relabel_score(sample_path, labels_path, out_dir):
+    """Self-agreement, split early vs late. Prints NOTHING about the judge."""
+    rl_sample = {r["item_id"]: r for r in read_jsonl(out_dir / RELABEL_SAMPLE)}
+    if not rl_sample:
+        sys.exit(f"no re-label sample at {out_dir / RELABEL_SAMPLE}. "
+                 "Run --relabel-draw first.")
+    _, orig, _ = labelled_in_order(labels_path)
+    _, redo, _ = labelled_in_order(out_dir / RELABEL_LABELS)
+    pairs = []
+    for iid, meta in rl_sample.items():
+        if iid not in redo or iid not in orig:
+            continue
+        a, b = int(orig[iid]["human_label"]), int(redo[iid]["human_label"])
+        pairs.append({"item_id": iid, "stratum": meta["relabel_stratum"],
+                      "model": meta["model"], "first": a, "second": b,
+                      "position": meta["original_position"]})
+    if not pairs:
+        sys.exit("no re-labels recorded yet. Run --relabel.")
+
+    def agree(rs, hall_only=False):
+        if not rs:
+            return float("nan"), 0
+        if hall_only:
+            k = sum(1 for r in rs if (r["first"] == 2) == (r["second"] == 2))
+        else:
+            k = sum(1 for r in rs if r["first"] == r["second"])
+        return k / len(rs), len(rs)
+
+    print()
+    print("=" * 92)
+    print("  §11.3 SELF-CONSISTENCY — NOT PRE-REGISTERED (added 2026-09-11)")
+    print("=" * 92)
+    print("  Nothing about the judge is shown or computed here.")
+    print()
+    print(f"  {len(pairs)} of {len(rl_sample)} re-labelled.")
+    print()
+    print("  slice        n    4-way agree   hallucination-boundary agree")
+    print("  " + "-" * 62)
+    res = {}
+    for slc, rs in (("all", pairs),
+                    ("early", [r for r in pairs if r["stratum"] == "early"]),
+                    ("late", [r for r in pairs if r["stratum"] == "late"])):
+        a4, n = agree(rs)
+        ah, _ = agree(rs, hall_only=True)
+        res[slc] = {"n": n, "agree_4way": a4, "agree_hall": ah}
+        print(f"  {slc:10s} {n:4d}    {a4:11.3f}   {ah:27.3f}")
+    print()
+    e, l = res["early"], res["late"]
+    for key, name in (("agree_hall", "hallucination boundary"),
+                      ("agree_4way", "4-way")):
+        if e["n"] and l["n"]:
+            d = l[key] - e[key]
+            print(f"  DRIFT ({name}): late - early = {d:+.3f}")
+    print()
+    print("  Read `late` as your reliability under the settled standard, and the DRIFT")
+    print("  as how much the standard moved. The hallucination-boundary row is the one")
+    print("  that matters: §6.1 pins P-hat to label==2, so 0/1/3 disagreements move it")
+    print("  by exactly zero and only this boundary can bias §5.2's per-model gap.")
+    print()
+    print("  CAVEATS, both anti-conservative:")
+    print("   - n is small; per-model splits are thinner still.")
+    print("   - the late items were labelled more recently, so recall inflates their")
+    print("     agreement more than the early items'. That makes DRIFT an OVERESTIMATE.")
+    print()
+    for slc in ("early", "late"):
+        rs = [r for r in pairs if r["stratum"] == slc]
+        for m in sorted({r["model"] for r in rs}):
+            sub = [r for r in rs if r["model"] == m]
+            ah, n = agree(sub, hall_only=True)
+            print(f"  {slc:6s} {m:22s} n={n:3d}  boundary agree {ah:.3f}")
+    print()
+    changed = [r for r in pairs if r["first"] != r["second"]]
+    if changed:
+        print(f"  items you labelled differently the second time ({len(changed)}):")
+        for r in sorted(changed, key=lambda x: x["position"]):
+            cross = "  <-- CROSSES the hallucination boundary" if (
+                (r["first"] == 2) != (r["second"] == 2)) else ""
+            print(f"    pos {r['position']:4d} {r['stratum']:6s} "
+                  f"{r['first']} -> {r['second']}  {r['item_id']}{cross}")
+    print()
+    out = {"pairs": pairs, "summary": res}
+    with open(out_dir / "relabel.json", "w") as f:
+        json.dump(out, f, indent=2, sort_keys=True)
+    print(f"wrote -> {(out_dir / 'relabel.json').relative_to(BASE_DIR)}")
+
+
 def cohens_kappa(pairs, weights=None):
     """Cohen's kappa over (human, judge) pairs, optionally IPW-weighted."""
     if not pairs:
@@ -1299,6 +1486,17 @@ def main():
     ap = argparse.ArgumentParser(description="Phase 0.5 §5.2 judge validation")
     ap.add_argument("--draw", action="store_true",
                     help="build the stratified 150-item sample (run once)")
+    ap.add_argument("--relabel-draw", action="store_true",
+                    help="draw a blind re-label set (§11.3 self-consistency, NOT "
+                         "pre-registered). Stratified early vs late so drift can be "
+                         "separated from noise. Run after all 300 are labelled.")
+    ap.add_argument("--relabel", action="store_true",
+                    help="re-label the drawn set, blind. Writes to a separate file; "
+                         "your original labels are never touched.")
+    ap.add_argument("--relabel-score", action="store_true",
+                    help="self-agreement, early vs late. Prints nothing about the judge.")
+    ap.add_argument("--relabel-n", type=int, default=40, metavar="N",
+                    help="size of the re-label draw (default 40, split half/half)")
     ap.add_argument("--score", action="store_true",
                     help="compute kappa, the per-model gap and the §5.2 verdict")
     ap.add_argument("--rubric-version", default=None, metavar="VER",
@@ -1371,6 +1569,14 @@ def main():
         if lab not in ("0", "1", "2", "3"):
             sys.exit(f"label must be 0, 1, 2 or 3 (got {lab!r})")
         fix_label(labels_path, item_id, int(lab), args.fix_note)
+    elif args.relabel_draw:
+        relabel_draw(sample_path, labels_path, args.out_dir,
+                     args.relabel_n, args.seed)
+    elif args.relabel:
+        label_session(args.out_dir / RELABEL_SAMPLE,
+                      args.out_dir / RELABEL_LABELS)
+    elif args.relabel_score:
+        relabel_score(sample_path, labels_path, args.out_dir)
     elif args.flag_gt:
         flag_gt(labels_path, args.flag_gt, args.fix_note, clear=args.clear_gt)
     elif args.draw:
