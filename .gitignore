@@ -114,3 +114,4 @@ results/*/batch_state.json
 
 # §11.3 re-label labels: irreplaceable human judgement, same class as human_labels.jsonl
 results/*/validation/relabel_labels.jsonl
+results/*/validation/redo_labels.jsonl

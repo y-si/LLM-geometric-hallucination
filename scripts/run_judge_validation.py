@@ -957,6 +957,110 @@ def relabel_score(sample_path, labels_path, out_dir):
     print(f"wrote -> {(out_dir / 'relabel.json').relative_to(BASE_DIR)}")
 
 
+# ── §11.3 early-block redo (NOT PRE-REGISTERED, added 2026-09-11) ────────────────
+
+REDO_SAMPLE = "redo_sample.jsonl"
+REDO_LABELS = "redo_labels.jsonl"
+EARLY_END = 75
+
+
+def redo_early_draw(sample_path, labels_path, out_dir):
+    """Queue the early block for re-labelling under the settled standard.
+
+    WHY. The §11.3 re-label pass measured self-agreement at 20/20 on the hallucination
+    boundary in the LATE block and 15/20 in the EARLY block: noise is nil, so the early
+    gap is drift, and ~25% of the first `EARLY_END` items are misclassified on the only
+    boundary P-hat consumes. The marginals hid it because the flips ran both ways
+    (4x 2->not-2, 1x not-2->2) and offsetting errors nearly cancel in aggregate. Marginal
+    stability does not imply item-level stability -- that is the lesson.
+
+    Excludes the early items already covered by the re-label pass; those 20 already have
+    settled-standard labels and are promoted by --promote-redo instead of redone twice.
+
+    Blind by construction, like the re-label pass: label_session renders only the
+    judge-blinded sample fields and never reads human_labels.jsonl.
+    """
+    order, latest, _ = labelled_in_order(labels_path)
+    if len(order) < 300:
+        sys.exit(f"only {len(order)} items labelled; finish the main set first.")
+    already = {r["item_id"] for r in read_jsonl(out_dir / RELABEL_SAMPLE)}
+    by_id = {r["item_id"] for r in read_jsonl(sample_path)}
+    rows = {r["item_id"]: r for r in read_jsonl(sample_path)}
+
+    early = order[:EARLY_END]
+    todo = [rows[i] for i in early if i not in already and i in by_id]
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / REDO_SAMPLE
+    if path.exists():
+        sys.exit(f"{path} already exists. Delete it deliberately to redraw.")
+    with open(path, "w") as f:
+        for i, r in enumerate(todo):
+            r = dict(r)
+            r["original_position"] = early.index(r["item_id"]) + 1
+            f.write(json.dumps(r, sort_keys=True) + "\n")
+
+    print(f"queued {len(todo)} early items for re-labelling -> "
+          f"{path.relative_to(BASE_DIR)}")
+    print(f"  ({len(early)} in the early block, {len(already & set(early))} already "
+          "covered by the re-label pass and promoted instead)")
+    print()
+    print("Next:")
+    print("  python3 scripts/run_judge_validation.py --dataset phase05b --redo-early")
+    print("  python3 scripts/run_judge_validation.py --dataset phase05b --promote-redo")
+    print("  python3 scripts/run_judge_validation.py --dataset phase05b --score")
+
+
+def promote_redo(labels_path, out_dir):
+    """Fold settled-standard labels into the primary file. Append-only.
+
+    Promotes (a) the redo of the early block and (b) the EARLY half of the re-label
+    pass. Deliberately NOT the late half: those items were already labelled under the
+    settled standard, so a re-label there is a second coin flip rather than a
+    correction, and preferring it over the first would be arbitrary.
+
+    Appends rather than rewrites, so every superseded label stays on disk; score() is
+    last-write-wins per item_id. `redone_from` records what each label was, so the drift
+    remains reconstructible from the primary file alone.
+    """
+    _, orig, _ = labelled_in_order(labels_path)
+    rl_meta = {r["item_id"]: r for r in read_jsonl(out_dir / RELABEL_SAMPLE)}
+    _, rl, _ = labelled_in_order(out_dir / RELABEL_LABELS)
+    _, rd, _ = labelled_in_order(out_dir / REDO_LABELS)
+
+    promote = {}
+    for iid, rec in rl.items():
+        if rl_meta.get(iid, {}).get("relabel_stratum") == "early":
+            promote[iid] = ("relabel", rec)
+    for iid, rec in rd.items():
+        promote[iid] = ("redo", rec)
+    if not promote:
+        sys.exit("nothing to promote. Run --redo-early first.")
+
+    n_changed = 0
+    lines = []
+    for iid, (src, rec) in sorted(promote.items()):
+        old = int(orig[iid]["human_label"])
+        new = int(rec["human_label"])
+        out = dict(rec)
+        out["redone_from"] = old
+        out["redone_via"] = src
+        if old != new:
+            n_changed += 1
+        lines.append(json.dumps(out, sort_keys=True) + "\n")
+
+    for path in (labels_path, labels_path.with_suffix(".backup.jsonl")):
+        with open(path, "a") as f:
+            f.writelines(lines)
+
+    print(f"promoted {len(promote)} settled-standard labels into "
+          f"{labels_path.relative_to(BASE_DIR)}")
+    print(f"  {n_changed} of them differ from the original label")
+    print(f"  every superseded record stays on disk; score() is last-write-wins")
+    print()
+    print("Now: python3 scripts/run_judge_validation.py --dataset phase05b --score")
+
+
 def cohens_kappa(pairs, weights=None):
     """Cohen's kappa over (human, judge) pairs, optionally IPW-weighted."""
     if not pairs:
@@ -1494,6 +1598,13 @@ def main():
     ap = argparse.ArgumentParser(description="Phase 0.5 §5.2 judge validation")
     ap.add_argument("--draw", action="store_true",
                     help="build the stratified 150-item sample (run once)")
+    ap.add_argument("--redo-early-draw", action="store_true",
+                    help="queue the early block for re-labelling under the settled "
+                         "standard (§11.3 drift correction, NOT pre-registered)")
+    ap.add_argument("--redo-early", action="store_true",
+                    help="re-label the queued early block, blind")
+    ap.add_argument("--promote-redo", action="store_true",
+                    help="fold the settled-standard labels into human_labels.jsonl")
     ap.add_argument("--relabel-draw", action="store_true",
                     help="draw a blind re-label set (§11.3 self-consistency, NOT "
                          "pre-registered). Stratified early vs late so drift can be "
@@ -1591,6 +1702,12 @@ def main():
         if lab not in ("0", "1", "2", "3"):
             sys.exit(f"label must be 0, 1, 2 or 3 (got {lab!r})")
         fix_label(labels_path, item_id, int(lab), args.fix_note)
+    elif args.redo_early_draw:
+        redo_early_draw(sample_path, labels_path, args.out_dir)
+    elif args.redo_early:
+        label_session(args.out_dir / REDO_SAMPLE, args.out_dir / REDO_LABELS)
+    elif args.promote_redo:
+        promote_redo(labels_path, args.out_dir)
     elif args.relabel_draw:
         relabel_draw(sample_path, labels_path, args.out_dir,
                      args.relabel_n, args.seed)
