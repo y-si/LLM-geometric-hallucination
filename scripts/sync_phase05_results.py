@@ -22,7 +22,20 @@ import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-RESULTS_DIR = BASE_DIR / "results" / "phase05"
+DATASETS = ("phase05", "phase05b", "phase05b_probe")
+DATASET = "phase05"
+RESULTS_DIR = BASE_DIR / "results" / DATASET
+
+
+def configure(dataset):
+    """Point at a dataset. Was hardcoded to phase05, which silently packed the wrong
+    run's files once 0.5b existed -- the same class of defect as --dataset defaulting to
+    the superseded set in run_judge_validation.py."""
+    global DATASET, RESULTS_DIR
+    if dataset not in DATASETS:
+        sys.exit(f"unknown dataset {dataset!r}. Choose from: {', '.join(DATASETS)}")
+    DATASET = dataset
+    RESULTS_DIR = BASE_DIR / "results" / dataset
 TRACKED = ["completions.jsonl", "judgments.jsonl", "decoding_config.json"]
 
 
@@ -45,7 +58,7 @@ def pack():
             shutil.copyfileobj(f_in, f_out)
         ratio = raw.stat().st_size / max(gz.stat().st_size, 1)
         print(f"  packed {name}  {human(raw)} -> {human(gz)}  ({ratio:.1f}x)")
-    print("\nNow: git add results/phase05 && git commit && git push")
+    print(f"\nNow: git add results/{DATASET} && git commit && git push")
 
 
 def unpack():
@@ -71,7 +84,7 @@ def unpack():
 
 def status():
     if not RESULTS_DIR.exists():
-        print("no results/phase05 directory yet")
+        print(f"no results/{DATASET} directory yet")
         return
     for name in TRACKED:
         raw, gz = RESULTS_DIR / name, RESULTS_DIR / (name + ".gz")
@@ -85,7 +98,15 @@ def status():
 
 
 if __name__ == "__main__":
-    cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    args = [a for a in sys.argv[1:]]
+    ds = "phase05"
+    if "--dataset" in args:
+        i = args.index("--dataset")
+        ds = args[i + 1] if i + 1 < len(args) else ds
+        del args[i:i + 2]
+    configure(ds)
+    print(f"dataset: {DATASET}   ->  results/{DATASET}")
+    cmd = args[0] if args else "status"
     if cmd == "pack":
         pack()
     elif cmd == "unpack":
