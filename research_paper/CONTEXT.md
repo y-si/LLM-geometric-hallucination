@@ -408,6 +408,71 @@ reliability check (~40 blind re-labels) stays available as a labelled
 **NOT PRE-REGISTERED** diagnostic, to be decided after 300 items and **before** `--score`
 is ever run. See [[preregistration-discipline]].
 
+### §11.3 returned JUDGE CONFOUNDED at 9.4 pp — and rubric v2 is the likely cause
+
+**Result 2026-09-12, on 300 hand-labelled items under rubric v2, after the early-block
+drift correction. §5.2's rule is binding: report the τ result as confounded and replace
+the judge before Phase 1. The 0.5b GO is NOT clean.**
+
+| | V3 (rubric v1) | **0.5b (rubric v2)** | §5.2 threshold |
+|---|---|---|---|
+| 4-way gap | 28.1 pp | **13.2 pp** | 5 pp |
+| **hallucination-only gap** | 5.3 pp | **9.4 pp** | **5 pp** |
+| hallucination-only agreement | 0.940 | **0.794** | — |
+| hallucination-only κ | 0.835 | **0.437** | — |
+| per-model agreement | A 0.966 / B 0.913 | **A 0.747 / B 0.841** | — |
+
+**The pre-registered-style prediction held, and it is worth keeping.** Stated on
+2026-09-11 *before* this was run: v2 pinned the CATEGORY 1 refusal boundary and added
+CATEGORY 5's "a decline in that spirit is CORRECT (0), NOT Refusal (3)", so the
+`human 3 Refusal → judge 0 Correct` cell that produced V3's 28 pp 4-way gap should
+collapse. It did: **50 of 150 (33%) → 1 of 300 (0.3%)**, and the 4-way gap fell to
+13.2 pp. v2 fixed precisely what §5.2 diagnosed.
+
+**But v2 made the load-bearing boundary worse, and that is the finding.** κ on the
+hallucination boundary fell 0.835 → 0.437 and the gap *doubled*. The rubric edit intended
+as a fix damaged the only boundary the estimator consumes.
+
+**The mechanism is unambiguous — the judge over-calls hallucination.** From the confusion
+matrix: when the human says hallucination the judge agrees **58/62 = 94%**; when the judge
+says hallucination the human agrees only **58/150 = 39%**. Ninety-two items where the judge
+said 2 and the human did not, against four the other way. High recall, poor precision
+against a careful human standard.
+
+**And the labeller's notes identify the cell:** *"the model answer hedges. i also don't
+think this is particularly wrong"*, *"almost a hallucination but it hedges"*, *"mostly
+correct with a few minor errors and inaccuracies"*, *"it started off hallucinating and then
+corrected itself"*, *"almost sounds like a hallucination in the beginning, but the end is
+correct"*. Every one is a **mixed** answer. That is v2's *own new rule* — the
+correct-rejection-then-unmarked-fabrication → HALLUCINATION (2) clause added on
+2026-08-28. The judge applies it aggressively; a careful human reads the same answers as
+PARTIAL. **The prime suspect for the deterioration is the edit that was supposed to help.**
+
+**Two consequences that must not be softened.**
+
+1. **The asymmetry is LARGER on the run that returned GO (9.4 pp) than on the run that
+   returned NO-GO (5.3 pp).** That is exactly the pattern expected if the GO were partly
+   artifactual. It does not prove it, and it cannot be waved away; a reviewer will reach
+   for it immediately.
+2. **0.5b's absolute hallucination rates are NOT quotable.** Earlier notes said they were,
+   on the grounds that TruthfulQA's ground truth is sourced. Withdrawn: the judge inflates
+   P̂ by over-calling hallucination roughly 2.4:1 against a human standard, which is
+   independent of ground-truth quality. Same conclusion as V3, different cause.
+
+**The clean win, and it is real.** Ground-truth doubt came in at **9 of 300 = 3.0% raw,
+1.9% IPW-weighted**, Wilson [1.6%, 5.6%], against V3's ~8%. **TruthfulQA's sourced
+reference answers held**, which is exactly what §4.0 selected it for. That part of the
+story survives.
+
+**One analytical gap in §5.2 itself, labelled post-hoc and NOT a reason to discount the
+verdict.** The gap measures a difference in agreement *levels*, while τ_b is *rank*-based:
+a per-model bias that is uniform across prompts shifts P̂ without changing its ordering
+and is therefore invisible to τ. What would actually threaten τ is judge error correlated
+with the prompt in a way shared across models. §5.2 does not measure that, and the gap is
+not a direct estimate of it. **This is an observation for the limitations section, not a
+route around the pre-registered rule** — the rule was fixed in advance, it has fired, and
+it is reported as fired. See [[preregistration-discipline]].
+
 ### Rubric v2's gaps, and the four rules adopted to close them (§11.3 labelling)
 
 **Recorded 2026-09-11, after 300 items + 40 blind re-labels, and BEFORE `--score` was
