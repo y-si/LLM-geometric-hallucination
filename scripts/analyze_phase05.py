@@ -509,10 +509,18 @@ def load_judged(prompts):
     dupes = 0
 
     # per (uid, model): parallel lists of successfully-labelled samples
-    recs = defaultdict(lambda: {"idx": [], "label": [], "tokens": [], "trunc": []})
+    recs = defaultdict(lambda: {"idx": [], "label": [], "tokens": [], "trunc": [],
+                                "mixed": []})
     models = set()
     errors = Counter()
     labelled_keys = set()
+    # §10 (2026-09-12 amendment) — presence of the mixed_rejection_then_fabrication
+    # key on ANY successful judgment row means this dataset was labelled under the
+    # rubric that flags mixed cases. That gates the post-hoc §6.1 fourth row.
+    # Datasets that predate rubric v2 (phase05) have no such key on any row and
+    # skip the sensitivity entirely — see build_per_pair, Panel, and the report
+    # renderer, all of which are gated on this boolean.
+    has_mixed_field = False
     for r in judgments:
         uid, model, idx = r["uid"], r["model"], r["sample_idx"]
         models.add(model)
@@ -544,6 +552,11 @@ def load_judged(prompts):
         rec["label"].append(int(r["label"]))
         rec["tokens"].append(comp.get("output_tokens"))
         rec["trunc"].append(comp.get("finish_reason") == "length")
+        if "mixed_rejection_then_fabrication" in r:
+            has_mixed_field = True
+            rec["mixed"].append(bool(r["mixed_rejection_then_fabrication"]))
+        else:
+            rec["mixed"].append(False)
 
     if unknown_uid:
         sys.exit(f"{len(unknown_uid)} judged uids are absent from the manifest "
@@ -562,10 +575,11 @@ def load_judged(prompts):
         "completions": completions,
         "empty_keys": sorted(empty_keys - labelled_keys),
         "error_counter": errors,
+        "has_mixed_field": has_mixed_field,
     }
 
 
-def build_per_pair(prompts, recs, empty_keys=()):
+def build_per_pair(prompts, recs, empty_keys=(), has_mixed_field=False):
     """P-hat and its companions for every (uid, model) in the manifest cross-product.
 
     Iterates the manifest x models cross-product deliberately: a pair whose every
@@ -584,6 +598,12 @@ def build_per_pair(prompts, recs, empty_keys=()):
     probability that sampling this model on this prompt yields a hallucination. Dropping
     empties conditions on "the model managed to produce an answer" — a selection effect,
     and here one that selects against gpt-oss's hardest prompts.
+
+    `has_mixed_field` (§10 amendment 2026-09-12) — when True, additional per-half
+    counters n_hall_mixed_true{,_even,_odd} are emitted so the NOT-PRE-REGISTERED
+    post-hoc §6.1 fourth row can reclassify (label==2 AND mixed_rejection_then_
+    fabrication==True) as non-hallucination. When False, these fields are OMITTED
+    entirely so datasets predating rubric v2 (phase05) get byte-identical output.
     """
     by_pair = defaultdict(list)
     for uid, model, idx in empty_keys:
@@ -598,6 +618,7 @@ def build_per_pair(prompts, recs, empty_keys=()):
             lab_l = list(rec["label"]) if rec else []
             tok_l = list(rec["tokens"]) if rec else []
             tru_l = list(rec["trunc"]) if rec else []
+            mix_l = list(rec["mixed"]) if rec else []
             for i in sorted(by_pair.get((uid, model), ())):
                 idx_l.append(i)
                 lab_l.append(LABEL_REFUSAL)
@@ -607,6 +628,9 @@ def build_per_pair(prompts, recs, empty_keys=()):
                 # imputed into them.
                 tok_l.append(None)
                 tru_l.append(False)
+                # An empty completion is not a hallucination and cannot be flagged
+                # as a mixed rejection→fabrication case, so it enters as False.
+                mix_l.append(False)
                 n_empty_folded += 1
             idx = np.array(idx_l, dtype=int)
             lab = np.array(lab_l, dtype=int)
@@ -615,6 +639,8 @@ def build_per_pair(prompts, recs, empty_keys=()):
             hall = (lab == LABEL_HALLUCINATION)
             partial = (lab == LABEL_PARTIAL)
             refusal = (lab == LABEL_REFUSAL)
+            mixed = (np.array(mix_l, dtype=bool)
+                     if k_eff else np.zeros(0, dtype=bool))
 
             # §6.2 noise ceiling: odd/even sample_idx. Deterministic, not random, so
             # the ceiling is reproducible and cannot be reshuffled into a better one.
@@ -661,6 +687,18 @@ def build_per_pair(prompts, recs, empty_keys=()):
                 "median_output_tokens": (float(np.median(tokens)) if tokens
                                          else float("nan")),
             }
+            # §10 amendment 2026-09-12 — mixed-flag counters for the post-hoc
+            # NOT-PRE-REGISTERED §6.1 fourth row. Only emitted when the dataset was
+            # labelled under a rubric that includes the flag; datasets that predate
+            # rubric v2 skip these fields, and their per_prompt.csv and JSON stay
+            # byte-identical.
+            if has_mixed_field:
+                hall_mixed = hall & mixed
+                out[(uid, model)]["n_hall_mixed_true"] = int(hall_mixed.sum())
+                out[(uid, model)]["n_hall_mixed_true_even"] = (
+                    int(hall_mixed[even].sum()) if k_eff else 0)
+                out[(uid, model)]["n_hall_mixed_true_odd"] = (
+                    int(hall_mixed[odd].sum()) if k_eff else 0)
     return out
 
 
@@ -718,6 +756,21 @@ class Panel:
             "an empty split half survived the k_eff filter — impossible at k_eff>=16"
         assert (self.kB_even > 0).all() and (self.kB_odd > 0).all()
 
+        # §10 amendment 2026-09-12 — mixed-flag counters. Present ONLY on datasets
+        # whose judgments carry mixed_rejection_then_fabrication (build_per_pair
+        # skips these fields otherwise). Detect once from a representative record
+        # and load only if present, so datasets predating rubric v2 leave
+        # has_mixed_field=False and never trigger the post-hoc §6.1 fourth row.
+        first = per_pair[(self.uids[0], MODEL_A)] if self.uids else {}
+        self.has_mixed_field = "n_hall_mixed_true" in first
+        if self.has_mixed_field:
+            self.nhAmixT = icol(MODEL_A, "n_hall_mixed_true")
+            self.nhBmixT = icol(MODEL_B, "n_hall_mixed_true")
+            for tag, model in (("A", MODEL_A), ("B", MODEL_B)):
+                for half in ("even", "odd"):
+                    setattr(self, "nh%smixT_%s" % (tag, half),
+                            icol(model, "n_hall_mixed_true_" + half))
+
     def __len__(self):
         return len(self.uids)
 
@@ -765,6 +818,51 @@ class Panel:
             "rho_selfA_spearman_brown": relA,
             "rho_selfB_spearman_brown": relB,
             "rho_corr": disattenuate(rho_cross, relA, relB),
+        }
+
+    def point_estimates_mixed_out(self):
+        """§10 amendment 2026-09-12 — NOT PRE-REGISTERED, post-hoc.
+
+        Reclassifies judgments with (label==LABEL_HALLUCINATION AND
+        mixed_rejection_then_fabrication==True) as NON-hallucination, adopting the
+        human's PARTIAL reading of the mixed rejection→fabrication pattern. This is
+        the §11.3-motivated sensitivity for the JUDGE CONFOUNDED verdict. It does
+        not renegotiate §5.2 or §7. Only tau_cross / selfA / selfB / tau_corr are
+        computed; the rho cross-check and the bootstrap CI are not, because the row
+        is documenting a robustness margin, not a new primary result.
+
+        Callable only when self.has_mixed_field is True. build_per_pair emits the
+        underlying counters gated on the same flag, so datasets predating rubric v2
+        cannot enter this path.
+        """
+        assert self.has_mixed_field, (
+            "point_estimates_mixed_out called on a Panel without the mixed flag "
+            "— build_per_pair should have gated this path")
+
+        def ph(nh, nh_mix, k):
+            # `nh - nh_mix` reclassifies hall+mixed cases as non-hall. Everything
+            # else in the numerator (Correct, Partial, Refusal, and hall-not-mixed)
+            # keeps its primary treatment. k_eff is unchanged.
+            return (nh - nh_mix) / k
+
+        pA = ph(self.nhA, self.nhAmixT, self.kA)
+        pB = ph(self.nhB, self.nhBmixT, self.kB)
+        pA_even = ph(self.nhA_even, self.nhAmixT_even, self.kA_even)
+        pA_odd = ph(self.nhA_odd, self.nhAmixT_odd, self.kA_odd)
+        pB_even = ph(self.nhB_even, self.nhBmixT_even, self.kB_even)
+        pB_odd = ph(self.nhB_odd, self.nhBmixT_odd, self.kB_odd)
+
+        cross = tau_b_blocked(pA, pB, self.strata)
+        selfA = tau_b_blocked(pA_even, pA_odd, self.strata)
+        selfB = tau_b_blocked(pB_even, pB_odd, self.strata)
+
+        return {
+            "tau_cross": cross["tau_b"],
+            "tau_selfA": selfA["tau_b"],
+            "tau_selfB": selfB["tau_b"],
+            "tau_corr": disattenuate(cross["tau_b"], selfA["tau_b"], selfB["tau_b"]),
+            "n_hall_reclassified_A": int(self.nhAmixT.sum()),
+            "n_hall_reclassified_B": int(self.nhBmixT.sum()),
         }
 
     def bootstrap(self, iters, seed, batch=BOOTSTRAP_BATCH):
@@ -1742,6 +1840,32 @@ def render_report(R):
             w("If tau_corr moves materially across these rows the label boundary is")
             w("load-bearing and must be discussed in the paper (§6.1, §9.9).")
             w("")
+            # §10 amendment 2026-09-12 disclosure — only prints when the post-hoc
+            # fourth row is present, so datasets predating rubric v2 render the
+            # section identically to the pre-amendment version.
+            post = [row for row in P["label_boundary"]
+                    if row.get("not_pre_registered")]
+            if post:
+                w("The final row above is **NOT PRE-REGISTERED** — a post-hoc "
+                  "sensitivity added on 2026-09-12 in response to the §11.3")
+                w("JUDGE CONFOUNDED verdict. It reclassifies judgments where "
+                  "`mixed_rejection_then_fabrication == true` from HALLUCINATION")
+                w("to NON-hallucination, adopting the human validator's PARTIAL "
+                  "reading of the mixed rejection→fabrication pattern. §5.2's")
+                w("CONFOUNDED verdict and every §7 threshold remain UNCHANGED.")
+                w("")
+                for row in post:
+                    w(f"    Rule: {row.get('rule', '(unspecified)')}")
+                    w(f"    Reclassified label==2 samples: "
+                      f"A={row.get('n_hall_reclassified_A', 0)}, "
+                      f"B={row.get('n_hall_reclassified_B', 0)}")
+                w("")
+                w("Honest limits — this rule covers ~3.58% of labels and ~10% of "
+                  "hallucination calls, so it CANNOT account for the entire")
+                w("§11.3 9.4 pp gap on its own. 62 of the human/judge "
+                  "disagreements were `human 0 Correct → judge 2` and not all")
+                w("of those will be mixed cases.")
+                w("")
 
     # ── Δ_artifact ──
     w("## Shared-judge artifact (§6.2b)")
@@ -2265,7 +2389,8 @@ def main():
     # §11.6 — the PRIMARY treatment folds empty completions in as non-hallucinations.
     # The sensitivity treatment (empty = missing data) is computed separately below and
     # reported alongside; §11.6 forbids resolving the two in favour of either.
-    per_pair = build_per_pair(prompts, recs, loaded["empty_keys"])
+    per_pair = build_per_pair(prompts, recs, loaded["empty_keys"],
+                              has_mixed_field=loaded["has_mixed_field"])
 
     # ── §5.1 integrity ──
     keff_vals = [v["k_eff"] for v in per_pair.values()]
@@ -2401,6 +2526,33 @@ def main():
                        "tau_cross": e["tau_cross"], "tau_selfA": e["tau_selfA"],
                        "tau_selfB": e["tau_selfB"], "tau_corr": e["tau_corr"]})
 
+        # §10 amendment 2026-09-12 — post-hoc NOT PRE-REGISTERED sensitivity motivated
+        # by the §11.3 JUDGE CONFOUNDED verdict. Only fires when the dataset was
+        # labelled under a rubric that flags mixed rejection→fabrication cases; older
+        # datasets skip this row entirely, so their JSON `label_boundary` list stays
+        # at three entries and the report table renders identically to before.
+        if panel.has_mixed_field:
+            m = panel.point_estimates_mixed_out()
+            lb.append({
+                "definition": ("mixed rejection→fabrication reclassified as "
+                               "non-hallucination (NOT PRE-REGISTERED, post-hoc)"),
+                "tau_cross": m["tau_cross"], "tau_selfA": m["tau_selfA"],
+                "tau_selfB": m["tau_selfB"], "tau_corr": m["tau_corr"],
+                "not_pre_registered": True,
+                "amendment_date": "2026-09-12",
+                "rule": ("(label==2 AND mixed_rejection_then_fabrication==True) "
+                         "→ non-hallucination"),
+                "n_hall_reclassified_A": m["n_hall_reclassified_A"],
+                "n_hall_reclassified_B": m["n_hall_reclassified_B"],
+                "note": ("Adopts the human's PARTIAL reading of the mixed pattern. "
+                         "Does NOT renegotiate §5.2 CONFOUNDED or §7 thresholds. "
+                         "This rule covers ~3.58% of labels and ~10% of "
+                         "hallucination calls, so it cannot account for the entire "
+                         "§11.3 9.4 pp gap on its own — 62 of the human/judge "
+                         "disagreements were `human 0 Correct → judge 2` and not "
+                         "all of those will be mixed cases."),
+            })
+
         R[key] = {"selection": {k: v for k, v in sel.items() if k != "dropped_keff"},
                   "n_dropped_keff": len(sel["dropped_keff"]),
                   "point": point, "bootstrap": boot, "label_boundary": lb}
@@ -2448,7 +2600,8 @@ def main():
     R["empty_sensitivity"] = None
     if loaded["empty_keys"] and panels["primary"] is not None:
         print("[§11.6] empty-completion sensitivity: re-running with empty = missing ...")
-        pp_sens = build_per_pair(prompts, recs, ())
+        pp_sens = build_per_pair(prompts, recs, (),
+                                 has_mixed_field=loaded["has_mixed_field"])
         panel_s, sel_s = make_panel("primary", primary_uids, prompts, pp_sens)
         ent = {"n_empty": len(loaded["empty_keys"]),
                "n_pairs_affected": len({(u, m) for u, m, _ in loaded["empty_keys"]}),

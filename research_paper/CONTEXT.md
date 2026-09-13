@@ -448,6 +448,26 @@ correct-rejection-then-unmarked-fabrication → HALLUCINATION (2) clause added o
 2026-08-28. The judge applies it aggressively; a careful human reads the same answers as
 PARTIAL. **The prime suspect for the deterioration is the edit that was supposed to help.**
 
+**How much of the confound the mixed rule accounts for — a NOT-PRE-REGISTERED sensitivity
+run on 2026-09-12.** The rubric-v2 judge tags each judgment with
+`mixed_rejection_then_fabrication`; it fires on 1,169 of 32,640 rows (3.58%), and 1,082
+of those (93%) were labelled HALLUCINATION (Llama 620, gpt-oss 549). Reclassifying those
+label==2 samples to NON-hallucination — the human PARTIAL reading — and refitting the
+primary panel with fresh split-half reliabilities under the variant definition yields
+**τ_corr = 0.5854**, versus the pre-registered primary 0.5999. Delta −0.0145, still
+above the §7 GO threshold of 0.50. On the pre-registered decision surface **the confound
+is real but not load-bearing.** Reclassification counts on the primary panel: A = 561,
+B = 499 (1,060 rows; the remaining 22 flagged label==2 rows were already dropped by the
+§5.1 k_eff and §6.7 filters). Rendered as a NOT-PRE-REGISTERED fourth row in the §6.1
+label-boundary table; §10 amendment log carries the dated post-data disclosure.
+
+**Honest limit on that sensitivity.** The rule is ~3.58% of labels and ~10% of
+hallucination calls, so it CANNOT explain the whole 9.4 pp gap — 62 of the human/judge
+disagreements were `human 0 Correct → judge 2` and not every one of those will be a
+mixed case. The row bounds the sub-question *"how much of the confound is the mixed
+rule specifically"*; the confound as a whole is broader. **§5.2's CONFOUNDED verdict
+and every §7 threshold are unchanged. The judge is still replaced before Phase 1.**
+
 **Two consequences that must not be softened.**
 
 1. **The asymmetry is LARGER on the run that returned GO (9.4 pp) than on the run that

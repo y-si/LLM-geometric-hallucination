@@ -7,7 +7,7 @@ right now, what was just done, what to do next.
 Update this at the end of every session. If it disagrees with your memory, trust this
 file.
 
-**Last updated: 2026-08-31**
+**Last updated: 2026-09-12**
 
 ---
 
@@ -138,39 +138,61 @@ Phase 1.** The GO stands as a computed result but is NOT clean.
 
 ---
 
-## DO THIS NEXT — the mixed-flag sensitivity (no API calls, ~minutes)
+## ✅ DONE 2026-09-12 — the mixed-flag sensitivity
 
-**The decisive question:** does the GO depend on the one rule the judge and a careful human
-disagree about?
+**Result: τ_corr = 0.5854** (vs. pre-registered primary 0.5999). Delta −0.0145. Above
+the §7 threshold of 0.50. **The confound is real but not load-bearing on the
+pre-registered decision surface.** The GO stands directionally; the §5.2 CONFOUNDED
+verdict is unchanged and still governs.
 
-`mixed_rejection_then_fabrication` was added to every judgment on 2026-08-28 *precisely*
-so this is computable without re-judging 32,680 rows. Verified present on **100% of
-32,640 labels**:
+Reclassified label==2 samples on the primary panel: A (Llama) = **561**, B (gpt-oss) =
+**499**, for 1,060 of the 1,082 flagged rows (the missing 22 are dropped by the §5.1
+k_eff and §6.7 degenerate-stratum filters when the primary panel is constructed).
 
-| | |
-|---|---|
-| flagged true | **1,169** (3.58% of labels) |
-| of those, labelled HALLUCINATION | **1,082 (93%)** |
-| by model | Llama **620**, gpt-oss **549** |
+Rendered as the fourth row of the §6.1 label-boundary table in
+`results/phase05b/analysis/report.md`, prefixed **(NOT PRE-REGISTERED, post-hoc)** and
+followed by a disclosure paragraph. JSON entry carries `not_pre_registered: True`,
+`amendment_date: 2026-09-12`, and the rule as text
+(`(label==2 AND mixed_rejection_then_fabrication==True) → non-hallucination`).
 
-The model split points the right way: the rule fires slightly *more* on Llama, and Llama
-is where judge-human agreement is worse (0.747 vs 0.841). Internally consistent.
+Amendment logged in `PHASE_0.5_SPEC.md` §10 with a dated post-data disclosure.
 
-**Build a fourth row in `analyze_phase05.py`'s §6.1 label-boundary table:** recompute
-tau_corr with the 1,082 mixed-flagged hallucinations reclassified as **non**-hallucination,
-i.e. adopting the human's PARTIAL reading. Slots in beside the three definitions already
-reported (label-2-only 0.5999 / partial-half 0.5841 / partial-full 0.5917).
+**Byte-identity for `--dataset phase05`.** The code path is gated on `has_mixed_field`
+(True only when a judgment carries the `mixed_rejection_then_fabrication` key). Phase 0.5
+predates rubric v2 and has no such key; the gate stays False and no new fields, rows,
+or paragraphs are emitted. Verified by simulation: analyzer runs pre-change vs.
+post-change on rubric-v1-simulated input (phase05b judgments with the flag stripped)
+produced byte-identical `report.md`, `phase05b_results.json`, and `per_prompt.csv`.
+Direct check against the shipped `results/phase05/analysis/report.md` was not runnable
+here because `results/phase05/judgments.jsonl.gz` was never packed for transfer.
 
-- **If tau_corr holds >= 0.50** — the confound is real but not load-bearing, and that can
-  be said with a number.
-- **If it collapses** — the GO was substantially an artifact of that clause, and you need
-  to know before this reaches Sunny.
+**Honest limits carried in the report and the §10 log.** The rule covers ~3.58% of
+labels and ~10% of hallucination calls, so it CANNOT account for the entire §11.3
+9.4 pp gap. 62 of the human/judge disagreements were `human 0 Correct → judge 2` and
+not all of those will be mixed cases. This row bounds the sub-question "how much of the
+confound is the mixed rule specifically"; the confound as a whole is broader.
 
-**Two honest limits.** The rule is 3.58% of labels and ~10% of hallucination calls, so it
-cannot be the whole 9.4 pp gap — 62 of the disagreements were `human 0 Correct -> judge 2`
-and not all will be mixed cases. And it is a post-hoc reclassification, so it is a
-**labelled sensitivity, not a new primary result**. §5.2's CONFOUNDED verdict stands
-either way.
+---
+
+## DO THIS NEXT — the two remaining zero-API sensitivities
+
+Same shape as the mixed-flag row above: post-hoc, labelled, non-decisional under §7,
+does not renegotiate §5.2. Both are already scoped in the handoff and both take input
+from files already on disk.
+
+1. **Drop the 110 "I have no comment" prompts (13.5% of TruthfulQA) and refit τ_corr.**
+   Tests whether shared *deflection* rather than shared *difficulty* is driving the
+   agreement. Per-category evidence is currently mixed, so this is undecided. The
+   prompts are identifiable from the manifest; no re-judging.
+
+2. **Drop the 9 gt_doubt-flagged prompts and refit τ_corr.** uids listed in
+   `results/phase05b/validation/validation.md`. Ground-truth doubt came in at 3.0% raw
+   / 1.9% weighted, so this is expected to move τ by less than the mixed-flag row did,
+   but it belongs on the record with a number.
+
+Same NOT-PRE-REGISTERED framing as the fourth row. Both slot into `analyze_phase05.py`
+either as additional §6.1 rows or as a small new §6.1b section — the mixed-flag row
+sets the pattern to follow. §5.2 CONFOUNDED still governs either way.
 
 ---
 
@@ -870,6 +892,33 @@ The remaining work is running it on complete data.
 ---
 
 ## Session log
+
+### 2026-09-12 (later) — mixed-flag §6.1 fourth row landed. τ_corr = 0.5854, still GO.
+
+Post-hoc NOT-PRE-REGISTERED sensitivity on the §11.3 CONFOUNDED verdict. Reclassifies
+judgments carrying `mixed_rejection_then_fabrication == true` from HALLUCINATION to
+NON-hallucination (the human validator's PARTIAL reading). Result τ_corr = 0.5854
+against the pre-registered primary 0.5999 — delta −0.0145, above the §7 GO threshold.
+**Confound is real but not load-bearing on the decision surface.** §5.2 CONFOUNDED and
+every §7 threshold left untouched.
+
+- 1,060 label==2 samples reclassified on the primary panel (A=561, B=499); 22 of the
+  raw 1,082 flagged rows were already dropped by the §5.1 k_eff and §6.7 filters.
+- Rendered as the fourth row of the §6.1 label-boundary table in
+  `results/phase05b/analysis/report.md`, prefixed `(NOT PRE-REGISTERED, post-hoc)`
+  with a disclosure paragraph and the reclassification counts.
+- JSON: `not_pre_registered: True`, `amendment_date: 2026-09-12`, rule as a text
+  field. Existing three rows unchanged.
+- Byte-identity of `--dataset phase05` guaranteed by construction: `has_mixed_field`
+  gates the entire new code path, and phase05 judgments predate rubric v2. Verified
+  by simulation — pre-change vs post-change on rubric-v1-stripped input produces
+  byte-identical `report.md`, JSON, and CSV. Direct check against the shipped
+  Phase 0.5 report was not runnable because `results/phase05/judgments.jsonl.gz` was
+  never packed for transfer.
+- Honest limit: the rule covers ~3.58% of labels / ~10% of hallucination calls, so it
+  cannot account for the whole §11.3 9.4 pp gap. 62 human/judge disagreements were
+  `human 0 Correct → judge 2` and not all will be mixed.
+- Amendment logged in `PHASE_0.5_SPEC.md` §10.
 
 ### 2026-08-31 — **Phase 0.5b returned GO.** τ_corr 0.310 → 0.601
 

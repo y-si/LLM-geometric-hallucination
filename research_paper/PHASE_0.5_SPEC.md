@@ -968,6 +968,50 @@ pre-registration.
   headroom was real rather than an artifact of tie structure. Phase 0.5's report
   reproduces byte-identically after the change, which was verified.
 
+- 2026-09-12 (**POST-DATA — NOT PRE-REGISTERED**) — **§6.1 label-boundary table gains a
+  fourth row: mixed rejection→fabrication reclassified as non-hallucination.** Motivated
+  by the §11.3 JUDGE CONFOUNDED verdict on Phase 0.5b (9.4 pp hallucination-only
+  per-model gap between the judge and the settled-standard human labels): the rubric-v2
+  judge flags 1,169 of 32,640 successful judgments (3.58%) as
+  `mixed_rejection_then_fabrication == true`; 1,082 of those (93%) were labelled
+  HALLUCINATION. The fourth row recomputes τ_cross, τ_selfA, τ_selfB, and τ_corr with
+  those hallucination samples reclassified to NON-hallucination, adopting the human
+  validator's PARTIAL reading of the mixed pattern.
+
+  **This is a post-hoc sensitivity, not a new primary result.** It is labelled
+  `not_pre_registered: True` in the JSON, prefixed **(NOT PRE-REGISTERED, post-hoc)**
+  in its `definition` string, and flagged as such in `report.md` with a disclosure
+  paragraph. **§5.2 CONFOUNDED and every §7 threshold remain UNCHANGED.** The row is a
+  robustness margin on the confounded GO, not a re-derivation of the verdict.
+
+  **Result on Phase 0.5b primary panel** (rounded): τ_corr = 0.5854 vs. the
+  pre-registered primary 0.5999, a delta of −0.0145. Both remain above the §7 GO
+  threshold of 0.50, so on the pre-registered decision surface the confound is real
+  but **not load-bearing**. The mixed rule reclassifies A = 561, B = 499 label==2
+  samples (22 fewer than the raw 1,082 above because they are dropped by the §5.1
+  k_eff and §6.7 degenerate-stratum filters when the primary panel is constructed).
+
+  **Honest limits.** The rule covers ~3.58% of labels and ~10% of hallucination calls,
+  so it CANNOT account for the entire §11.3 9.4 pp gap on its own — 62 of the
+  human/judge disagreements were `human 0 Correct → judge 2` and not all of those will
+  be mixed cases. The row bounds the sub-question "how much of the confound is the
+  mixed rule specifically"; the confound as a whole is broader.
+
+  **Byte-identity check.** The code path is gated on `has_mixed_field`, which is True
+  only when a judgment row carries the `mixed_rejection_then_fabrication` key. Datasets
+  predating rubric v2 (Phase 0.5's `--dataset phase05`) have no such key on any row, so
+  no new fields are added to `per_pair`, no new list entries are added to
+  `label_boundary`, and no disclosure paragraph renders. Verified by simulation:
+  running the analyzer both before and after this change against a rubric-v1 dataset
+  (phase05b judgments with the flag key stripped) produced byte-identical `report.md`,
+  `phase05b_results.json`, and `per_prompt.csv`. Phase 0.5's own judgment file was not
+  available on the working machine (never packed for transfer), so the runtime check
+  against the shipped `results/phase05/analysis/report.md` was replaced with this
+  structural equivalent.
+
+  No API calls were made for this amendment. No `partial_weight` knob was changed.
+  No pre-registered threshold was renegotiated.
+
 ---
 
 ## 11. Phase 0.5b — TruthfulQA replication (pre-registered 2026-08-28, pre-data)

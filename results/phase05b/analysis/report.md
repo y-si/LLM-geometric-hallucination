@@ -172,9 +172,22 @@ tau_corr is internally consistent:
 | label 2 only (PRE-REGISTERED PRIMARY) | 0.4813 | 0.8032 | 0.8014 | 0.5999 |
 | partial = 0.5 hallucination | 0.4834 | 0.8330 | 0.8222 | 0.5841 |
 | partial = full hallucination | 0.4941 | 0.8419 | 0.8283 | 0.5917 |
+| mixed rejection→fabrication reclassified as non-hallucination (NOT PRE-REGISTERED, post-hoc) | 0.4649 | 0.7966 | 0.7916 | 0.5854 |
 
 If tau_corr moves materially across these rows the label boundary is
 load-bearing and must be discussed in the paper (§6.1, §9.9).
+
+The final row above is **NOT PRE-REGISTERED** — a post-hoc sensitivity added on 2026-09-12 in response to the §11.3
+JUDGE CONFOUNDED verdict. It reclassifies judgments where `mixed_rejection_then_fabrication == true` from HALLUCINATION
+to NON-hallucination, adopting the human validator's PARTIAL reading of the mixed rejection→fabrication pattern. §5.2's
+CONFOUNDED verdict and every §7 threshold remain UNCHANGED.
+
+    Rule: (label==2 AND mixed_rejection_then_fabrication==True) → non-hallucination
+    Reclassified label==2 samples: A=561, B=499
+
+Honest limits — this rule covers ~3.58% of labels and ~10% of hallucination calls, so it CANNOT account for the entire
+§11.3 9.4 pp gap on its own. 62 of the human/judge disagreements were `human 0 Correct → judge 2` and not all
+of those will be mixed cases.
 
 ## Judge-bound set — artifact diagnostic (§4.2)
 
