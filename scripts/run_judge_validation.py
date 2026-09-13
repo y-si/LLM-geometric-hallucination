@@ -578,7 +578,7 @@ def ask(prompt):
         return "q"
 
 
-def label_session(sample_path, labels_path):
+def label_session(sample_path, labels_path, next_hint=None):
     sample = read_jsonl(sample_path)
     if not sample:
         sys.exit(f"no sample at {sample_path}. Run --draw first.")
@@ -615,7 +615,8 @@ def label_session(sample_path, labels_path):
     print("=" * 92)
     print()
     if not todo:
-        print("  Nothing left to label. Run --score.")
+        print(f"  Nothing left to label. Next: {next_hint}" if next_hint
+              else "  Nothing left to label. Run --score.")
         return
     if ask("  Press Enter to start (or q to quit)... ") == "q":
         return
@@ -764,7 +765,8 @@ def label_session(sample_path, labels_path):
 
     print()
     print(f"  Done — {len(done)} of {len(sample)} labelled.")
-    print("  Next: python3 scripts/run_judge_validation.py --score")
+    print(f"  Next: {next_hint}" if next_hint else
+              "  Next: python3 scripts/run_judge_validation.py --dataset <ds> --score")
 
 
 # ── scoring ───────────────────────────────────────────────────────────────────
@@ -1705,7 +1707,9 @@ def main():
     elif args.redo_early_draw:
         redo_early_draw(sample_path, labels_path, args.out_dir)
     elif args.redo_early:
-        label_session(args.out_dir / REDO_SAMPLE, args.out_dir / REDO_LABELS)
+        label_session(args.out_dir / REDO_SAMPLE, args.out_dir / REDO_LABELS,
+                      next_hint=f"python3 scripts/run_judge_validation.py "
+                                f"--dataset {args.dataset} --promote-redo")
     elif args.promote_redo:
         promote_redo(labels_path, args.out_dir)
     elif args.relabel_draw:
@@ -1713,7 +1717,9 @@ def main():
                      args.relabel_n, args.seed)
     elif args.relabel:
         label_session(args.out_dir / RELABEL_SAMPLE,
-                      args.out_dir / RELABEL_LABELS)
+                      args.out_dir / RELABEL_LABELS,
+                      next_hint=f"python3 scripts/run_judge_validation.py "
+                                f"--dataset {args.dataset} --relabel-score")
     elif args.relabel_score:
         relabel_score(sample_path, labels_path, args.out_dir)
     elif args.flag_gt:
@@ -1767,7 +1773,9 @@ def main():
                 "here costs real hours. Run it interactively, or point --out-dir at "
                 "a scratch directory to test."
             )
-        label_session(sample_path, labels_path)
+        label_session(sample_path, labels_path,
+                      next_hint=f"python3 scripts/run_judge_validation.py "
+                                f"--dataset {args.dataset} --score")
 
 
 if __name__ == "__main__":
