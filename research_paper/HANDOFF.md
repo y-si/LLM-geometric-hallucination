@@ -103,6 +103,77 @@ the notable low outliers inside the panel.
 
 ---
 
+## §11.3 IS DONE, AND IT RETURNED **JUDGE CONFOUNDED** (2026-09-12)
+
+300 items hand-labelled under rubric v2, plus a 40-item blind re-label and a 55-item
+early-block drift correction. Full report: `results/phase05b/validation/validation.md`.
+Durable write-up: `CONTEXT.md` -> "§11.3 returned JUDGE CONFOUNDED at 9.4 pp".
+
+| | V3 (v1) | **0.5b (v2)** | §5.2 threshold |
+|---|---|---|---|
+| 4-way gap | 28.1 pp | **13.2 pp** | 5 pp |
+| **hallucination-only gap** | 5.3 pp | **9.4 pp** | **5 pp** |
+| hallucination-only agreement | 0.940 | **0.794** | — |
+| hallucination-only kappa | 0.835 | **0.437** | — |
+
+**§5.2 is binding: report the tau result as confounded, and replace the judge before
+Phase 1.** The GO stands as a computed result but is NOT clean.
+
+- **The prediction held.** v2 fixed the refusal cell it was written for: `human 3 ->
+  judge 0` went 50/150 (33%) -> 1/300 (0.3%), 4-way gap 28.1 -> 13.2 pp. Stated in
+  writing on 2026-09-11 *before* the score was run.
+- **But v2 damaged the load-bearing boundary.** kappa 0.835 -> 0.437, gap doubled.
+- **Mechanism: the judge over-calls hallucination.** When the human says hallucination the
+  judge agrees **94%**; when the judge says hallucination the human agrees **39%**. 92
+  items judge-2/human-not-2 against 4 the other way.
+- **Prime suspect is v2's own new MIXED CASE rule.** Every one of the labeller's notes on
+  these disagreements describes a *mixed* answer ("almost a hallucination but it hedges",
+  "started off hallucinating and then corrected itself").
+- **The asymmetry is WORSE on the GO run (9.4 pp) than the NO-GO run (5.3 pp).** That is
+  the pattern expected if the GO were partly artifactual. Do not wave it away.
+- **0.5b absolute rates are NOT quotable** — withdraw the earlier claim that they were.
+  The judge inflates P-hat ~2.4:1 against a human standard, independent of ground truth.
+- **The clean win:** ground-truth doubt 9/300 = **3.0% raw, 1.9% weighted**, Wilson
+  [1.6%, 5.6%], against V3's ~8%. **TruthfulQA's sourced reference answers held.**
+
+---
+
+## DO THIS NEXT — the mixed-flag sensitivity (no API calls, ~minutes)
+
+**The decisive question:** does the GO depend on the one rule the judge and a careful human
+disagree about?
+
+`mixed_rejection_then_fabrication` was added to every judgment on 2026-08-28 *precisely*
+so this is computable without re-judging 32,680 rows. Verified present on **100% of
+32,640 labels**:
+
+| | |
+|---|---|
+| flagged true | **1,169** (3.58% of labels) |
+| of those, labelled HALLUCINATION | **1,082 (93%)** |
+| by model | Llama **620**, gpt-oss **549** |
+
+The model split points the right way: the rule fires slightly *more* on Llama, and Llama
+is where judge-human agreement is worse (0.747 vs 0.841). Internally consistent.
+
+**Build a fourth row in `analyze_phase05.py`'s §6.1 label-boundary table:** recompute
+tau_corr with the 1,082 mixed-flagged hallucinations reclassified as **non**-hallucination,
+i.e. adopting the human's PARTIAL reading. Slots in beside the three definitions already
+reported (label-2-only 0.5999 / partial-half 0.5841 / partial-full 0.5917).
+
+- **If tau_corr holds >= 0.50** — the confound is real but not load-bearing, and that can
+  be said with a number.
+- **If it collapses** — the GO was substantially an artifact of that clause, and you need
+  to know before this reaches Sunny.
+
+**Two honest limits.** The rule is 3.58% of labels and ~10% of hallucination calls, so it
+cannot be the whole 9.4 pp gap — 62 of the disagreements were `human 0 Correct -> judge 2`
+and not all will be mixed cases. And it is a post-hoc reclassification, so it is a
+**labelled sensitivity, not a new primary result**. §5.2's CONFOUNDED verdict stands
+either way.
+
+---
+
 ## THE ONE THING BLOCKING THE GO FROM BEING BELIEVABLE
 
 **§11.3 fresh judge validation under rubric v2 has NOT been done.** The sample is drawn
